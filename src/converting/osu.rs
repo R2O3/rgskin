@@ -272,7 +272,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             column_start: keymode.layout.x_offset,
             column_width: keymode.layout.column_widths,
             column_spacing: keymode.layout.column_spacing,
-            column_line_width: vec![0, keymode.keymode as u32], // osu skins are the only skins that support line widths so no need to implement in generic skin
+            column_line_width: vec![0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
             receptor_images,
             receptor_images_down,
             normal_note_images,
