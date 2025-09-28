@@ -142,6 +142,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
 
         let layout = KeymodeLayout {
             keymode: key_count as u8,
+            receptor_above_notes: !keymode.keys_under_notes,
             x_offset: keymode.column_start,
             hit_position: get_hitpos(keymode.hit_position),
             receptor_offset: receptor_offset,
@@ -266,6 +267,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
 
         let osu_keymode = crate::osu::Keymode {
             keymode: keymode.keymode,
+            keys_under_notes: !keymode.layout.receptor_above_notes,
             hit_position: 512 - keymode.layout.hit_position,
             column_start: keymode.layout.x_offset,
             column_width: keymode.layout.column_widths,

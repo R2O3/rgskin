@@ -1,6 +1,7 @@
 #[derive(Clone)]
 pub struct KeymodeLayout {
     pub keymode: u8,
+    pub receptor_above_notes: bool,
     pub x_offset: u32,
     pub hit_position: u32,
     pub receptor_offset: u32,
