@@ -1,0 +1,97 @@
+pub(crate) mod skin;
+pub(crate) mod converting;
+pub(crate) mod exporting;
+pub(crate) mod importing;
+pub(crate) mod io;
+pub(crate) mod extensions;
+
+mod parse;
+
+pub mod image_proc;
+pub mod utils;
+
+pub use skin::osu;
+pub use skin::generic;
+pub use parse::ini;
+
+pub use osu::OsuSkin;
+pub use generic::GenericManiaSkin;
+
+pub use io::Binary;
+pub use io::Texture;
+pub use io::Store;
+pub use io::TextureStore;
+
+pub mod assets {
+    use std::collections::HashSet;
+    use crate::osu;
+
+    pub fn get_mania_texture_paths(skin_ini: &osu::SkinIni) -> HashSet<String> {
+        skin_ini.get_mania_texture_paths()
+    }
+}
+
+pub mod load {
+    pub mod osu {
+        use crate::{converting::osu::{from_generic_mania, to_generic_mania}, io::TextureStore, osu, skin::generic};
+
+        pub fn skin_ini(str: &str) -> Result<osu::SkinIni, Box<dyn std::error::Error>> {
+            osu::SkinIni::from_str(str)
+        }
+
+        pub fn from_ini(skin_ini: osu::SkinIni, assets: Option<TextureStore>) -> osu::OsuSkin {
+            osu::OsuSkin::new(skin_ini, assets)
+        }
+
+        pub fn to_generic(skin: osu::OsuSkin) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
+            to_generic_mania(skin)
+        }
+
+        pub fn from_generic(skin: generic::GenericManiaSkin) -> Result<osu::OsuSkin, Box<dyn std::error::Error>> {
+            from_generic_mania(skin)
+        }
+    }
+}
+
+pub mod export {
+    use std::io;
+    use crate::{exporting::native::export_textures, TextureStore};
+
+    pub fn textures_to_dir(textures: &TextureStore, path: &str) -> io::Result<()>  {
+        export_textures(textures, path)
+    }
+
+    pub mod osu {
+        use std::io;
+
+        use crate::{exporting::native::{export_osu_ini, export_osu_skin}, osu, TextureStore};
+
+        pub fn skin_to_dir(skin_ini: &osu::SkinIni, textures: Option<&TextureStore>, path: &str) -> io::Result<()> {
+            export_osu_skin(skin_ini, textures, path)
+        }
+
+        pub fn ini_to_dir(skin_ini: &osu::SkinIni, path: &str) -> io::Result<()> {
+            export_osu_ini(skin_ini, path)
+        }
+    }
+}
+
+pub mod import {
+    use crate::{importing::native::import_textures_from_dir, TextureStore};
+
+    pub fn textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>>  {
+        import_textures_from_dir(path, relative_texture_paths)
+    }
+
+    pub mod osu {
+        use crate::{importing::native::{import_osu_ini_str, import_osu_mania_skin_from_dir}, OsuSkin};
+
+        pub fn skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std::error::Error>> {
+            import_osu_mania_skin_from_dir(path)
+        }
+
+        pub fn ini_str_from_dir(path: &str) -> String {
+            import_osu_ini_str(path)
+        }
+    }
+}

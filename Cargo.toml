@@ -1,0 +1,37 @@
+[package]
+name = "rgc-skin"
+version = "0.0.1"
+edition = "2024"
+repository = "https://github.com/menvae/RGC-Skin"
+authors = ["menvae"]
+categories = ["encoding", "wasm"]
+description = "A library for converting rhythm game skins."
+keywords = [
+  "wasm",
+  "rhythm-game",
+  "parser",
+  "converter",
+  "encoder"
+]
+license = "MIT"
+exclude = [
+    "tests/*",
+    ".vscode/*",
+    "package.json"
+]
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+doctest = false # TODO: re add doctest when we have better docs
+
+[dependencies]
+wasm-bindgen = "0.2.100"
+js-sys = "0.3.78"
+image = { version = "0.25.8", default-features = false, features = ["png"] }
+# tinyjson = "2.5.1"
+
+[profile.release]
+strip = false
+debug = true
+opt-level = 3
+lto = true
