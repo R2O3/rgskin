@@ -14,11 +14,11 @@ pub struct HUDLayout {
 }
 
 impl KeymodeLayout {
-    pub fn average_column_width(&mut self) -> u32 {
+    pub fn average_column_width(&self) -> u32 {
         self.column_widths.iter().sum::<u32>() / (self.column_widths.len() as u32)
     }
 
-    pub fn average_column_spacing(&mut self) -> u32 {
+    pub fn average_column_spacing(&self) -> u32 {
         self.column_spacing.iter().sum::<u32>() / (self.column_spacing.len() as u32)
     }
 }

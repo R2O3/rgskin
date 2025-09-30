@@ -187,7 +187,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
     let mut processed_textures = HashSet::new();
 
     for keymode in skin.keymodes {
-        let average_column_width = keymode.layout.column_widths.iter().sum::<u32>() / keymode.layout.column_widths.len() as u32;
+        let average_column_width = keymode.layout.average_column_width();
 
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
