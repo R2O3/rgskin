@@ -1,3 +1,5 @@
+use crate::common::{Anchor, Vector2, Vector3};
+
 #[derive(Clone)]
 pub struct KeymodeLayout {
     pub keymode: u8,
@@ -10,7 +12,10 @@ pub struct KeymodeLayout {
 }
 
 pub struct HUDLayout {
-    // unimplemented
+    pub combo: (Vector3<f32>, Anchor),
+    pub rating: (Vector3<f32>, Anchor),
+    pub accuracy: (Vector3<f32>, Anchor),
+    pub score: (Vector3<f32>, Anchor),
 }
 
 impl KeymodeLayout {

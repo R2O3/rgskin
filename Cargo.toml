@@ -25,6 +25,7 @@ crate-type = ["cdylib", "rlib"]
 doctest = false # TODO: re add doctest when we have better docs
 
 [dependencies]
+paste = "1.0.15"
 wasm-bindgen = "0.2.100"
 js-sys = "0.3.78"
 image = { version = "0.25.8", default-features = false, features = ["png"] }

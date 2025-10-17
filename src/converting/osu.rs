@@ -1,6 +1,8 @@
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
+use crate::common::{Anchor, Vector3};
 use crate::extensions::TextureArcExt;
+use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, to_osu_column, to_osu_column_draw};
 use crate::io::{Store, Texture};
 use crate::osu::{General, OsuSkin, SkinIni};
@@ -20,14 +22,15 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
     let blank_texture = textures.get_shared("blank").unwrap();
 
     let metadata = Metadata {
-        name: skin.skin_ini.general.name,
-        creator: skin.skin_ini.general.author,
-        version: skin.skin_ini.general.version,
+        name: skin.skin_ini.general.name.clone(),
+        creator: skin.skin_ini.general.author.clone(),
+        version: skin.skin_ini.general.version.clone(),
+        center_cursor: skin.skin_ini.general.cursor_centre.clone()
     };
 
     let mut processed_textures = HashSet::new();
 
-    for keymode in skin.skin_ini.keymodes {
+    for keymode in &skin.skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
         let average_column_width = keymode.column_width.iter().sum::<u32>() / keymode.column_width.len() as u32;
         let mut receptor_offset = 0;
@@ -146,8 +149,8 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             x_offset: keymode.column_start,
             hit_position: get_hitpos(keymode.hit_position),
             receptor_offset: receptor_offset,
-            column_widths: keymode.column_width,
-            column_spacing: keymode.column_spacing,
+            column_widths: keymode.column_width.clone(),
+            column_spacing: keymode.column_spacing.clone(),
         };
 
         keymodes.push(Keymode { 
@@ -161,10 +164,23 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             long_note_tail: long_note_tail_elements
         });
     }
+
+    let default_keymode = skin.skin_ini.keymodes[0].clone();
+    let layout_keymode = skin.skin_ini.get_keymode(4).unwrap_or(&default_keymode);
+
+    let gameplay = Gameplay {
+        health_bar: Healthbar::new(textures.get_shared("scorebar-colour").unwrap(), textures.get_shared("scorebar-bg").unwrap()),
+        layout: HUDLayout {
+            combo: (Vector3::new(50.0 / 512.0, layout_keymode.combo_position.unwrap_or_default() as f32 / 384.0, 1.0), Anchor::BottomLeft),
+            rating: (Vector3::new(0.0, -30.0 / 384.0, 1.0), Anchor::Centre),
+            accuracy: (Vector3::new(-50.0 / 512.0, 50.0 / 512.0, 1.0), Anchor::TopRight),
+            score: (Vector3::new(-50.0 / 512.0, layout_keymode.score_position.unwrap_or_default() as f32 / 384.0, 1.0), Anchor::TopRight),
+        }
+    };
     
     Ok(GenericManiaSkin { 
         metadata, 
-        gameplay_hud: HUDLayout{}, 
+        gameplay, 
         keymodes, 
         textures 
     })
@@ -181,6 +197,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         name: skin.metadata.name,
         author: skin.metadata.creator,
         version: skin.metadata.version,
+        cursor_centre: skin.metadata.center_cursor,
         ..Default::default()
     };
 
@@ -254,7 +271,14 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             .iter()
             .map(|note| note.path())
             .collect();
-        
+
+        if let Some(health_bar_bg) = skin.gameplay.health_bar.background.get_data() {
+            textures.insert(Texture::with_data("scorebar-bg".to_string(), health_bar_bg));
+        }
+
+        if let Some(health_bar_colour) = skin.gameplay.health_bar.fill.get_data() {
+            textures.insert(Texture::with_data("scorebar-colour".to_string(), health_bar_colour));
+        }
 
         // these wouldn't be present in other skins
         if !textures.contains("star") {
@@ -279,16 +303,22 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             long_note_head_images,
             long_note_body_images,
             long_note_tail_images,
+            judgement_line : false,
             ..Default::default()
         };
 
         osu_keymodes.push(osu_keymode);
     }
     
-    let skin_ini = SkinIni {
+    let mut skin_ini = SkinIni {
         general,
         keymodes: osu_keymodes,
     };
+
+    for keymode in &mut skin_ini.keymodes {
+        keymode.score_position = Some((skin.gameplay.layout.score.0.y * 384.0) as u32);
+        keymode.combo_position = Some((skin.gameplay.layout.combo.0.y * 384.0) as u32);
+    }
     
     Ok(OsuSkin::new(skin_ini, Some(textures)))
 }

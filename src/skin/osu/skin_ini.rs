@@ -53,4 +53,11 @@ impl SkinIni {
 
         result
     }
+
+    pub fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
+        for k in &self.keymodes {
+            if k.keymode == keymode { return Some(k); }
+        }
+        None
+    }
 }

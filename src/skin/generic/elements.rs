@@ -31,214 +31,82 @@ pub trait SkinElement: Sync + Send {
     }
 }
 
-#[derive(Clone)]
-pub struct ReceptorUp {
-    pub texture: Arc<RwLock<Texture>>,
-}
-
-impl ReceptorUp {
-    pub fn new(texture: Arc<RwLock<Texture>>) -> Self {
-        Self { texture }
-    }
+macro_rules! skin_element {
+    ($name:ident) => {
+        skin_element!($name; texture);
+    };
     
-    pub fn with_texture_data(texture: Texture) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(texture)),
+    ($name:ident; $primary:ident $(, $extra:ident)*) => {
+        #[derive(Clone)]
+        pub struct $name {
+            pub $primary: Arc<RwLock<Texture>>,
+            $(pub $extra: Arc<RwLock<Texture>>,)*
         }
-    }
-    
-    pub fn from_path(path: String) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(Texture::new(path))),
+
+        impl $name {
+            pub fn new($primary: Arc<RwLock<Texture>> $(, $extra: Arc<RwLock<Texture>>)*) -> Self {
+                Self { $primary $(, $extra)* }
+            }
+            
+            pub fn with_texture_data($primary: Texture $(, $extra: Texture)*) -> Self {
+                Self {
+                    $primary: Arc::new(RwLock::new($primary)),
+                    $($extra: Arc::new(RwLock::new($extra)),)*
+                }
+            }
+            
+            pub fn from_path($primary: String $(, $extra: String)*) -> Self {
+                Self {
+                    $primary: Arc::new(RwLock::new(Texture::new($primary))),
+                    $($extra: Arc::new(RwLock::new(Texture::new($extra))),)*
+                }
+            }
+            
+            $(
+                paste::paste! {
+                    pub fn [<as_ $extra>](&self) -> std::sync::RwLockReadGuard<'_, Texture> {
+                        self.$extra.read().unwrap()
+                    }
+                    
+                    pub fn [<as_ $extra _mut>](&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
+                        self.$extra.write().unwrap()
+                    }
+                    
+                    pub fn [<with_ $extra>]<F, R>(&self, f: F) -> R
+                    where 
+                        F: FnOnce(&Texture) -> R,
+                    {
+                        let texture = self.[<as_ $extra>]();
+                        f(&*texture)
+                    }
+                    
+                    pub fn [<with_ $extra _mut>]<F, R>(&self, f: F) -> R
+                    where 
+                        F: FnOnce(&mut Texture) -> R,
+                    {
+                        let mut texture = self.[<as_ $extra _mut>]();
+                        f(&mut *texture)
+                    }
+                }
+            )*
         }
-    }
-}
 
-impl SkinElement for ReceptorUp {
-    fn as_texture(&self) -> std::sync::RwLockReadGuard<'_, Texture> {
-        self.texture.read().unwrap()
-    }
-    
-    fn as_texture_mut(&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
-        self.texture.write().unwrap()
-    }
-}
-
-#[derive(Clone)]
-pub struct ReceptorDown {
-    pub texture: Arc<RwLock<Texture>>,
-}
-
-impl ReceptorDown {
-    pub fn new(texture: Arc<RwLock<Texture>>) -> Self {
-        Self { texture }
-    }
-    
-    pub fn with_texture_data(texture: Texture) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(texture)),
+        impl SkinElement for $name {
+            fn as_texture(&self) -> std::sync::RwLockReadGuard<'_, Texture> {
+                self.$primary.read().unwrap()
+            }
+            
+            fn as_texture_mut(&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
+                self.$primary.write().unwrap()
+            }
         }
-    }
-    
-    pub fn from_path(path: String) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(Texture::new(path))),
-        }
-    }
+    };
 }
 
-impl SkinElement for ReceptorDown {
-    fn as_texture(&self) -> std::sync::RwLockReadGuard<'_, Texture> {
-        self.texture.read().unwrap()
-    }
-    
-    fn as_texture_mut(&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
-        self.texture.write().unwrap()
-    }
-}
-
-pub trait Hitobject: SkinElement {
-    fn normalize(&mut self) {
-        unimplemented!()
-    }
-}
-
-#[derive(Clone)]
-pub struct NormalNote {
-    pub texture: Arc<RwLock<Texture>>,
-}
-
-impl NormalNote {
-    pub fn new(texture: Arc<RwLock<Texture>>) -> Self {
-        Self { texture }
-    }
-    
-    pub fn with_texture_data(texture: Texture) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(texture)),
-        }
-    }
-    
-    pub fn from_path(path: String) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(Texture::new(path))),
-        }
-    }
-}
-
-impl SkinElement for NormalNote {
-    fn as_texture(&self) -> std::sync::RwLockReadGuard<'_, Texture> {
-        self.texture.read().unwrap()
-    }
-    
-    fn as_texture_mut(&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
-        self.texture.write().unwrap()
-    }
-}
-
-impl Hitobject for NormalNote {}
-
-#[derive(Clone)]
-pub struct LongNoteHead {
-    pub texture: Arc<RwLock<Texture>>,
-}
-
-impl LongNoteHead {
-    pub fn new(texture: Arc<RwLock<Texture>>) -> Self {
-        Self { texture }
-    }
-    
-    pub fn with_texture_data(texture: Texture) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(texture)),
-        }
-    }
-    
-    pub fn from_path(path: String) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(Texture::new(path))),
-        }
-    }
-}
-
-impl SkinElement for LongNoteHead {
-    fn as_texture(&self) -> std::sync::RwLockReadGuard<'_, Texture> {
-        self.texture.read().unwrap()
-    }
-    
-    fn as_texture_mut(&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
-        self.texture.write().unwrap()
-    }
-}
-
-impl Hitobject for LongNoteHead {}
-
-#[derive(Clone)]
-pub struct LongNoteTail {
-    pub texture: Arc<RwLock<Texture>>,
-}
-
-impl LongNoteTail {
-    pub fn new(texture: Arc<RwLock<Texture>>) -> Self {
-        Self { texture }
-    }
-    
-    pub fn with_texture_data(texture: Texture) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(texture)),
-        }
-    }
-    
-    pub fn from_path(path: String) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(Texture::new(path))),
-        }
-    }
-}
-
-impl SkinElement for LongNoteTail {
-    fn as_texture(&self) -> std::sync::RwLockReadGuard<'_, Texture> {
-        self.texture.read().unwrap()
-    }
-    
-    fn as_texture_mut(&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
-        self.texture.write().unwrap()
-    }
-}
-
-impl Hitobject for LongNoteTail {}
-
-#[derive(Clone)]
-pub struct LongNoteBody {
-    pub texture: Arc<RwLock<Texture>>,
-}
-
-impl LongNoteBody {
-    pub fn new(texture: Arc<RwLock<Texture>>) -> Self {
-        Self { texture }
-    }
-    
-    pub fn with_texture_data(texture: Texture) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(texture)),
-        }
-    }
-    
-    pub fn from_path(path: String) -> Self {
-        Self {
-            texture: Arc::new(RwLock::new(Texture::new(path))),
-        }
-    }
-}
-
-impl SkinElement for LongNoteBody {
-    fn as_texture(&self) -> std::sync::RwLockReadGuard<'_, Texture> {
-        self.texture.read().unwrap()
-    }
-    
-    fn as_texture_mut(&self) -> std::sync::RwLockWriteGuard<'_, Texture> {
-        self.texture.write().unwrap()
-    }
-}
-
-impl Hitobject for LongNoteBody {}
+skin_element!(ReceptorUp);
+skin_element!(ReceptorDown);
+skin_element!(NormalNote);
+skin_element!(LongNoteHead);
+skin_element!(LongNoteTail);
+skin_element!(LongNoteBody);
+skin_element!(Healthbar; fill, background);

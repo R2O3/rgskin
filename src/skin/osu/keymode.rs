@@ -3,7 +3,7 @@ use crate::utils::serde::{
     add_key_value, add_key_value_if_not_default, parse_bool, parse_key_value, parse_u32_list, serialize_bool, serialize_bool_vec_if_not_empty, serialize_u32_slice, serialize_vec_if_not_empty
 };
 use crate::utils::io::{path_to_unix, path_to_win};
-use crate::skin::shared::structs::Rgba;
+use crate::common::Rgba;
 
 #[derive(Clone, Debug)]
 pub struct Keymode {
@@ -556,6 +556,9 @@ impl Keymode {
         result.insert("mania-stage-hint".to_string());
         result.insert("star".to_string());
         result.insert("star2".to_string());
+
+        result.insert("scorebar-bg".to_string());
+        result.insert("scorebar-colour".to_string());
 
         result
     }
