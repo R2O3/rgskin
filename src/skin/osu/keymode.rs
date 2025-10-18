@@ -364,34 +364,40 @@ impl Keymode {
         let default = Keymode::default();
         
         add_key_value(&mut result, "Keys", ": ", &self.keymode.to_string(), "\n");
-        add_key_value(&mut result, "KeysUnderNotes", ": ", &serialize_bool(self.keys_under_notes).to_string(), "\n");
+        result.push('\n');
         
+        // toggles
+        result.push_str(&format!("// --=  Toggles  |  {}k  =--\n", &self.keymode));
+        add_key_value(&mut result, "KeysUnderNotes", ": ", &serialize_bool(self.keys_under_notes).to_string(), "\n");
         add_key_value_if_not_default::<bool>(&mut result, "JudgementLine", &self.judgement_line, &default.judgement_line);
         add_key_value_if_not_default::<bool>(&mut result, "UpsideDown", &self.upside_down, &default.upside_down);
         add_key_value_if_not_default::<bool>(&mut result, "SeparateScore", &self.separate_score, &default.separate_score);
-        add_key_value_if_not_default::<u8>(&mut result, "SpecialStyle", &self.special_style, &default.special_style);
-        add_key_value_if_not_default::<u8>(&mut result, "ComboBurstStyle", &self.combo_burst_style, &default.combo_burst_style);
-        add_key_value_if_not_default::<f32>(&mut result, "StageSeparation", &self.stage_separation, &default.stage_separation);
-        add_key_value(&mut result, "HitPosition", ": ", &self.hit_position.to_string(), "\n");
-        add_key_value_if_not_default::<u32>(&mut result, "LightPosition", &self.light_position, &default.light_position);
-        add_key_value_if_not_default::<u32>(&mut result, "ColumnStart", &self.column_start, &default.column_start);
-        add_key_value_if_not_default::<u32>(&mut result, "ColumnRight", &self.column_right, &default.column_right);
-        add_key_value_if_not_default::<f32>(&mut result, "BarlineHeight", &self.barline_height, &default.barline_height);
-        add_key_value_if_not_default::<u32>(&mut result, "LightFramePerSecond", &self.light_frame_per_second, &default.light_frame_per_second);
-        add_key_value_if_not_default::<u8>(&mut result, "NoteBodyStyle", &self.note_body_style, &default.note_body_style);
-        
         if let Some(split_stages) = self.split_stages {
             add_key_value(&mut result, "SplitStages", ": ", &serialize_bool(split_stages).to_string(), "\n");
         }
+        add_key_value_if_not_default::<bool>(&mut result, "KeyFlipWhenUpsideDown", &self.key_flip_when_upside_down, &default.key_flip_when_upside_down);
+        add_key_value_if_not_default::<bool>(&mut result, "NoteFlipWhenUpsideDown", &self.note_flip_when_upside_down, &default.note_flip_when_upside_down);
+        result.push('\n');
+
+        // position
+        result.push_str(&format!("// --=  Position  |  {}k  =--\n", &self.keymode));
+        add_key_value(&mut result, "HitPosition", ": ", &self.hit_position.to_string(), "\n");
+        add_key_value_if_not_default::<u32>(&mut result, "LightPosition", &self.light_position, &default.light_position);
         
         if let Some(score_position) = self.score_position {
             add_key_value(&mut result, "ScorePosition", ": ", &score_position.to_string(), "\n");
         }
-        
+
         if let Some(combo_position) = self.combo_position {
             add_key_value(&mut result, "ComboPosition", ": ", &combo_position.to_string(), "\n");
         }
-        
+        add_key_value_if_not_default::<f32>(&mut result, "BarlineHeight", &self.barline_height, &default.barline_height);
+        result.push('\n');
+
+        // column
+        result.push_str(&format!("// --=  Column  |  {}k  =--\n", &self.keymode));
+        add_key_value_if_not_default::<u32>(&mut result, "ColumnStart", &self.column_start, &default.column_start);
+        add_key_value_if_not_default::<u32>(&mut result, "ColumnRight", &self.column_right, &default.column_right);
         if let Some(width_for_note_height_scale) = self.width_for_note_height_scale {
             add_key_value(&mut result, "WidthForNoteHeightScale", ": ", &width_for_note_height_scale.to_string(), "\n");
         }
@@ -407,26 +413,41 @@ impl Keymode {
         if self.column_spacing != default.column_spacing {
             add_key_value(&mut result, "ColumnSpacing", ": ", &serialize_u32_slice(&self.column_spacing), "\n");
         }
-        
+        result.push('\n');
+
+        // stage
+        result.push_str(&format!("// --=  Stage  |  {}k  =--\n", &self.keymode));
+        add_key_value_if_not_default::<f32>(&mut result, "StageSeparation", &self.stage_separation, &default.stage_separation);
+        add_key_value_if_not_default::<String>(&mut result, "StageLeft", &self.stage_left, &default.stage_left);
+        add_key_value_if_not_default::<String>(&mut result, "StageRight", &self.stage_right, &default.stage_right);
+        add_key_value_if_not_default::<String>(&mut result, "StageBottom", &self.stage_bottom, &default.stage_bottom);
+        add_key_value_if_not_default::<String>(&mut result, "StageHint", &self.stage_hint, &default.stage_hint);
+        add_key_value_if_not_default::<String>(&mut result, "StageLight", &self.stage_light, &default.stage_light);
+        result.push('\n');
+
+        // style
+        result.push_str(&format!("// --=  Style  |  {}k  =--\n", &self.keymode));
+        add_key_value_if_not_default::<u8>(&mut result, "NoteBodyStyle", &self.note_body_style, &default.note_body_style);
+        add_key_value_if_not_default::<u8>(&mut result, "SpecialStyle", &self.special_style, &default.special_style);
+        add_key_value_if_not_default::<u8>(&mut result, "ComboBurstStyle", &self.combo_burst_style, &default.combo_burst_style);
+        serialize_vec_if_not_empty(&mut result, &self.note_body_style_columns, "NoteBodyStyleColumns");
+        result.push('\n');
+
+        // lighting
+        result.push_str(&format!("// --=  Lighting  |  {}k  =--\n", &self.keymode));
         if !self.lighting_n_width.is_empty() {
             add_key_value(&mut result, "LightingNWidth", ": ", &serialize_u32_slice(&self.lighting_n_width), "\n");
         }
-        
         if !self.lighting_l_width.is_empty() {
             add_key_value(&mut result, "LightingLWidth", ": ", &serialize_u32_slice(&self.lighting_l_width), "\n");
         }
+        add_key_value_if_not_default::<String>(&mut result, "LightingN", &self.lighting_n, &default.lighting_n);
+        add_key_value_if_not_default::<String>(&mut result, "LightingL", &self.lighting_l, &default.lighting_l);
+        add_key_value_if_not_default::<u32>(&mut result, "LightFramePerSecond", &self.light_frame_per_second, &default.light_frame_per_second);
+        result.push('\n');
         
-        serialize_bool_vec_if_not_empty(&mut result, &self.key_flip_when_upside_down_columns, "KeyFlipWhenUpsideDownColumns");
-        serialize_bool_vec_if_not_empty(&mut result, &self.key_flip_when_upside_down_down_columns, "KeyFlipWhenUpsideDownDownColumns");
-        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_columns, "NoteFlipWhenUpsideDownColumns");
-        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_h_columns, "NoteFlipWhenUpsideDownHColumns");
-        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_l_columns, "NoteFlipWhenUpsideDownLColumns");
-        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_t_columns, "NoteFlipWhenUpsideDownTColumns");
-        serialize_vec_if_not_empty(&mut result, &self.note_body_style_columns, "NoteBodyStyleColumns");
-        
-        add_key_value_if_not_default::<bool>(&mut result, "KeyFlipWhenUpsideDown", &self.key_flip_when_upside_down, &default.key_flip_when_upside_down);
-        add_key_value_if_not_default::<bool>(&mut result, "NoteFlipWhenUpsideDown", &self.note_flip_when_upside_down, &default.note_flip_when_upside_down);
-        
+        // colors
+        result.push_str(&format!("// --=  Colors  |  {}k  =--\n", &self.keymode));
         if self.colours != default.colours {
             for (i, color) in self.colours.iter().enumerate() {
                 if i < default.colours.len() && color != &default.colours[i] {
@@ -478,21 +499,24 @@ impl Keymode {
                 }
             }
         };
-        
+        result.push('\n');
+
+        // receptors
+        result.push_str(&format!("// --=  Receptors  |  {}k  =--\n", &self.keymode));
         serialize_string_vec(&mut result, &self.receptor_images, &default.receptor_images, "KeyImage", "");
         serialize_string_vec(&mut result, &self.receptor_images_down, &default.receptor_images_down, "KeyImage", "D");
+        result.push('\n');
+
+        // notes
+        result.push_str(&format!("// --=  Notes  |  {}k  =--\n", &self.keymode));
         serialize_string_vec(&mut result, &self.normal_note_images, &default.normal_note_images, "NoteImage", "");
         serialize_string_vec(&mut result, &self.long_note_head_images, &default.long_note_head_images, "NoteImage", "H");
         serialize_string_vec(&mut result, &self.long_note_body_images, &default.long_note_body_images, "NoteImage", "L");
         serialize_string_vec(&mut result, &self.long_note_tail_images, &default.long_note_tail_images, "NoteImage", "T");
-        
-        add_key_value_if_not_default::<String>(&mut result, "StageLeft", &self.stage_left, &default.stage_left);
-        add_key_value_if_not_default::<String>(&mut result, "StageRight", &self.stage_right, &default.stage_right);
-        add_key_value_if_not_default::<String>(&mut result, "StageBottom", &self.stage_bottom, &default.stage_bottom);
-        add_key_value_if_not_default::<String>(&mut result, "StageHint", &self.stage_hint, &default.stage_hint);
-        add_key_value_if_not_default::<String>(&mut result, "StageLight", &self.stage_light, &default.stage_light);
-        add_key_value_if_not_default::<String>(&mut result, "LightingN", &self.lighting_n, &default.lighting_n);
-        add_key_value_if_not_default::<String>(&mut result, "LightingL", &self.lighting_l, &default.lighting_l);
+        result.push('\n');
+
+        // misc
+        result.push_str(&format!("// --=  Misc  |  {}k  =--\n", &self.keymode));
         add_key_value_if_not_default::<String>(&mut result, "WarningArrow", &self.warning_arrow, &default.warning_arrow);
         add_key_value_if_not_default::<String>(&mut result, "Hit0", &self.hit0, &default.hit0);
         add_key_value_if_not_default::<String>(&mut result, "Hit50", &self.hit50, &default.hit50);
@@ -500,6 +524,14 @@ impl Keymode {
         add_key_value_if_not_default::<String>(&mut result, "Hit200", &self.hit200, &default.hit200);
         add_key_value_if_not_default::<String>(&mut result, "Hit300", &self.hit300, &default.hit300);
         add_key_value_if_not_default::<String>(&mut result, "Hit300g", &self.hit300g, &default.hit300g);
+        result.push('\n');
+
+        serialize_bool_vec_if_not_empty(&mut result, &self.key_flip_when_upside_down_columns, "KeyFlipWhenUpsideDownColumns");
+        serialize_bool_vec_if_not_empty(&mut result, &self.key_flip_when_upside_down_down_columns, "KeyFlipWhenUpsideDownDownColumns");
+        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_columns, "NoteFlipWhenUpsideDownColumns");
+        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_h_columns, "NoteFlipWhenUpsideDownHColumns");
+        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_l_columns, "NoteFlipWhenUpsideDownLColumns");
+        serialize_bool_vec_if_not_empty(&mut result, &self.note_flip_when_upside_down_t_columns, "NoteFlipWhenUpsideDownTColumns");
         
         result
     }

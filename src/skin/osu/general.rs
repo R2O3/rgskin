@@ -95,27 +95,27 @@ impl General {
     pub fn to_str(&self) -> String {
         let mut result = String::new();
 
-        add_key_value(&mut result, "    Name", ": ", &self.name, "\n");
-        add_key_value(&mut result, "    Author", ": ", &self.author, "\n");
-        add_key_value(&mut result, "    Version", ": ", &self.version, "\n");
-        add_key_value(&mut result, "    AnimationFramerate", ": ", &self.animation_framerate.to_string(), "\n");
-        add_key_value(&mut result, "    AllowSliderBallTint", ": ", &serialize_bool(self.allow_slider_ball_tint).to_string(), "\n");
-        add_key_value(&mut result, "    ComboBurstRandom", ": ", &serialize_bool(self.combo_burst_random).to_string(), "\n");
-        add_key_value(&mut result, "    CursorCentre", ": ", &serialize_bool(self.cursor_centre).to_string(), "\n");
-        add_key_value(&mut result, "    CursorExpand", ": ", &serialize_bool(self.cursor_expand).to_string(), "\n");
-        add_key_value(&mut result, "    CursorRotate", ": ", &serialize_bool(self.cursor_rotate).to_string(), "\n");
-        add_key_value(&mut result, "    CursorTrailRotate", ": ", &serialize_bool(self.cursor_trail_rotate).to_string(), "\n");
+        add_key_value(&mut result, "Name", ": ", &self.name, "\n");
+        add_key_value(&mut result, "Author", ": ", &self.author, "\n");
+        add_key_value(&mut result, "Version", ": ", &self.version, "\n");
+        add_key_value(&mut result, "AnimationFramerate", ": ", &self.animation_framerate.to_string(), "\n");
+        add_key_value(&mut result, "AllowSliderBallTint", ": ", &serialize_bool(self.allow_slider_ball_tint).to_string(), "\n");
+        add_key_value(&mut result, "ComboBurstRandom", ": ", &serialize_bool(self.combo_burst_random).to_string(), "\n");
+        add_key_value(&mut result, "CursorCentre", ": ", &serialize_bool(self.cursor_centre).to_string(), "\n");
+        add_key_value(&mut result, "CursorExpand", ": ", &serialize_bool(self.cursor_expand).to_string(), "\n");
+        add_key_value(&mut result, "CursorRotate", ": ", &serialize_bool(self.cursor_rotate).to_string(), "\n");
+        add_key_value(&mut result, "CursorTrailRotate", ": ", &serialize_bool(self.cursor_trail_rotate).to_string(), "\n");
         
         if !self.custom_combo_burst_sounds.is_empty() {
-            add_key_value(&mut result, "    CustomComboBurstSounds", ": ", &serialize_u16_slice(&self.custom_combo_burst_sounds), "\n");
+            add_key_value(&mut result, "CustomComboBurstSounds", ": ", &serialize_u16_slice(&self.custom_combo_burst_sounds), "\n");
         }
         
-        add_key_value(&mut result, "    HitCircleOverlayAboveNumber", ": ", &serialize_bool(self.hit_circle_overlay_above_number).to_string(), "\n");
-        add_key_value(&mut result, "    LayeredHitSounds", ": ", &serialize_bool(self.layered_hit_sounds).to_string(), "\n");
-        add_key_value(&mut result, "    SliderBallFlip", ": ", &serialize_bool(self.slider_ball_flip).to_string(), "\n");
-        add_key_value(&mut result, "    SpinnerFadePlayfield", ": ", &serialize_bool(self.spinner_fade_playfield).to_string(), "\n");
-        add_key_value(&mut result, "    SpinnerFrequencyModulate", ": ", &serialize_bool(self.spinner_frequency_modulate).to_string(), "\n");
-        add_key_value(&mut result, "    SpinnerNoBlink", ": ", &serialize_bool(self.spinner_no_blink).to_string(), "\n");
+        add_key_value(&mut result, "HitCircleOverlayAboveNumber", ": ", &serialize_bool(self.hit_circle_overlay_above_number).to_string(), "\n");
+        add_key_value(&mut result, "LayeredHitSounds", ": ", &serialize_bool(self.layered_hit_sounds).to_string(), "\n");
+        add_key_value(&mut result, "SliderBallFlip", ": ", &serialize_bool(self.slider_ball_flip).to_string(), "\n");
+        add_key_value(&mut result, "SpinnerFadePlayfield", ": ", &serialize_bool(self.spinner_fade_playfield).to_string(), "\n");
+        add_key_value(&mut result, "SpinnerFrequencyModulate", ": ", &serialize_bool(self.spinner_frequency_modulate).to_string(), "\n");
+        add_key_value(&mut result, "SpinnerNoBlink", ": ", &serialize_bool(self.spinner_no_blink).to_string(), "\n");
         
         result
     }
