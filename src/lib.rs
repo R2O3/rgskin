@@ -12,6 +12,7 @@ pub mod image_proc;
 pub mod utils;
 
 pub use skin::osu;
+pub use skin::fluxis;
 pub use skin::generic;
 pub use parse::ini;
 
@@ -52,6 +53,30 @@ pub mod load {
             from_generic_mania(skin)
         }
     }
+
+    pub mod fluxis {
+        use crate::{converting::fluxis::{from_generic_mania, to_generic_mania}, io::TextureStore, fluxis, skin::generic};
+
+        pub fn skin_json(str: &str) -> Result<fluxis::SkinJson, Box<dyn std::error::Error>> {
+            fluxis::SkinJson::from_str(str)
+        }
+
+        pub fn layout_json(str: &str) -> Result<fluxis::FluXisLayout, Box<dyn std::error::Error>> {
+            fluxis::FluXisLayout::from_str(str)
+        }
+
+        pub fn from_json(skin_ini: fluxis::SkinJson, assets: Option<TextureStore>) -> fluxis::FluXisSkin {
+            fluxis::FluXisSkin::new(skin_ini, assets)
+        }
+
+        pub fn to_generic(skin: fluxis::FluXisSkin, layout: Option<fluxis::FluXisLayout>) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
+            to_generic_mania(skin, layout)
+        }
+
+        pub fn from_generic(skin: generic::GenericManiaSkin) -> Result<(fluxis::FluXisSkin, fluxis::FluXisLayout), Box<dyn std::error::Error>> {
+            from_generic_mania(skin)
+        }
+    }
 }
 
 pub mod export {
@@ -75,24 +100,57 @@ pub mod export {
             export_osu_ini(skin_ini, path)
         }
     }
+
+    pub mod fluxis {
+        use std::io;
+        use crate::{exporting::native::{export_fluxis_layout_json, export_fluxis_skin, export_fluxis_skin_json}, fluxis, TextureStore};
+
+        pub fn skin_to_dir(skin_json: &fluxis::SkinJson, textures: Option<&TextureStore>, path: &str) -> io::Result<()> {
+            export_fluxis_skin(skin_json, textures, path)
+        }
+
+        pub fn layout_to_dir(layout_json: &fluxis::FluXisLayout, path: &str) -> io::Result<()> {
+            export_fluxis_layout_json(layout_json, path)
+        }
+
+        pub fn json_to_dir(skin_json: &fluxis::SkinJson, path: &str) -> io::Result<()> {
+            export_fluxis_skin_json(skin_json, path)
+        }
+    }
 }
 
 pub mod import {
-    use crate::{importing::native::import_textures_from_dir, TextureStore};
+    use crate::{importing::native::{import_all_textures_from_dir, import_textures_from_dir}, TextureStore};
 
     pub fn textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>>  {
         import_textures_from_dir(path, relative_texture_paths)
     }
 
+    pub fn all_textures_from_dir(path: &str) -> Result<TextureStore, Box<dyn std::error::Error>>  {
+        import_all_textures_from_dir(path)
+    }
+
     pub mod osu {
-        use crate::{importing::native::{import_osu_ini_str, import_osu_mania_skin_from_dir}, OsuSkin};
+        use crate::{importing::native::{read_str_from_path, import_osu_mania_skin_from_dir}, OsuSkin};
 
         pub fn skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std::error::Error>> {
             import_osu_mania_skin_from_dir(path)
         }
 
         pub fn ini_str_from_dir(path: &str) -> String {
-            import_osu_ini_str(path)
+            read_str_from_path(path)
+        }
+    }
+
+    pub mod fluxis {
+        use crate::{importing::native::{read_str_from_path, import_fluxis_skin_from_dir}, fluxis::FluXisSkin};
+
+        pub fn skin_from_dir(path: &str) -> Result<FluXisSkin, Box<dyn std::error::Error>> {
+            import_fluxis_skin_from_dir(path)
+        }
+
+        pub fn json_str_from_dir(path: &str) -> String {
+            read_str_from_path(path)
         }
     }
 }

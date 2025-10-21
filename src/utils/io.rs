@@ -46,10 +46,9 @@ pub fn change_extension(path: &str, new_ext: &str) -> String {
 
 #[inline]
 pub fn remove_extension(path: &str) -> String {
-    Path::new(path)
+    path_to_unix(&Path::new(path)
         .with_extension("")
-        .to_string_lossy()
-        .to_string()
+        .to_string_lossy())
 }
 
 #[inline]

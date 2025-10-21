@@ -1,21 +1,21 @@
-use crate::common::{Anchor, Vector2, Vector3};
+use crate::common::{Alignment, Anchor, Origin, Vector2, Vector3};
 
 #[derive(Clone)]
 pub struct KeymodeLayout {
     pub keymode: u8,
     pub receptor_above_notes: bool,
-    pub x_offset: u32,
-    pub hit_position: u32,
-    pub receptor_offset: u32,
+    pub x_offset: f32, // relative
+    pub hit_position: i32,
+    pub receptor_offset: i32,
     pub column_widths: Vec<u32>,
     pub column_spacing: Vec<u32>,
 }
 
 pub struct HUDLayout {
-    pub combo: (Vector3<f32>, Anchor),
-    pub rating: (Vector3<f32>, Anchor),
-    pub accuracy: (Vector3<f32>, Anchor),
-    pub score: (Vector3<f32>, Anchor),
+    pub combo: (Vector3<f32>, Alignment),
+    pub rating: (Vector3<f32>, Alignment),
+    pub accuracy: (Vector3<f32>, Alignment),
+    pub score: (Vector3<f32>, Alignment),
 }
 
 impl KeymodeLayout {

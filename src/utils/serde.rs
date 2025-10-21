@@ -86,3 +86,26 @@ where
         }
     }
 }
+
+pub mod json {
+    use std::collections::HashMap;
+    use tinyjson::JsonValue;
+
+    pub fn get_string(obj: &HashMap<String, JsonValue>, key: &str) -> Option<String> {
+        obj.get(key).and_then(|v| v.get::<String>()).cloned()
+    }
+
+    pub fn get_f64(obj: &HashMap<String, JsonValue>, key: &str) -> Option<f64> {
+        obj.get(key).and_then(|v| v.get::<f64>()).copied()
+    }
+
+    pub fn get_bool(obj: &HashMap<String, JsonValue>, key: &str) -> Option<bool> {
+        obj.get(key).and_then(|v| v.get::<bool>()).copied()
+    }
+
+    pub fn set_vec_element(vec: &mut Vec<String>, idx: usize, value: &str) {
+        if idx < vec.len() {
+            vec[idx] = value.to_string();
+        }
+    }
+}

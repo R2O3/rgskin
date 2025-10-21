@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
-use crate::common::{Anchor, Vector3};
+use crate::common::{Alignment, Anchor, Origin, Vector3};
 use crate::extensions::TextureArcExt;
 use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, to_osu_column, to_osu_column_draw};
@@ -146,9 +146,9 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
         let layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: !keymode.keys_under_notes,
-            x_offset: keymode.column_start,
-            hit_position: get_hitpos(keymode.hit_position),
-            receptor_offset: receptor_offset,
+            x_offset: keymode.column_start as f32 / 512.0,
+            hit_position: get_hitpos(keymode.hit_position) as i32,
+            receptor_offset: receptor_offset as i32,
             column_widths: keymode.column_width.clone(),
             column_spacing: keymode.column_spacing.clone(),
         };
@@ -169,12 +169,35 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
     let layout_keymode = skin.skin_ini.get_keymode(4).unwrap_or(&default_keymode);
 
     let gameplay = Gameplay {
-        health_bar: Healthbar::new(textures.get_shared("scorebar-colour").unwrap(), textures.get_shared("scorebar-bg").unwrap()),
+        health_bar: Healthbar::new(
+            textures.get_shared("scorebar-colour").unwrap(),
+            textures.get_shared("scorebar-bg").unwrap()
+        ),
         layout: HUDLayout {
-            combo: (Vector3::new(50.0 / 512.0, layout_keymode.combo_position.unwrap_or_default() as f32 / 384.0, 1.0), Anchor::BottomLeft),
-            rating: (Vector3::new(0.0, -30.0 / 384.0, 1.0), Anchor::Centre),
-            accuracy: (Vector3::new(-50.0 / 512.0, 50.0 / 512.0, 1.0), Anchor::TopRight),
-            score: (Vector3::new(-50.0 / 512.0, layout_keymode.score_position.unwrap_or_default() as f32 / 384.0, 1.0), Anchor::TopRight),
+            combo: (
+                Vector3::new(
+                    50.0 / 512.0,
+                    layout_keymode.combo_position.unwrap_or_default() as f32 / 384.0,
+                    1.0
+                ),
+                Alignment { anchor: Anchor::BottomLeft, origin: Origin::BottomLeft }
+            ),
+            rating: (
+                Vector3::new(0.0, -30.0 / 384.0, 1.0),
+                Alignment { anchor: Anchor::Centre, origin: Origin::Centre }
+            ),
+            accuracy: (
+                Vector3::new(-50.0 / 512.0, 50.0 / 512.0, 1.0),
+                Alignment { anchor: Anchor::TopRight,origin: Origin::Centre }
+            ),
+            score: (
+                Vector3::new(
+                    -50.0 / 512.0,
+                    layout_keymode.score_position.unwrap_or_default() as f32 / 384.0,
+                    1.0
+                ),
+                Alignment { anchor: Anchor::TopRight, origin: Origin::TopRight }
+            ),
         }
     };
     
@@ -221,7 +244,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                 }
 
                 if !Arc::ptr_eq(texture_arc, &blank_texture) && !texture_already_processed {
-                    if let Err(e) = to_osu_column(texture_arc, average_column_width, keymode.layout.receptor_offset) {
+                    if let Err(e) = to_osu_column(texture_arc, average_column_width, keymode.layout.receptor_offset.clamp(0, 512) as u32) {
                         eprintln!("Failed to process receptor up texture: {}", e);
                     }
                 }
@@ -244,7 +267,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                 }
 
                 if !Arc::ptr_eq(texture_arc, &blank_texture) && !texture_already_processed {
-                    if let Err(e) = to_osu_column(texture_arc, average_column_width, keymode.layout.receptor_offset) {
+                    if let Err(e) = to_osu_column(texture_arc, average_column_width, keymode.layout.receptor_offset.clamp(0, 512) as u32) {
                         eprintln!("Failed to process receptor down texture: {}", e);
                     }
                 }
@@ -292,8 +315,8 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         let osu_keymode = crate::osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
-            hit_position: 512 - keymode.layout.hit_position,
-            column_start: keymode.layout.x_offset,
+            hit_position: 512 - keymode.layout.hit_position.clamp(0, 512) as u32,
+            column_start: (keymode.layout.x_offset * 512.0) as u32,
             column_width: keymode.layout.column_widths,
             column_spacing: keymode.layout.column_spacing,
             column_line_width: vec![0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
