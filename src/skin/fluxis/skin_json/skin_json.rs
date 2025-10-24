@@ -41,49 +41,49 @@ impl SkinJson {
             
             for (col_idx, img) in keymode.receptor_images.iter().enumerate() {
                 if !img.is_empty() {
-                    let key = format!("Receptor/{}-{}-up", k, col_idx + 1);
+                    let key = format!("Receptor/{}k-{}-up", k, col_idx + 1);
                     self.overrides.raw_overrides.insert(key, img.clone());
                 }
             }
             
             for (col_idx, img) in keymode.receptor_images_down.iter().enumerate() {
                 if !img.is_empty() {
-                    let key = format!("Receptor/{}-{}-down", k, col_idx + 1);
+                    let key = format!("Receptor/{}k-{}-down", k, col_idx + 1);
                     self.overrides.raw_overrides.insert(key, img.clone());
                 }
             }
             
             for (col_idx, img) in keymode.normal_note_images.iter().enumerate() {
                 if !img.is_empty() {
-                    let key = format!("HitObjects/Note/{}-{}", k, col_idx + 1);
+                    let key = format!("HitObjects/Note/{}k-{}", k, col_idx + 1);
                     self.overrides.raw_overrides.insert(key, img.clone());
                 }
             }
             
             for (col_idx, img) in keymode.long_note_body_images.iter().enumerate() {
                 if !img.is_empty() {
-                    let key = format!("HitObjects/LongNoteBody/{}-{}", k, col_idx + 1);
+                    let key = format!("HitObjects/LongNoteBody/{}k-{}", k, col_idx + 1);
                     self.overrides.raw_overrides.insert(key, img.clone());
                 }
             }
             
             for (col_idx, img) in keymode.long_note_tail_images.iter().enumerate() {
                 if !img.is_empty() {
-                    let key = format!("HitObjects/LongNoteEnd/{}-{}", k, col_idx + 1);
+                    let key = format!("HitObjects/LongNoteEnd/{}k-{}", k, col_idx + 1);
                     self.overrides.raw_overrides.insert(key, img.clone());
                 }
             }
             
             for (col_idx, img) in keymode.tick_images.iter().enumerate() {
                 if !img.is_empty() {
-                    let key = format!("HitObjects/Tick/{}-{}", k, col_idx + 1);
+                    let key = format!("HitObjects/Tick/{}k-{}", k, col_idx + 1);
                     self.overrides.raw_overrides.insert(key, img.clone());
                 }
             }
             
             for (col_idx, img) in keymode.tick_images_small.iter().enumerate() {
                 if !img.is_empty() {
-                    let key = format!("HitObjects/Tick/{}-{}-small", k, col_idx + 1);
+                    let key = format!("HitObjects/Tick/{}k-{}-small", k, col_idx + 1);
                     self.overrides.raw_overrides.insert(key, img.clone());
                 }
             }
