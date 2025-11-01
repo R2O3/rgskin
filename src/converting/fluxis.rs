@@ -15,6 +15,7 @@ use crate::skin::fluxis::{
     FluXisLayout,
     SkinJson
 };
+use crate::utils::fluxis::FluXisDimensions;
 use crate::{GenericManiaSkin, Store, Texture};
 
 pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -110,13 +111,16 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             })
             .collect();
 
+
+        println!("what {}", &keymode.receptor_offset);
+
         let new_layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: !keymode.receptors_first,
             x_offset: 0.5,
             hit_position: keymode.hit_position,
             receptor_offset: keymode.receptor_offset,
-            column_widths: vec![keymode.column_width; key_count],
+            column_widths: vec![keymode.column_width as f32 / FluXisDimensions::X.as_f32(); key_count],
             column_spacing: vec![0; key_count],
         };
 
@@ -235,7 +239,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
             receptors_first: !keymode.layout.receptor_above_notes,
             hit_position: keymode.layout.hit_position,
             receptor_offset: keymode.layout.receptor_offset,
-            column_width: keymode.layout.column_widths.get(0).copied().unwrap_or(0),
+            column_width: (keymode.layout.column_widths.get(0).copied().unwrap_or(0.0) * FluXisDimensions::X.as_f32()) as u32,
             tint_notes: false,
             tint_lns: false,
             tint_receptors: false,

@@ -7,7 +7,7 @@ pub struct KeymodeLayout {
     pub x_offset: f32, // relative
     pub hit_position: i32,
     pub receptor_offset: i32,
-    pub column_widths: Vec<u32>,
+    pub column_widths: Vec<f32>, // relative
     pub column_spacing: Vec<u32>,
 }
 
@@ -19,8 +19,8 @@ pub struct HUDLayout {
 }
 
 impl KeymodeLayout {
-    pub fn average_column_width(&self) -> u32 {
-        self.column_widths.iter().sum::<u32>() / (self.column_widths.len() as u32)
+    pub fn average_column_width(&self) -> f32 {
+        self.column_widths.iter().sum::<f32>() / (self.column_widths.len() as f32)
     }
 
     pub fn average_column_spacing(&self) -> u32 {

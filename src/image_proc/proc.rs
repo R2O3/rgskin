@@ -103,8 +103,9 @@ pub fn to_osu_column(texture: &Arc<RwLock<Texture>>, column_width: u32, receptor
         let scale_factor = 48.0 / column_width as f32;
         let current_width = img.width();
         let new_width = (current_width as f32 * scale_factor) as u32;
+        let new_height = (img.height() as f32 * scale_factor) as u32;
 
-        let resized_img = img.resize_exact(new_width, img.height(), image::imageops::FilterType::Triangle);
+        let resized_img = img.resize_exact(new_width, new_height, image::imageops::FilterType::Triangle);
         let trimmed_img = trim_image_vertical(resized_img, 0.01);
         
         pad_image_vertical(trimmed_img, 0, receptor_offset)
