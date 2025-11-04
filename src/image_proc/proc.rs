@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 use image::{DynamicImage, GenericImageView, Rgba};
-use crate::{io::Texture, process_texture}; 
+use crate::{io::Texture, process_texture, utils::osu::OsuDimensions}; 
 
 pub fn dist_from_bottom(img: &DynamicImage, alpha_tolerance: f32) -> u32 {
     let rgba_img = img.to_rgba8();
@@ -88,7 +88,7 @@ pub fn pad_image_vertical(img: DynamicImage, top_pad: u32, bottom_pad: u32) -> D
 
 pub fn to_osu_column_draw(texture: &Arc<RwLock<Texture>>, column_width: u32) -> Result<(), Box<dyn std::error::Error>> {
     process_texture!(texture, |img: DynamicImage| {
-        let scale_factor = column_width as f32 / 48.0;
+        let scale_factor = column_width as f32 / OsuDimensions::ReceptorWidth.as_f32();
         let current_width = img.width();
         let new_width = (current_width as f32 * scale_factor) as u32;
 
@@ -100,7 +100,7 @@ pub fn to_osu_column_draw(texture: &Arc<RwLock<Texture>>, column_width: u32) -> 
 
 pub fn to_osu_column(texture: &Arc<RwLock<Texture>>, column_width: u32, receptor_offset: u32) -> Result<(), Box<dyn std::error::Error>> {
     process_texture!(texture, |img: DynamicImage| {
-        let scale_factor = 48.0 / column_width as f32;
+        let scale_factor = OsuDimensions::ReceptorWidth.as_f32() / column_width as f32;
         let current_width = img.width();
         let new_width = (current_width as f32 * scale_factor) as u32;
         let new_height = (img.height() as f32 * scale_factor) as u32;
