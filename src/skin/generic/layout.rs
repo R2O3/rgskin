@@ -5,7 +5,7 @@ pub struct KeymodeLayout {
     pub keymode: u8,
     pub receptor_above_notes: bool,
     pub x_offset: f32, // relative
-    pub hit_position: i32,
+    pub hit_position: f32, // relative
     pub receptor_offset: i32,
     pub column_widths: Vec<f32>, // relative
     pub column_spacing: Vec<u32>,

@@ -64,7 +64,7 @@ impl Overrides {
             return overrides;
         };
         
-        for (key, value) in overrides_obj.iter() {
+        for (key, _value) in overrides_obj.iter() {
             let Some(value_str) = get_string(overrides_obj, key) else {
                 continue;
             };

@@ -10,11 +10,6 @@ use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
 use crate::utils::osu::OsuDimensions;
 
-#[inline]
-pub fn get_hitpos(val: u32) -> u32 {
-    (OsuDimensions::X.as_i32() - val as i32) as u32
-}
-
 pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures;
     let mut keymodes: Vec<Keymode> = Vec::new();
@@ -148,7 +143,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             keymode: key_count as u8,
             receptor_above_notes: !keymode.keys_under_notes,
             x_offset: keymode.column_start as f32 / OsuDimensions::X.as_f32(),
-            hit_position: get_hitpos(keymode.hit_position) as i32,
+            hit_position: keymode.hit_position as f32 / OsuDimensions::Y.as_f32(),
             receptor_offset: receptor_offset as i32,
             column_widths: keymode.column_width.iter().map(|cw| *cw as f32 / OsuDimensions::X.as_f32()).collect(),
             column_spacing: keymode.column_spacing.clone(),
@@ -316,7 +311,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         let osu_keymode = crate::osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
-            hit_position: OsuDimensions::X.as_u32() - keymode.layout.hit_position.clamp(0, OsuDimensions::X.as_i32()) as u32,
+            hit_position: (((1.0 - keymode.layout.hit_position).abs() * (OsuDimensions::Y.as_f32()))) as u32,
             column_start: (keymode.layout.x_offset * OsuDimensions::X.as_f32()) as u32,
             column_width: keymode.layout.column_widths.iter().map(|cw| (*cw * OsuDimensions::X.as_f32()) as u32).collect(),
             column_spacing: keymode.layout.column_spacing,

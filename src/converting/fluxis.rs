@@ -1,9 +1,11 @@
+use std::collections::HashSet;
 use std::sync::Arc;
 use crate::common::{Alignment, Anchor, Origin, Vector3};
 use crate::extensions::TextureArcExt;
 use crate::generic::{Gameplay, Keymode, Metadata,};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::*;
+use crate::image_proc::proc::dist_from_bottom;
 use crate::skin::fluxis::layout_json::component::*;
 use crate::skin::fluxis::layout_json::gameplay::*;
 use crate::skin::fluxis::skin_json::colors::{JudgementColors, SnapColors};
@@ -33,15 +35,30 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
         ..Default::default()
     };
 
-    // let mut processed_textures = HashSet::new();
+    let mut processed_textures = HashSet::new();
 
-    for keymode in &skin.skin_json.keymodes {
+    for keymode in skin.skin_json.keymodes {
         let key_count = keymode.keymode as usize;
+        let mut additional_receptor_offset = 0;
+
         let receptor_up_elements: Vec<ReceptorUp> = keymode.receptor_images
-        .iter()
+            .iter()
             .map(|path| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
+                        let texture_path = texture.get_path();
+                        let mut texture_already_processed = false;
+
+                        if processed_textures.contains(&texture_path) {
+                            texture_already_processed = true;
+                        } else {
+                            processed_textures.insert(texture_path);
+                        }
+
+                        if !texture_already_processed {
+                            additional_receptor_offset = texture.with_image(|img| dist_from_bottom(img, 0.1)) as i32;
+                        }
+                        
                         ReceptorUp::new(texture)
                     } else {
                         ReceptorUp::new(Arc::clone(&blank_texture))
@@ -53,10 +70,23 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             .collect();
 
         let receptor_down_elements: Vec<ReceptorDown> = keymode.receptor_images_down
-        .iter()
+            .iter()
             .map(|path| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
+                        let texture_path = texture.get_path();
+                        let mut texture_already_processed = false;
+
+                        if processed_textures.contains(&texture_path) {
+                            texture_already_processed = true;
+                        } else {
+                            processed_textures.insert(texture_path);
+                        }
+
+                        if !texture_already_processed {
+                            additional_receptor_offset = texture.with_image(|img| dist_from_bottom(img, 0.1)) as i32;
+                        }
+                        
                         ReceptorDown::new(texture)
                     } else {
                         ReceptorDown::new(Arc::clone(&blank_texture))
@@ -68,15 +98,15 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             .collect();
 
         let normal_note_elements: Vec<NormalNote> = keymode.normal_note_images
-        .iter()
-        .map(|path| {
-            if !path.is_empty() && textures.contains(path) {
-                NormalNote::new(textures.get_shared(path).unwrap())
-            } else {
-                NormalNote::new(Arc::clone(&blank_texture))
-            }
-        })
-        .collect();
+            .iter()
+            .map(|path| {
+                if !path.is_empty() && textures.contains(path) {
+                    NormalNote::new(textures.get_shared(path).unwrap())
+                } else {
+                    NormalNote::new(Arc::clone(&blank_texture))
+                }
+            })
+            .collect();
 
         let long_note_head_elements: Vec<LongNoteHead> = keymode.normal_note_images
             .iter()
@@ -115,8 +145,8 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             keymode: key_count as u8,
             receptor_above_notes: !keymode.receptors_first,
             x_offset: 0.5,
-            hit_position: keymode.hit_position,
-            receptor_offset: keymode.receptor_offset,
+            hit_position: (keymode.hit_position + additional_receptor_offset) as f32 / FluXisDimensions::Y.as_f32(),
+            receptor_offset: keymode.receptor_offset + additional_receptor_offset,
             column_widths: vec![keymode.column_width as f32 / FluXisDimensions::X.as_f32(); key_count],
             column_spacing: vec![0; key_count],
         };
@@ -133,6 +163,9 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
         });
     }
 
+    let fluxis_x = FluXisDimensions::X.as_f32();
+    let fluxis_y = FluXisDimensions::Y.as_f32();
+
     let combo_hud = layout.gameplay.components.get("Combo").unwrap();
     let rating_hud = layout.gameplay.components.get("PerformanceRating").unwrap();
     let accuracy_hud = layout.gameplay.components.get("Accuracy").unwrap();
@@ -145,8 +178,8 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
         layout: HUDLayout {
             combo: (
                 Vector3::new(
-                    combo_hud.position.x / 1920.0,
-                    combo_hud.position.y / 1080.0,
+                    combo_hud.position.x / fluxis_x,
+                    combo_hud.position.y / fluxis_y,
                     combo_hud.scale
                 ),
                 Alignment { 
@@ -156,8 +189,8 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             ),
             rating: (
                 Vector3::new(
-                    rating_hud.position.x / 1920.0,
-                    rating_hud.position.y / 1080.0,
+                    rating_hud.position.x / fluxis_x,
+                    rating_hud.position.y / fluxis_y,
                     rating_hud.scale
                 ),
                 Alignment { 
@@ -167,8 +200,8 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             ),
             accuracy: (
                 Vector3::new(
-                    accuracy_hud.position.x / 1920.0,
-                    accuracy_hud.position.y / 1080.0,
+                    accuracy_hud.position.x / fluxis_x,
+                    accuracy_hud.position.y / fluxis_y,
                     accuracy_hud.scale
                 ),
                 Alignment { 
@@ -178,7 +211,7 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             ),
             score: (
                 Vector3::new(
-                    -187.5 / 1920.0,
+                    -187.5 / fluxis_x,
                     0.0,
                     1.0
                 ),
@@ -234,7 +267,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
             long_note_body_images,
             long_note_tail_images,
             receptors_first: !keymode.layout.receptor_above_notes,
-            hit_position: keymode.layout.hit_position,
+            hit_position: (keymode.layout.hit_position * FluXisDimensions::Y.as_f32()).clamp(0.0, FluXisDimensions::Y.as_f32()) as i32,
             receptor_offset: keymode.layout.receptor_offset,
             column_width: (keymode.layout.column_widths.get(0).copied().unwrap_or(0.0) * FluXisDimensions::X.as_f32()) as u32,
             tint_notes: false,
@@ -271,12 +304,15 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
 
     let mut layout = FluXisLayout::new(skin.metadata.name.clone(), skin.metadata.creator.clone());
 
+    let fluxis_x = FluXisDimensions::X.as_f32();
+    let fluxis_y = FluXisDimensions::Y.as_f32();
+
     let default_combo_comp = Combo::default().component;
     let (combo_pos, combo_align) = &skin.gameplay.layout.combo;
     layout.add_component_to_gameplay("Combo".to_string(), Component {
         position: Position {
-            x: combo_pos.x * 1920.0,
-            y: combo_pos.y * 1080.0,
+            x: combo_pos.x * fluxis_x,
+            y: combo_pos.y * fluxis_y,
         },
         scale: combo_pos.z,
         anchor: combo_align.anchor as u8,
@@ -289,8 +325,8 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
     let (rating_pos, rating_align) = &skin.gameplay.layout.rating;
     layout.add_component_to_gameplay("PerformanceRating".to_string(), Component {
         position: Position {
-            x: rating_pos.x * 1920.0,
-            y: rating_pos.y * 1080.0,
+            x: rating_pos.x * fluxis_x,
+            y: rating_pos.y * fluxis_y,
         },
         scale: rating_pos.z,
         anchor: rating_align.anchor as u8,
@@ -303,8 +339,8 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
     let (kps_pos, kps_align) = &skin.gameplay.layout.rating;
     layout.add_component_to_gameplay("KeysPerSecond".to_string(), Component {
         position: Position {
-            x: kps_pos.x * 1920.0,
-            y: kps_pos.y * 1080.0,
+            x: kps_pos.x * fluxis_x,
+            y: kps_pos.y * fluxis_y,
         },
         scale: kps_pos.z,
         anchor: kps_align.anchor as u8,
@@ -317,8 +353,8 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
     let (accuracy_pos, accuracy_align) = &skin.gameplay.layout.accuracy;
     layout.add_component_to_gameplay("Accuracy".to_string(), Component {
         position: Position {
-            x: accuracy_pos.x * 1920.0,
-            y: accuracy_pos.y * 1080.0,
+            x: accuracy_pos.x * fluxis_x,
+            y: accuracy_pos.y * fluxis_y,
         },
         scale: accuracy_pos.z,
         anchor: accuracy_align.anchor as u8,
