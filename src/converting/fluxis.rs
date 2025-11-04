@@ -111,9 +111,6 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             })
             .collect();
 
-
-        println!("what {}", &keymode.receptor_offset);
-
         let new_layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: !keymode.receptors_first,
