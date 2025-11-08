@@ -1,11 +1,11 @@
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
-use crate::common::{Alignment, Anchor, Origin, Vector3};
+use crate::common::{Alignment, Anchor, Origin, Vector2, Vector3};
 use crate::extensions::TextureArcExt;
 use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, to_osu_column, to_osu_column_draw};
 use crate::io::{Store, Texture};
-use crate::osu::{General, OsuSkin, SkinIni};
+use crate::osu::{self, General, OsuSkin, SkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
 use crate::utils::osu::OsuDimensions;
@@ -172,7 +172,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
         layout: HUDLayout {
             combo: (
                 Vector3::new(
-                    50.0 / OsuDimensions::X.as_f32(),
+                    0.5,
                     layout_keymode.combo_position.unwrap_or_default() as f32 / OsuDimensions::Y.as_f32(),
                     1.0
                 ),
@@ -189,10 +189,18 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             score: (
                 Vector3::new(
                     -50.0 / OsuDimensions::X.as_f32(),
-                    layout_keymode.score_position.unwrap_or_default() as f32 / OsuDimensions::Y.as_f32(),
+                    0.0,
                     1.0
                 ),
                 Alignment { anchor: Anchor::TopRight, origin: Origin::TopRight }
+            ),
+            judgement: (
+                Vector3::new(
+                    0.5,
+                    layout_keymode.score_position.unwrap_or_default() as f32 / OsuDimensions::Y.as_f32(),
+                    1.0
+                ),
+                Alignment { anchor: Anchor::Centre, origin: Origin::Centre }
             ),
         }
     };
@@ -207,7 +215,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
 
 pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures;
-    let mut osu_keymodes: Vec<crate::osu::Keymode> = Vec::new();
+    let mut osu_keymodes: Vec<osu::Keymode> = Vec::new();
 
     let blank_texture: Arc<RwLock<Texture>> = textures.get_shared("blank")
         .unwrap_or(Arc::new(RwLock::new(Texture::empty("blank".to_string()))));
@@ -308,7 +316,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             textures.insert(Texture::with_data("star2".to_string(), blank_texture.clone_data().unwrap()));
         }
 
-        let osu_keymode = crate::osu::Keymode {
+        let osu_keymode = osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
             hit_position: (((1.0 - keymode.layout.hit_position).abs() * (OsuDimensions::Y.as_f32()))) as u32,
@@ -334,9 +342,27 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         keymodes: osu_keymodes,
     };
 
+    let osu_dimensions = Vector2::new(OsuDimensions::X.as_f32(), OsuDimensions::Y.as_f32());
+
     for keymode in &mut skin_ini.keymodes {
-        keymode.score_position = Some((skin.gameplay.layout.score.0.y * OsuDimensions::Y.as_f32()) as u32);
-        keymode.combo_position = Some((skin.gameplay.layout.combo.0.y * OsuDimensions::Y.as_f32()) as u32);
+
+        let score_size = Vector2::new(100.0, 50.0);
+        let combo_size = Vector2::new(150.0, 100.0);
+        
+        let score_pos = Alignment::calculate_pos(
+            osu_dimensions,
+            score_size,
+            &skin.gameplay.layout.judgement.1
+        );
+        
+        let combo_pos = Alignment::calculate_pos(
+            osu_dimensions,
+            combo_size,
+            &skin.gameplay.layout.combo.1
+        );
+        
+        keymode.score_position = Some(score_pos.y as u32);
+        keymode.combo_position = Some(combo_pos.y as u32);
     }
     
     Ok(OsuSkin::new(skin_ini, Some(textures)))

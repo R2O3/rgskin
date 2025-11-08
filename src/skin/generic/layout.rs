@@ -16,6 +16,7 @@ pub struct HUDLayout {
     pub rating: (Vector3<f32>, Alignment),
     pub accuracy: (Vector3<f32>, Alignment),
     pub score: (Vector3<f32>, Alignment),
+    pub judgement: (Vector3<f32>, Alignment),
 }
 
 impl KeymodeLayout {

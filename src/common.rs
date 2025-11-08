@@ -106,6 +106,89 @@ pub struct Alignment  {
     pub origin: Origin,
 }
 
+impl Alignment {
+    pub fn new(anchor: Anchor, origin: Origin) -> Self {
+        Self { anchor, origin }
+    }
+    
+    fn anchor_offset(anchor: Anchor) -> (f32, f32) {
+        let anchor_bits = anchor.as_u8();
+        let x_mask = Anchor::X0.as_u8() | Anchor::X1.as_u8() | Anchor::X2.as_u8();
+        let y_mask = Anchor::Y0.as_u8() | Anchor::Y1.as_u8() | Anchor::Y2.as_u8();
+        
+        let x = match anchor_bits & x_mask {
+            x if x == Anchor::X0.as_u8() => 0.0,
+            x if x == Anchor::X1.as_u8() => 0.5,
+            x if x == Anchor::X2.as_u8() => 1.0,
+            _ => 0.5,
+        };
+        
+        let y = match anchor_bits & y_mask {
+            y if y == Anchor::Y0.as_u8() => 0.0,
+            y if y == Anchor::Y1.as_u8() => 0.5,
+            y if y == Anchor::Y2.as_u8() => 1.0,
+            _ => 0.5,
+        };
+        
+        (x, y)
+    }
+    
+    pub fn convert_pos(
+        position: Vector2<f32>,
+        size: Vector2<f32>,
+        original_alignment: &Alignment,
+        target_alignment: &Alignment,
+    ) -> Vector2<f32> {
+        let (orig_anchor_x_mult, orig_anchor_y_mult) = Self::anchor_offset(original_alignment.anchor);
+        let (orig_origin_x_mult, orig_origin_y_mult) = Self::anchor_offset(original_alignment.origin);
+        
+        let origin_offset_x = size.x * orig_origin_x_mult;
+        let origin_offset_y = size.y * orig_origin_y_mult;
+        
+        let top_left_x = position.x - origin_offset_x;
+        let top_left_y = position.y - origin_offset_y;
+        
+        let (target_origin_x_mult, target_origin_y_mult) = Self::anchor_offset(target_alignment.origin);
+        
+        let target_x = top_left_x + (size.x * target_origin_x_mult);
+        let target_y = top_left_y + (size.y * target_origin_y_mult);
+        
+        Vector2::new(target_x, target_y)
+    }
+    
+    pub fn calculate_pos(
+        container_size: Vector2<f32>,
+        target_size: Vector2<f32>,
+        target_alignment: &Alignment,
+    ) -> Vector2<f32> {
+        let (anchor_x_mult, anchor_y_mult) = Self::anchor_offset(target_alignment.anchor);
+        let anchor_x = container_size.x * anchor_x_mult;
+        let anchor_y = container_size.y * anchor_y_mult;
+        
+        let (origin_x_mult, origin_y_mult) = Self::anchor_offset(target_alignment.origin);
+        let origin_offset_x = target_size.x * origin_x_mult;
+        let origin_offset_y = target_size.y * origin_y_mult;
+        
+        Vector2::new(
+            anchor_x - origin_offset_x,
+            anchor_y - origin_offset_y,
+        )
+    }
+    
+    pub fn calculate_pos_offsetted(
+        container_size: Vector2<f32>,
+        target_size: Vector2<f32>,
+        target_alignment: &Alignment,
+        offset: Vector2<f32>,
+    ) -> Vector2<f32> {
+        let base_position = Self::calculate_pos(container_size, target_size, target_alignment);
+        Vector2::new(
+            base_position.x + offset.x,
+            base_position.y + offset.y,
+        )
+    }
+}
+
 #[derive(Clone, Copy, PartialEq, Eq, Debug)]
 pub struct Rgba {
     pub red: u8,

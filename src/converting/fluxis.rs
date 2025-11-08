@@ -169,6 +169,7 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
     let combo_hud = layout.gameplay.components.get("Combo").unwrap();
     let rating_hud = layout.gameplay.components.get("PerformanceRating").unwrap();
     let accuracy_hud = layout.gameplay.components.get("Accuracy").unwrap();
+    let judgement_hud = layout.gameplay.components.get("Judgement").unwrap();
 
     let gameplay = Gameplay {
         health_bar: Healthbar::new(
@@ -216,6 +217,17 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
                     1.0
                 ),
                 Alignment { anchor: Anchor::TopRight, origin: Origin::TopRight }
+            ),
+            judgement: (
+                Vector3::new(
+                    judgement_hud.position.x / fluxis_x,
+                    judgement_hud.position.y / fluxis_y,
+                    judgement_hud.scale
+                ),
+                Alignment { 
+                    anchor: Anchor::from_u8(judgement_hud.anchor).unwrap_or_default(), 
+                    origin: Origin::from_u8(judgement_hud.origin).unwrap_or_default() 
+                }
             ),
         }
     };
