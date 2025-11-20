@@ -78,6 +78,9 @@ impl SkinJson {
                     ("HitObjects", "Note") => {
                         set_vec_element(&mut keymode.normal_note_images, col_idx, value);
                     },
+                    ("HitObjects", "LongNoteStart") => {
+                        set_vec_element(&mut keymode.long_note_head_images, col_idx, value);
+                    },
                     ("HitObjects", "LongNoteBody") => {
                         set_vec_element(&mut keymode.long_note_body_images, col_idx, value);
                     },
@@ -129,6 +132,7 @@ impl SkinJson {
             insert(&keymode.receptor_images, "Receptor", "-up");
             insert(&keymode.receptor_images_down, "Receptor", "-down");
             insert(&keymode.normal_note_images, "HitObjects/Note", "");
+            insert(&keymode.long_note_head_images, "HitObjects/LongNoteStart", "");
             insert(&keymode.long_note_body_images, "HitObjects/LongNoteBody", "");
             insert(&keymode.long_note_tail_images, "HitObjects/LongNoteEnd", "");
             insert(&keymode.tick_images, "HitObjects/Tick", "");
@@ -146,6 +150,7 @@ impl SkinJson {
         resize(&mut keymode.receptor_images);
         resize(&mut keymode.receptor_images_down);
         resize(&mut keymode.normal_note_images);
+        resize(&mut keymode.long_note_head_images);
         resize(&mut keymode.long_note_body_images);
         resize(&mut keymode.long_note_tail_images);
         resize(&mut keymode.tick_images);

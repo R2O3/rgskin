@@ -108,7 +108,10 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             })
             .collect();
 
-        let long_note_head_elements: Vec<LongNoteHead> = keymode.normal_note_images
+        let fallback_to_normal = keymode.long_note_head_images.iter().all(|path| path.is_empty());
+
+        let long_note_head_elements: Vec<LongNoteHead> = if fallback_to_normal {
+            keymode.normal_note_images
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
@@ -117,7 +120,19 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
                     LongNoteHead::new(Arc::clone(&blank_texture))
                 }
             })
-            .collect();
+            .collect()
+        } else {
+            keymode.long_note_head_images
+                .iter()
+                .map(|path| {
+                    if !path.is_empty() && textures.contains(path) {
+                        LongNoteHead::new(textures.get_shared(path).unwrap())
+                    } else {
+                        LongNoteHead::new(Arc::clone(&blank_texture))
+                    }
+                })
+                .collect()
+        };
 
         let long_note_body_elements: Vec<LongNoteBody> = keymode.long_note_body_images
             .iter()
