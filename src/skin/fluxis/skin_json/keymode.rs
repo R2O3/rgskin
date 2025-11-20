@@ -1,6 +1,10 @@
-#[derive(Clone, Debug)]
+use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Keymode {
+    #[serde(skip)] 
     pub keymode: u8,
+    
     pub column_width: u32,
     pub hit_position: i32,
     pub tint_notes: bool,
@@ -10,13 +14,21 @@ pub struct Keymode {
     pub receptors_first: bool,
     pub receptor_offset: i32,
     
+    #[serde(skip)]
     pub receptor_images: Vec<String>,
+    #[serde(skip)]
     pub receptor_images_down: Vec<String>,
+    #[serde(skip)]
     pub normal_note_images: Vec<String>,
+    #[serde(skip)]
     pub long_note_head_images: Vec<String>,
+    #[serde(skip)]
     pub long_note_body_images: Vec<String>,
+    #[serde(skip)]
     pub long_note_tail_images: Vec<String>,
+    #[serde(skip)]
     pub tick_images: Vec<String>,
+    #[serde(skip)]
     pub tick_images_small: Vec<String>,
 }
 
@@ -43,4 +55,3 @@ impl Default for Keymode {
         }
     }
 }
-

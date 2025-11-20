@@ -1,5 +1,5 @@
-use serde::{Deserialize, Serialize};
-
+use indexmap::IndexMap;
+use serde::{Deserialize, Serialize, Serializer};
 use crate::{skin::fluxis::skin_json::{
     colors::{JudgementColors, SnapColors}, 
     info::Info, 
@@ -7,7 +7,7 @@ use crate::{skin::fluxis::skin_json::{
     overrides::Overrides
 }, utils::serde::set_vec_element};
 
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize)]
 pub struct SkinJson {
     #[serde(default)]
     pub info: Info,
@@ -23,6 +23,46 @@ pub struct SkinJson {
 
     #[serde(skip)]
     pub keymodes: Vec<Keymode>,
+}
+
+impl Serialize for SkinJson {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let keymode_map: IndexMap<String, &Keymode> = self
+            .keymodes
+            .iter()
+            .map(|km| (format!("{}k", km.keymode), km))
+            .collect();
+
+
+        // this is only to preserve order for keymodes
+        #[derive(Serialize)]
+        struct SkinJsonSerialized<'a> {
+            info: &'a Info,
+
+            #[serde(flatten)]
+            keymode_map: &'a IndexMap<String, &'a Keymode>,
+
+            judgements: &'a JudgementColors,
+
+            #[serde(rename = "snap-colors")]
+            snap_colors: &'a SnapColors,
+
+            overrides: &'a Overrides,
+        }
+
+        let temp = SkinJsonSerialized {
+            info: &self.info,
+            judgements: &self.judgements,
+            snap_colors: &self.snap_colors,
+            keymode_map: &keymode_map,
+            overrides: &self.overrides,
+        };
+
+        temp.serialize(serializer)
+    }
 }
 
 impl SkinJson {
