@@ -1,5 +1,5 @@
 use std::sync::{Arc, RwLock};
-use image::{DynamicImage, GenericImageView, Rgba};
+use image::{imageops, DynamicImage, GenericImageView, Rgba};
 use crate::{io::Texture, process_texture, utils::osu::OsuDimensions}; 
 
 pub fn dist_from_bottom(img: &DynamicImage, alpha_tolerance: f32) -> u32 {
@@ -84,6 +84,11 @@ pub fn pad_image_vertical(img: DynamicImage, top_pad: u32, bottom_pad: u32) -> D
     }
     
     DynamicImage::ImageRgba8(padded_img)
+}
+
+pub fn flip_vertical(img: DynamicImage) -> DynamicImage {
+    let flipped_buffer = imageops::flip_vertical(&img);
+    DynamicImage::ImageRgba8(flipped_buffer)
 }
 
 pub fn to_osu_column_draw(texture: &Arc<RwLock<Texture>>, column_width: u32) -> Result<(), Box<dyn std::error::Error>> {

@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use crate::common::{Alignment, Anchor, Origin, Vector2, Vector3};
 use crate::extensions::TextureArcExt;
 use crate::generic::Gameplay;
-use crate::image_proc::proc::{dist_from_bottom, to_osu_column, to_osu_column_draw};
+use crate::image_proc::proc::{dist_from_bottom, flip_vertical, to_osu_column, to_osu_column_draw};
 use crate::io::{Store, Texture};
 use crate::osu::{self, General, OsuSkin, SkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
@@ -131,8 +131,27 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
         let long_note_tail_elements: Vec<LongNoteTail> = keymode.long_note_tail_images
             .iter()
             .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    LongNoteTail::new(textures.get_shared(path).unwrap())
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        let texture_path = texture.get_path();
+                        let mut texture_already_processed = false;
+
+                        if processed_textures.contains(&texture_path) {
+                            texture_already_processed = true;
+                        } else {
+                            processed_textures.insert(texture_path);
+                        }
+
+                        if !texture_already_processed {
+                            texture.replace_data(
+                                texture.with_image(|img| flip_vertical(img.clone())) // too lazy for rust shinanigans so we're just gonna clone
+                            );
+                        }
+                        
+                        LongNoteTail::new(texture)
+                    } else {
+                        LongNoteTail::new(Arc::clone(&blank_texture))
+                    }
                 } else {
                     LongNoteTail::new(Arc::clone(&blank_texture))
                 }
@@ -296,7 +315,25 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
 
         let long_note_tail_images: Vec<String> = keymode.long_note_tail
             .iter()
-            .map(|note| note.path())
+            .map(|note| {
+                let texture_arc = &note.texture;
+
+                let texture_path = texture_arc.get_path();
+                let mut texture_already_processed = false;
+
+                if processed_textures.contains(&texture_path) {
+                    texture_already_processed = true;
+                } else {
+                    processed_textures.insert(texture_path);
+                }
+
+                if !Arc::ptr_eq(texture_arc, &blank_texture) && !texture_already_processed {
+                    texture_arc.replace_data(
+                        texture_arc.with_image(|img| flip_vertical(img.clone()))
+                    );
+                }
+                note.path()
+            })
             .collect();
 
         if let Some(health_bar_bg) = skin.gameplay.health_bar.background.get_data() {
