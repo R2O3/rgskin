@@ -276,6 +276,11 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
             .map(|note| note.path())
             .collect();
         
+        let long_note_head_images: Vec<String> = keymode.long_note_head
+            .iter()
+            .map(|note| note.path())
+            .collect();
+
         let long_note_body_images: Vec<String> = keymode.long_note_body
             .iter()
             .map(|note| note.path())
@@ -291,6 +296,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
             receptor_images,
             receptor_images_down,
             normal_note_images,
+            long_note_head_images,
             long_note_body_images,
             long_note_tail_images,
             receptors_first: !keymode.layout.receptor_above_notes,
