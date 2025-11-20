@@ -1,24 +1,16 @@
-use std::collections::HashMap;
-use tinyjson::JsonValue;
+use indexmap::IndexMap;
+use serde::de::{MapAccess, Visitor};
+use serde::ser::{SerializeMap, Serializer};
+use serde::{Deserialize, Deserializer, Serialize};
+use std::fmt;
 
-use crate::utils::serde::json::get_string;
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Overrides {
     pub stage: StageOverrides,
-    pub raw_overrides: HashMap<String, String>,
+    pub raw_overrides: IndexMap<String, String>,
 }
 
-impl Default for Overrides {
-    fn default() -> Self {
-        Self {
-            stage: StageOverrides::default(),
-            raw_overrides: HashMap::new(),
-        }
-    }
-}
-
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct StageOverrides {
     pub health_foreground: String,
     pub health_background: String,
@@ -35,68 +27,95 @@ pub struct StageOverrides {
     pub fail_flash: String,
 }
 
-impl Default for StageOverrides {
-    fn default() -> Self {
-        Self {
-            health_foreground: String::new(),
-            health_background: String::new(),
-            border_left: String::new(),
-            border_right: String::new(),
-            border_right_top: String::new(),
-            border_right_bottom: String::new(),
-            border_left_top: String::new(),
-            border_left_bottom: String::new(),
-            background_top: String::new(),
-            background_bottom: String::new(),
-            hitline: String::new(),
-            column_lighting: String::new(),
-            fail_flash: String::new(),
+impl Serialize for Overrides {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        let mut entries: Vec<(&str, &str)> = Vec::new();
+        let stage = &self.stage;
+
+        macro_rules! add {
+            ($key:expr, $val:expr) => {
+                if !$val.is_empty() {
+                    entries.push(($key, &$val));
+                }
+            };
         }
+
+        add!("Health/foreground", stage.health_foreground);
+        add!("Health/background", stage.health_background);
+        add!("Stage/border-left", stage.border_left);
+        add!("Stage/border-right", stage.border_right);
+        add!("Stage/border-right-top", stage.border_right_top);
+        add!("Stage/border-right-bottom", stage.border_right_bottom);
+        add!("Stage/border-left-top", stage.border_left_top);
+        add!("Stage/border-left-bottom", stage.border_left_bottom);
+        add!("Stage/background-top", stage.background_top);
+        add!("Stage/background-bottom", stage.background_bottom);
+        add!("Stage/hitline", stage.hitline);
+        add!("Lighting/column-lighting", stage.column_lighting);
+        add!("Gameplay/fail-flash", stage.fail_flash);
+
+        for (k, v) in &self.raw_overrides {
+            entries.push((k.as_str(), v.as_str()));
+        }
+
+        entries.sort_by(|a, b| a.0.cmp(b.0));
+
+        let mut map = serializer.serialize_map(Some(entries.len()))?;
+        for (k, v) in entries {
+            map.serialize_entry(k, v)?;
+        }
+        map.end()
     }
 }
 
-impl Overrides {
-    pub fn from_map(root: &HashMap<String, JsonValue>) -> Self {
-        let mut overrides = Self::default();
-        
-        let Some(overrides_obj) = root.get("overrides")
-            .and_then(|v| v.get::<HashMap<String, JsonValue>>()) else {
-            return overrides;
-        };
-        
-        for (key, _value) in overrides_obj.iter() {
-            let Some(value_str) = get_string(overrides_obj, key) else {
-                continue;
-            };
-            
-            overrides.raw_overrides.insert(key.clone(), value_str.clone());
-            
-            match key.as_str() {
-                "Health/foreground" => overrides.stage.health_foreground = value_str,
-                "Health/background" => overrides.stage.health_background = value_str,
-                "Stage/border-left" => overrides.stage.border_left = value_str,
-                "Stage/border-right" => overrides.stage.border_right = value_str,
-                "Stage/border-right-top" => overrides.stage.border_right_top = value_str,
-                "Stage/border-right-bottom" => overrides.stage.border_right_bottom = value_str,
-                "Stage/border-left-top" => overrides.stage.border_left_top = value_str,
-                "Stage/border-left-bottom" => overrides.stage.border_left_bottom = value_str,
-                "Stage/background-top" => overrides.stage.background_top = value_str,
-                "Stage/background-bottom" => overrides.stage.background_bottom = value_str,
-                "Stage/hitline" => overrides.stage.hitline = value_str,
-                "Lighting/column-lighting" => overrides.stage.column_lighting = value_str,
-                "Gameplay/fail-flash" => overrides.stage.fail_flash = value_str,
-                _ => {}
+impl<'de> Deserialize<'de> for Overrides {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        struct OverridesVisitor;
+
+        impl<'de> Visitor<'de> for OverridesVisitor {
+            type Value = Overrides;
+
+            fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+                formatter.write_str("a map of overrides")
+            }
+
+            fn visit_map<A>(self, mut map: A) -> Result<Self::Value, A::Error>
+            where
+                A: MapAccess<'de>,
+            {
+                let mut overrides = Overrides::default();
+
+                while let Some((key, value)) = map.next_entry::<String, String>()? {
+                    match key.as_str() {
+                        "Health/foreground" => overrides.stage.health_foreground = value,
+                        "Health/background" => overrides.stage.health_background = value,
+                        "Stage/border-left" => overrides.stage.border_left = value,
+                        "Stage/border-right" => overrides.stage.border_right = value,
+                        "Stage/border-right-top" => overrides.stage.border_right_top = value,
+                        "Stage/border-right-bottom" => overrides.stage.border_right_bottom = value,
+                        "Stage/border-left-top" => overrides.stage.border_left_top = value,
+                        "Stage/border-left-bottom" => overrides.stage.border_left_bottom = value,
+                        "Stage/background-top" => overrides.stage.background_top = value,
+                        "Stage/background-bottom" => overrides.stage.background_bottom = value,
+                        "Stage/hitline" => overrides.stage.hitline = value,
+                        "Lighting/column-lighting" => overrides.stage.column_lighting = value,
+                        "Gameplay/fail-flash" => overrides.stage.fail_flash = value,
+                        _ => {
+                            overrides.raw_overrides.insert(key, value);
+                        }
+                    }
+                }
+
+                Ok(overrides)
             }
         }
-        
-        overrides
-    }
-    
-    pub fn to_json(&self) -> JsonValue {
-        let mut map = HashMap::new();
-        for (key, value) in &self.raw_overrides {
-            map.insert(key.clone(), JsonValue::from(value.clone()));
-        }
-        JsonValue::from(map)
+
+        deserializer.deserialize_map(OverridesVisitor)
     }
 }

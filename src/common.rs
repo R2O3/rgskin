@@ -1,6 +1,7 @@
 #![allow(unused)]
 
 use std::ops::BitOr;
+use serde::{Deserialize, Deserializer, Serialize, Serializer};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Vector2<T> {
@@ -197,6 +198,25 @@ pub struct Rgba {
     pub alpha: u8,
 }
 
+impl Serialize for Rgba {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&self.to_hex())
+    }
+}
+
+impl<'de> Deserialize<'de> for Rgba {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        Rgba::from_hex(&s).map_err(serde::de::Error::custom)
+    }
+}
+
 impl Rgba {
     pub fn from_str(s: &str) -> Result<Self, String> {
         let parts: Vec<&str> = s.split(',').collect();
@@ -252,9 +272,9 @@ impl Rgba {
 
     pub fn to_hex(&self) -> String {
         if self.alpha == 255 {
-            format!("#{:02x}{:02x}{:02x}", self.red, self.green, self.blue)
+            format!("#{:02x}{:02x}{:02x}", self.red, self.green, self.blue).to_uppercase()
         } else {
-            format!("#{:02x}{:02x}{:02x}{:02x}", self.red, self.green, self.blue, self.alpha)
+            format!("#{:02x}{:02x}{:02x}{:02x}", self.red, self.green, self.blue, self.alpha).to_uppercase()
         }
     }
 
@@ -263,6 +283,6 @@ impl Rgba {
     }
     
     pub fn to_str(&self) -> String {
-        format!("{},{},{},{}", self.red, self.green, self.blue, self.alpha)
+        format!("{},{},{},{}", self.red, self.green, self.blue, self.alpha).to_uppercase()
     }
 }
