@@ -1,13 +1,14 @@
 use std::collections::HashMap;
-
-use tinyjson::JsonValue;
-
+use serde::{Deserialize, Serialize};
 use crate::skin::fluxis::layout_json::{component::Component, gameplay::*};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FluXisLayout {
+    #[serde(rename = "Name")]
     pub name: String,
+    #[serde(rename = "Author")]
     pub author: String,
+    #[serde(rename = "Gameplay")]
     pub gameplay: Gameplay,
 }
 
@@ -27,50 +28,13 @@ impl FluXisLayout {
     }
 
     pub fn from_str(json_str: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let json: JsonValue = json_str.parse()
-            .map_err(|e| format!("Failed to parse JSON: {}", e))?;
-        
-        Self::from_json(&json)
+        let layout: FluXisLayout = serde_json::from_str(json_str)?;
+        Ok(layout)
     }
 
-    pub fn from_json(json: &JsonValue) -> Result<Self, Box<dyn std::error::Error>> {
-        let obj = json.get::<HashMap<String, JsonValue>>()
-            .ok_or("Expected JSON object at root")?;
-        
-        let name = obj.get("name")
-            .and_then(|v| v.get::<String>())
-            .ok_or("Missing or invalid 'name' field")?
-            .clone();
-        
-        let author = obj.get("author")
-            .and_then(|v| v.get::<String>())
-            .ok_or("Missing or invalid 'author' field")?
-            .clone();
-        
-        let gameplay = obj.get("gameplay")
-            .ok_or("Missing 'gameplay' field")
-            .and_then(|v| Gameplay::from_json(v))?;
-        
-        Ok(Self {
-            name,
-            author,
-            gameplay,
-        })
-    }
-
-    pub fn to_str(&self) -> String {
-        self.to_json().stringify().unwrap()
-    }
-    
-    pub fn to_json(&self) -> JsonValue {
-        let mut map = std::collections::HashMap::new();
-        
-        map.insert("name".to_string(), JsonValue::String(self.name.clone()));
-        map.insert("author".to_string(), JsonValue::String(self.author.clone()));
-        
-        map.insert("gameplay".to_string(), self.gameplay.to_json());
-        
-        JsonValue::Object(map)
+    pub fn to_str(&self) -> Result<String, Box<dyn std::error::Error>> {
+        let json_str = serde_json::to_string_pretty(self)?;
+        Ok(json_str)
     }
 }
 

@@ -57,7 +57,7 @@ pub fn export_fluxis_layout_json(layout_json: &fluxis::FluXisLayout, path: &str)
         fs::create_dir_all(parent)?;
     }
     
-    let json_content = layout_json.to_str();
+    let json_content = layout_json.to_str().unwrap();
     
     fs::write(path, json_content)?;
     
