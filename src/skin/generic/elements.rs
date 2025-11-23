@@ -110,3 +110,5 @@ skin_element!(LongNoteHead);
 skin_element!(LongNoteTail);
 skin_element!(LongNoteBody);
 skin_element!(Healthbar; fill, background);
+skin_element!(HitLighting; normal, hold);
+skin_element!(ColumnLighting);

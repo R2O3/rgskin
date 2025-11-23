@@ -168,6 +168,8 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             column_spacing: keymode.column_spacing.clone(),
         };
 
+        let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
+
         keymodes.push(Keymode { 
             keymode: key_count as u8,
             layout: layout,
@@ -176,7 +178,10 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             normal_note: normal_note_elements,
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
-            long_note_tail: long_note_tail_elements
+            long_note_tail: long_note_tail_elements,
+            hit_lighting: HitLighting { normal: texture_or_blank(&keymode.lighting_n),
+                hold: texture_or_blank(&keymode.lighting_l) },
+            column_lighting: ColumnLighting { texture: texture_or_blank(&keymode.stage_light) }
         });
     }
 
@@ -367,6 +372,9 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             long_note_head_images,
             long_note_body_images,
             long_note_tail_images,
+            lighting_n: keymode.hit_lighting.normal.get_path(),
+            lighting_l: keymode.hit_lighting.hold.get_path(),
+            stage_light: keymode.column_lighting.path(),
             judgement_line : false,
             ..Default::default()
         };

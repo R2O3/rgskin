@@ -12,4 +12,7 @@ pub struct Keymode {
     pub long_note_head: Vec<LongNoteHead>,
     pub long_note_body: Vec<LongNoteBody>,
     pub long_note_tail: Vec<LongNoteTail>,
+
+    pub hit_lighting: HitLighting,
+    pub column_lighting: ColumnLighting
 }

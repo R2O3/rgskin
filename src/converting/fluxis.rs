@@ -166,6 +166,9 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             column_spacing: vec![0; key_count],
         };
 
+        let column_lighting_path = &skin.skin_json.overrides.stage.column_lighting;
+        let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
+
         keymodes.push(Keymode { 
             keymode: key_count as u8,
             layout: new_layout,
@@ -174,7 +177,10 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             normal_note: normal_note_elements,
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
-            long_note_tail: long_note_tail_elements
+            long_note_tail: long_note_tail_elements,
+            hit_lighting: HitLighting { normal: blank_texture.clone(),
+                hold: blank_texture.clone() },
+            column_lighting: ColumnLighting { texture: texture_or_blank(column_lighting_path) } 
         });
     }
 
@@ -327,6 +333,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
 
     skin_json.overrides.stage.health_foreground = health_foreground;
     skin_json.overrides.stage.health_background = health_background;
+    skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.path();
     skin_json.sync_overrides_from_stage();
     skin_json.sync_overrides_from_keymodes();
     
