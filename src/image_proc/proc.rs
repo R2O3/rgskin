@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 use image::{imageops, DynamicImage, GenericImageView, Rgba};
-use crate::{io::Texture, process_texture, utils::osu::OsuDimensions}; 
+use crate::{io::Texture, process_texture, process_texture_mut, utils::osu::OsuDimensions}; 
 
 pub fn dist_from_bottom(img: &DynamicImage, alpha_tolerance: f32) -> u32 {
     let rgba_img = img.to_rgba8();
@@ -86,9 +86,24 @@ pub fn pad_image_vertical(img: DynamicImage, top_pad: u32, bottom_pad: u32) -> D
     DynamicImage::ImageRgba8(padded_img)
 }
 
-pub fn flip_vertical(img: DynamicImage) -> DynamicImage {
-    let flipped_buffer = imageops::flip_vertical(&img);
-    DynamicImage::ImageRgba8(flipped_buffer)
+pub fn flip_vertical(texture: &Arc<RwLock<Texture>>) {
+    process_texture_mut!(texture, |img: &mut DynamicImage| {
+        imageops::flip_vertical_in_place(img);
+    })
+}
+
+pub fn rotate_90_deg_cw(texture: &Arc<RwLock<Texture>>) -> Result<(), Box<dyn std::error::Error>> {
+    process_texture!(texture, |img: DynamicImage| {
+        let rotated_buffer = imageops::rotate90(&img);
+        DynamicImage::ImageRgba8(rotated_buffer)
+    })
+}
+
+pub fn rotate_90_deg_ccw(texture: &Arc<RwLock<Texture>>) -> Result<(), Box<dyn std::error::Error>> {
+    process_texture!(texture, |img: DynamicImage| {
+        let rotated_buffer = imageops::rotate270(&img);
+        DynamicImage::ImageRgba8(rotated_buffer)
+    })
 }
 
 pub fn to_osu_column_draw(texture: &Arc<RwLock<Texture>>, column_width: u32) -> Result<(), Box<dyn std::error::Error>> {

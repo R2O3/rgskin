@@ -3,7 +3,7 @@ use std::sync::{Arc, RwLock};
 use crate::common::{Alignment, Anchor, Origin, Vector2, Vector3};
 use crate::extensions::TextureArcExt;
 use crate::generic::Gameplay;
-use crate::image_proc::proc::{dist_from_bottom, flip_vertical, to_osu_column, to_osu_column_draw};
+use crate::image_proc::proc::{dist_from_bottom, flip_vertical, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
 use crate::io::{Store, Texture};
 use crate::osu::{self, General, OsuSkin, SkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
@@ -143,9 +143,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
                         }
 
                         if !texture_already_processed {
-                            texture.replace_data(
-                                texture.with_image(|img| flip_vertical(img.clone())) // too lazy for rust shinanigans so we're just gonna clone
-                            );
+                            flip_vertical(&texture);
                         }
                         
                         LongNoteTail::new(texture)
@@ -188,11 +186,15 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
     let default_keymode = skin.skin_ini.keymodes[0].clone();
     let layout_keymode = skin.skin_ini.get_keymode(4).unwrap_or(&default_keymode);
 
+    let health_bar_fg = textures.get_shared("scorebar-colour").unwrap();
+    let health_bar_bg = textures.get_shared("scorebar-bg").unwrap();
+    rotate_90_deg_ccw(&health_bar_fg)?;
+    rotate_90_deg_ccw(&health_bar_bg)?;
+
+    let health_bar = Healthbar::new(health_bar_fg, health_bar_bg);
+
     let gameplay = Gameplay {
-        health_bar: Healthbar::new(
-            textures.get_shared("scorebar-colour").unwrap(),
-            textures.get_shared("scorebar-bg").unwrap()
-        ),
+        health_bar: health_bar,
         layout: HUDLayout {
             combo: (
                 Vector3::new(
@@ -333,20 +335,22 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                 }
 
                 if !Arc::ptr_eq(texture_arc, &blank_texture) && !texture_already_processed {
-                    texture_arc.replace_data(
-                        texture_arc.with_image(|img| flip_vertical(img.clone()))
-                    );
+                    flip_vertical(&texture_arc);
                 }
                 note.path()
             })
             .collect();
 
         if let Some(health_bar_bg) = skin.gameplay.health_bar.background.get_data() {
-            textures.insert(Texture::with_data("scorebar-bg".to_string(), health_bar_bg));
+            let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-bg".to_string(), health_bar_bg)));
+            rotate_90_deg_cw(&texture)?;
+            textures.insert(texture.take_texture());
         }
 
         if let Some(health_bar_colour) = skin.gameplay.health_bar.fill.get_data() {
-            textures.insert(Texture::with_data("scorebar-colour".to_string(), health_bar_colour));
+            let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-colour".to_string(), health_bar_colour)));
+            rotate_90_deg_cw(&texture)?;
+            textures.insert(texture.take_texture());
         }
 
         // these wouldn't be present in other skins

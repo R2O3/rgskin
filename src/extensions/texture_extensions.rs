@@ -26,6 +26,8 @@ pub trait TextureArcExt {
     
     fn clone_data(&self) -> Option<DynamicImage>;
     
+    fn take_texture(&self) -> Texture;
+    
     fn path_ref<F, R>(&self, f: F) -> R
     where
         F: FnOnce(&str) -> R;
@@ -90,6 +92,10 @@ impl TextureArcExt for Arc<RwLock<Texture>> {
     
     fn clone_data(&self) -> Option<DynamicImage> {
         self.read().unwrap().data().clone()
+    }
+    
+    fn take_texture(&self) -> Texture {
+        std::mem::replace(&mut *self.write().unwrap(), Texture::default())
     }
     
     fn path_ref<F, R>(&self, f: F) -> R

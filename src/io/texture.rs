@@ -4,7 +4,7 @@ use image::{DynamicImage, ImageError};
 use crate::io::Binary;
 
 #[wasm_bindgen]
-#[derive(Clone)]
+#[derive(Clone, Default)]
 pub struct Texture {
     #[wasm_bindgen(getter_with_clone)]
     pub path: String,
