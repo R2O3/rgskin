@@ -1,4 +1,3 @@
-use std::collections::HashSet;
 use std::sync::Arc;
 use crate::common::alignment::*;
 use crate::common::vector::*;
@@ -7,6 +6,7 @@ use crate::generic::{Gameplay, Keymode, Metadata,};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::*;
 use crate::image_proc::proc::dist_from_bottom;
+use crate::io::TextureProcessor;
 use crate::skin::fluxis::layout_json::component::*;
 use crate::skin::fluxis::layout_json::gameplay::*;
 use crate::skin::fluxis::skin_json::colors::{JudgementColors, SnapColors};
@@ -36,30 +36,21 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
         ..Default::default()
     };
 
-    let mut processed_textures = HashSet::new();
+    let mut receptor_processor = TextureProcessor::<i32>::new();
 
     for keymode in skin.skin_json.keymodes {
         let key_count = keymode.keymode as usize;
-        let mut additional_receptor_offset = 0;
+        let mut max_additional_offset = 0;
 
         let receptor_up_elements: Vec<ReceptorUp> = keymode.receptor_images
             .iter()
             .map(|path| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
-                        let texture_path = texture.get_path();
-                        let mut texture_already_processed = false;
-
-                        if processed_textures.contains(&texture_path) {
-                            texture_already_processed = true;
-                        } else {
-                            processed_textures.insert(texture_path);
-                        }
-
-                        if !texture_already_processed {
-                            additional_receptor_offset = texture.with_image(|img| dist_from_bottom(img, 0.1)) as i32;
-                        }
-                        
+                        let offset = receptor_processor.process_once(&texture, |arc| {
+                            arc.with_image(|img| dist_from_bottom(img, 0.1)) as i32
+                        });
+                        max_additional_offset = max_additional_offset.max(offset);
                         ReceptorUp::new(texture)
                     } else {
                         ReceptorUp::new(Arc::clone(&blank_texture))
@@ -75,19 +66,10 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             .map(|path| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
-                        let texture_path = texture.get_path();
-                        let mut texture_already_processed = false;
-
-                        if processed_textures.contains(&texture_path) {
-                            texture_already_processed = true;
-                        } else {
-                            processed_textures.insert(texture_path);
-                        }
-
-                        if !texture_already_processed {
-                            additional_receptor_offset = texture.with_image(|img| dist_from_bottom(img, 0.1)) as i32;
-                        }
-                        
+                        let offset = receptor_processor.process_once(&texture, |tex| {
+                            tex.with_image(|img| dist_from_bottom(img, 0.1)) as i32
+                        });
+                        max_additional_offset = max_additional_offset.max(offset);
                         ReceptorDown::new(texture)
                     } else {
                         ReceptorDown::new(Arc::clone(&blank_texture))
@@ -161,8 +143,8 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             keymode: key_count as u8,
             receptor_above_notes: !keymode.receptors_first,
             x_offset: 0.5,
-            hit_position: (keymode.hit_position + additional_receptor_offset) as f32 / FluXisDimensions::Y.as_f32(),
-            receptor_offset: keymode.receptor_offset + additional_receptor_offset,
+            hit_position: (keymode.hit_position + max_additional_offset) as f32 / FluXisDimensions::Y.as_f32(),
+            receptor_offset: keymode.receptor_offset + max_additional_offset,
             column_widths: vec![keymode.column_width as f32 / FluXisDimensions::X.as_f32(); key_count],
             column_spacing: vec![0; key_count],
         };

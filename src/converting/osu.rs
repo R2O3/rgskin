@@ -1,11 +1,10 @@
-use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
 use crate::common::alignment::*;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, flip_vertical, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
-use crate::io::{Store, Texture};
+use crate::io::{Store, Texture, TextureProcessor};
 use crate::osu::{self, General, OsuSkin, SkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
@@ -25,35 +24,27 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
         center_cursor: skin.skin_ini.general.cursor_centre.clone()
     };
 
-    let mut processed_textures = HashSet::new();
+    let mut receptor_processor = TextureProcessor::<i32>::new();
+    let mut tail_processor = TextureProcessor::<()>::new();
 
     for keymode in &skin.skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
         let average_column_width = keymode.column_width.iter().sum::<u32>() / keymode.column_width.len() as u32;
-        let mut receptor_offset = 0;
+        let mut max_receptor_offset = 0;
 
         let receptor_up_elements: Vec<ReceptorUp> = keymode.receptor_images
             .iter()
             .map(|path| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
-                        let texture_path = texture.get_path();
-                        let mut texture_already_processed = false;
-
-                        if processed_textures.contains(&texture_path) {
-                            texture_already_processed = true;
-                        } else {
-                            processed_textures.insert(texture_path);
-                        }
-
-                        if !texture_already_processed {
-                            receptor_offset = texture.with_image(|img| dist_from_bottom(img, 0.1));
-                            
-                            if let Err(e) = to_osu_column_draw(&texture, average_column_width) {
-                                eprintln!("Failed to process receptor up texture {}: {}", path, e);
+                        let offset = receptor_processor.process_once(&texture, |arc_texture| {
+                            let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
+                            if let Err(e) = to_osu_column_draw(arc_texture, average_column_width) {
+                                eprintln!("Failed to process receptor texture: {}", e);
                             }
-                        }
-                        
+                            offset.try_into().unwrap() // TODO: potential panic check later
+                        });
+                        max_receptor_offset = max_receptor_offset.max(offset);
                         ReceptorUp::new(texture)
                     } else {
                         ReceptorUp::new(Arc::clone(&blank_texture))
@@ -69,23 +60,14 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             .map(|path| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
-                        let texture_path = texture.get_path();
-                        let mut texture_already_processed = false;
-
-                        if processed_textures.contains(&texture_path) {
-                            texture_already_processed = true;
-                        } else {
-                            processed_textures.insert(texture_path);
-                        }
-
-                        if !texture_already_processed {
-                            receptor_offset = texture.with_image(|img| dist_from_bottom(img, 0.1));
-
-                            if let Err(e) = to_osu_column_draw(&texture, average_column_width) {
-                                eprintln!("Failed to process receptor down texture {}: {}", path, e);
+                        let offset = receptor_processor.process_once(&texture, |arc_texture| {
+                            let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
+                            if let Err(e) = to_osu_column_draw(arc_texture, average_column_width) {
+                                eprintln!("Failed to process receptor texture: {}", e);
                             }
-                        }
-                        
+                            offset.try_into().unwrap()
+                        });
+                        max_receptor_offset = max_receptor_offset.max(offset);
                         ReceptorDown::new(texture)
                     } else {
                         ReceptorDown::new(Arc::clone(&blank_texture))
@@ -134,19 +116,9 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             .map(|path| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
-                        let texture_path = texture.get_path();
-                        let mut texture_already_processed = false;
-
-                        if processed_textures.contains(&texture_path) {
-                            texture_already_processed = true;
-                        } else {
-                            processed_textures.insert(texture_path);
-                        }
-
-                        if !texture_already_processed {
-                            flip_vertical(&texture);
-                        }
-                        
+                        tail_processor.process_once_void(&texture, |arc_texture| {
+                            flip_vertical(arc_texture);
+                        });
                         LongNoteTail::new(texture)
                     } else {
                         LongNoteTail::new(Arc::clone(&blank_texture))
@@ -162,7 +134,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             receptor_above_notes: !keymode.keys_under_notes,
             x_offset: keymode.column_start as f32 / OsuDimensions::X.as_f32(),
             hit_position: (1.0 - (keymode.hit_position as f32 / OsuDimensions::Y.as_f32())).abs(),
-            receptor_offset: receptor_offset as i32,
+            receptor_offset: max_receptor_offset as i32,
             column_widths: keymode.column_width.iter().map(|cw| *cw as f32 / OsuDimensions::X.as_f32()).collect(),
             column_spacing: keymode.column_spacing.clone(),
         };
@@ -171,16 +143,20 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
 
         keymodes.push(Keymode { 
             keymode: key_count as u8,
-            layout: layout,
+            layout,
             receptor_up: receptor_up_elements,
             receptor_down: receptor_down_elements,
             normal_note: normal_note_elements,
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
-            hit_lighting: HitLighting { normal: texture_or_blank(&keymode.lighting_n),
-                hold: texture_or_blank(&keymode.lighting_l) },
-            column_lighting: ColumnLighting { texture: texture_or_blank(&keymode.stage_light) }
+            hit_lighting: HitLighting { 
+                normal: texture_or_blank(&keymode.lighting_n),
+                hold: texture_or_blank(&keymode.lighting_l) 
+            },
+            column_lighting: ColumnLighting { 
+                texture: texture_or_blank(&keymode.stage_light) 
+            }
         });
     }
 
@@ -255,29 +231,28 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         ..Default::default()
     };
 
-    let mut processed_textures = HashSet::new();
+    let mut receptor_processor = TextureProcessor::<()>::new();
+    let mut tail_processor = TextureProcessor::<()>::new();
 
     for keymode in skin.keymodes {
         let average_column_width = keymode.layout.average_column_width();
+        let receptor_offset = keymode.layout.receptor_offset;
 
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
             .map(|receptor| {
                 let texture_arc = &receptor.texture;
-
-                let texture_path = texture_arc.get_path();
-                let mut texture_already_processed = false;
-
-                if processed_textures.contains(&texture_path) {
-                    texture_already_processed = true;
-                } else {
-                    processed_textures.insert(texture_path);
-                }
-
-                if !Arc::ptr_eq(texture_arc, &blank_texture) && !texture_already_processed {
-                    if let Err(e) = to_osu_column(texture_arc, (average_column_width * OsuDimensions::X.as_f32()) as u32, keymode.layout.receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32) {
-                        eprintln!("Failed to process receptor up texture: {}", e);
-                    }
+                
+                if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                    receptor_processor.process_once_void(texture_arc, |arc_texture| {
+                        if let Err(e) = to_osu_column(
+                            arc_texture,
+                            (average_column_width * OsuDimensions::X.as_f32()) as u32,
+                            receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
+                        ) {
+                            eprintln!("Failed to process receptor up texture: {}", e);
+                        }
+                    });
                 }
                 receptor.path()
             })
@@ -287,20 +262,17 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             .iter()
             .map(|receptor| {
                 let texture_arc = &receptor.texture;
-
-                let texture_path = texture_arc.get_path();
-                let mut texture_already_processed = false;
-
-                if processed_textures.contains(&texture_path) {
-                    texture_already_processed = true;
-                } else {
-                    processed_textures.insert(texture_path);
-                }
-
-                if !Arc::ptr_eq(texture_arc, &blank_texture) && !texture_already_processed {
-                    if let Err(e) = to_osu_column(texture_arc, (average_column_width * OsuDimensions::X.as_f32()) as u32, keymode.layout.receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32) {
-                        eprintln!("Failed to process receptor down texture: {}", e);
-                    }
+                
+                if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                    receptor_processor.process_once_void(texture_arc, |arc_texture| {
+                        if let Err(e) = to_osu_column(
+                            arc_texture,
+                            (average_column_width * OsuDimensions::X.as_f32()) as u32,
+                            receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
+                        ) {
+                            eprintln!("Failed to process receptor down texture: {}", e);
+                        }
+                    });
                 }
                 receptor.path()
             })
@@ -325,18 +297,11 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             .iter()
             .map(|note| {
                 let texture_arc = &note.texture;
-
-                let texture_path = texture_arc.get_path();
-                let mut texture_already_processed = false;
-
-                if processed_textures.contains(&texture_path) {
-                    texture_already_processed = true;
-                } else {
-                    processed_textures.insert(texture_path);
-                }
-
-                if !Arc::ptr_eq(texture_arc, &blank_texture) && !texture_already_processed {
-                    flip_vertical(&texture_arc);
+                
+                if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                    tail_processor.process_once_void(texture_arc, |arc_texture| {
+                        flip_vertical(arc_texture);
+                    });
                 }
                 note.path()
             })
