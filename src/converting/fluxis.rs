@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::sync::Arc;
-use crate::common::{Alignment, Anchor, Origin, Vector3};
+use crate::common::alignment::*;
+use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::generic::{Gameplay, Keymode, Metadata,};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};

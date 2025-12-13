@@ -1,5 +1,5 @@
 use serde::{Deserialize, Serialize};
-use crate::common::Rgba;
+use crate::common::color::Rgba;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]

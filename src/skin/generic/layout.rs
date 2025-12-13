@@ -1,4 +1,5 @@
-use crate::common::{Alignment, Anchor, Origin, Vector2, Vector3};
+use crate::common::alignment::*;
+use crate::common::vector::*;
 
 #[derive(Clone)]
 pub struct KeymodeLayout {

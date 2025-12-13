@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::sync::{Arc, RwLock};
-use crate::common::{Alignment, Anchor, Origin, Vector2, Vector3};
+use crate::common::alignment::*;
+use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, flip_vertical, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
