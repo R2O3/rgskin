@@ -19,10 +19,7 @@ pub use parse::ini;
 pub use osu::OsuSkin;
 pub use generic::GenericManiaSkin;
 
-pub use io::Binary;
-pub use io::Texture;
-pub use io::Store;
-pub use io::TextureStore;
+pub use io::{Binary, Store, texture};
 
 pub mod assets {
     use std::collections::HashSet;
@@ -35,7 +32,7 @@ pub mod assets {
 
 pub mod load {
     pub mod osu {
-        use crate::{converting::osu::{from_generic_mania, to_generic_mania}, io::TextureStore, osu, skin::generic};
+        use crate::{converting::osu::{from_generic_mania, to_generic_mania}, io::texture::TextureStore, osu, skin::generic};
 
         pub fn skin_ini(str: &str) -> Result<osu::SkinIni, Box<dyn std::error::Error>> {
             osu::SkinIni::from_str(str)
@@ -55,7 +52,7 @@ pub mod load {
     }
 
     pub mod fluxis {
-        use crate::{converting::fluxis::{from_generic_mania, to_generic_mania}, io::TextureStore, fluxis, skin::generic};
+        use crate::{converting::fluxis::{from_generic_mania, to_generic_mania}, io::texture::TextureStore, fluxis, skin::generic};
 
         pub fn skin_json(str: &str) -> Result<fluxis::SkinJson, Box<dyn std::error::Error>> {
             fluxis::SkinJson::from_str(str)
@@ -81,7 +78,7 @@ pub mod load {
 
 pub mod export {
     use std::io;
-    use crate::{exporting::native::export_textures, TextureStore};
+    use crate::{exporting::native::export_textures, io::texture::TextureStore};
 
     pub fn textures_to_dir(textures: &TextureStore, path: &str) -> io::Result<()>  {
         export_textures(textures, path)
@@ -90,7 +87,7 @@ pub mod export {
     pub mod osu {
         use std::io;
 
-        use crate::{exporting::native::{export_osu_ini, export_osu_skin}, osu, TextureStore};
+        use crate::{exporting::native::{export_osu_ini, export_osu_skin}, osu, io::texture::TextureStore};
 
         pub fn skin_to_dir(skin_ini: &osu::SkinIni, textures: Option<&TextureStore>, path: &str) -> io::Result<()> {
             export_osu_skin(skin_ini, textures, path)
@@ -103,7 +100,7 @@ pub mod export {
 
     pub mod fluxis {
         use std::io;
-        use crate::{exporting::native::{export_fluxis_layout_json, export_fluxis_skin, export_fluxis_skin_json}, fluxis, TextureStore};
+        use crate::{exporting::native::{export_fluxis_layout_json, export_fluxis_skin, export_fluxis_skin_json}, fluxis, io::texture::TextureStore};
 
         pub fn skin_to_dir(skin_json: &fluxis::SkinJson, textures: Option<&TextureStore>, path: &str) -> io::Result<()> {
             export_fluxis_skin(skin_json, textures, path)
@@ -120,7 +117,7 @@ pub mod export {
 }
 
 pub mod import {
-    use crate::{importing::native::{import_all_textures_from_dir, import_textures_from_dir}, TextureStore};
+    use crate::{importing::native::{import_all_textures_from_dir, import_textures_from_dir}, io::texture::TextureStore};
 
     pub fn textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>>  {
         import_textures_from_dir(path, relative_texture_paths)

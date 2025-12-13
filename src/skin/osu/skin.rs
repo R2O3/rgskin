@@ -3,7 +3,7 @@ use crate::converting::osu::{from_generic_mania, to_generic_mania};
 use crate::osu::Keymode;
 use crate::skin::generic::GenericManiaSkin;
 use crate::skin::osu::SkinIni;
-use crate::io::TextureStore;
+use crate::io::texture::TextureStore;
 
 pub struct OsuSkin {
     pub skin_ini: SkinIni,

@@ -1,6 +1,6 @@
 use crate::common::traits::ManiaSkin;
 use crate::generic::gameplay::Gameplay;
-use crate::io::TextureStore;
+use crate::io::texture::TextureStore;
 use crate::skin::generic::{Keymode, Metadata};
 
 pub struct GenericManiaSkin {

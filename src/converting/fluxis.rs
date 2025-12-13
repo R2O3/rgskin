@@ -6,7 +6,8 @@ use crate::generic::{Gameplay, Keymode, Metadata,};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::*;
 use crate::image_proc::proc::dist_from_bottom;
-use crate::io::TextureProcessor;
+use crate::io::Store;
+use crate::io::texture::{Texture, TextureProcessor};
 use crate::skin::fluxis::layout_json::component::*;
 use crate::skin::fluxis::layout_json::gameplay::*;
 use crate::skin::fluxis::skin_json::colors::{JudgementColors, SnapColors};
@@ -19,7 +20,7 @@ use crate::skin::fluxis::{
     SkinJson
 };
 use crate::utils::fluxis::FluXisDimensions;
-use crate::{GenericManiaSkin, Store, Texture};
+use crate::GenericManiaSkin;
 
 pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures;

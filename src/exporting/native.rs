@@ -3,7 +3,7 @@ use std::fs;
 use std::path::Path;
 use crate::utils::io::change_extension;
 use crate::Store;
-use crate::{osu, fluxis, TextureStore};
+use crate::{osu, fluxis, texture::TextureStore};
 
 pub fn export_textures(textures: &TextureStore, path: &str) -> io::Result<()> {
     fs::create_dir_all(path)?;

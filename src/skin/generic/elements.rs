@@ -1,4 +1,4 @@
-use crate::io::Texture;
+use crate::io::texture::Texture;
 use image::imageops::FilterType;
 use std::sync::{Arc, RwLock};
 

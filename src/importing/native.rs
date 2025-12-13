@@ -5,7 +5,7 @@ use crate::osu;
 use crate::utils::io::{get_filename, get_parent, get_stem, join_paths_unix, remove_extension};
 use crate::utils::string::string_iter_as_str;
 use crate::OsuSkin;
-use crate::TextureStore;
+use crate::io::texture::TextureStore;
 
 pub fn import_textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>> {
     let mut texture_store = TextureStore::new();

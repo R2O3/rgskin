@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use crate::extensions::TextureArcExt;
-use crate::Texture;
+use crate::io::texture::Texture;
 
 pub struct TextureProcessor<T = ()> {
     processed: HashMap<String, T>,

@@ -2,7 +2,8 @@ use std::{collections::HashMap, sync::{Arc, RwLock}};
 use wasm_bindgen::prelude::*;
 use js_sys::{Uint8Array, ArrayBuffer, Array};
 use image::ImageError;
-use crate::io::{Store, Texture};
+use crate::io::Store;
+use crate::io::texture::Texture;
 
 #[wasm_bindgen]
 #[derive(Clone)]

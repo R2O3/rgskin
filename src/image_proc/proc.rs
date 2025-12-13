@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 use image::{imageops, DynamicImage, GenericImageView, Rgba};
-use crate::{io::Texture, process_texture, process_texture_mut, utils::osu::OsuDimensions}; 
+use crate::{io::texture::Texture, process_texture, process_texture_mut, utils::osu::OsuDimensions}; 
 
 pub fn dist_from_bottom(img: &DynamicImage, alpha_tolerance: f32) -> u32 {
     let rgba_img = img.to_rgba8();

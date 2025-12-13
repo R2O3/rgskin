@@ -3,7 +3,7 @@ use crate::converting::fluxis::{from_generic_mania, to_generic_mania};
 use crate::fluxis::skin_json::Keymode;
 use crate::skin::generic::GenericManiaSkin;
 use crate::skin::fluxis::{FluXisLayout, SkinJson};
-use crate::io::TextureStore;
+use crate::io::texture::TextureStore;
 
 pub struct FluXisSkin {
     pub skin_json: SkinJson,

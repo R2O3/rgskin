@@ -1,13 +1,14 @@
 mod test_dependencies;
 use test_dependencies::*;
-use rgc_skin::{image_proc::proc::to_osu_column_draw, {Binary, Store, Texture}, utils::io::join_paths_unix};
+use rgc_skin::{image_proc::proc::to_osu_column_draw, {Binary, Store}, utils::io::join_paths_unix};
+use rgc_skin::texture::{Texture, TextureStore};
 
 #[test]
 fn osu_mania_receptor_draw() -> Result<(), Box<dyn std::error::Error>> {
     let img_bytes = read_file_to_bytes("./tests/assets/k_down.png")?;
     let texture = Texture::from_bytes("k_down.png".to_string(), img_bytes)?;
 
-    let mut textures = rgc_skin::TextureStore::new();
+    let mut textures = TextureStore::new();
     textures.insert(texture);
 
     let texture_ref = textures.get_shared("k_down.png").unwrap();

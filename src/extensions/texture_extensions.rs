@@ -3,7 +3,7 @@
 
 use std::sync::{Arc, RwLock};
 use image::DynamicImage;
-use crate::{Binary, Texture};
+use crate::{Binary, texture::Texture};
 
 pub trait TextureArcExt {
     fn get_path(&self) -> String;
