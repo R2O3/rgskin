@@ -1,5 +1,18 @@
 use serde::{Deserialize, Serialize};
 
+use crate::define_keymode;
+
+define_keymode!(
+    (receptor_images, "Receptor", "", "-up"),
+    (receptor_images_down, "Receptor", "", "-down"),
+    (normal_note_images, "HitObjects", "Note", ""),
+    (long_note_head_images, "HitObjects", "LongNoteStart", ""),
+    (long_note_body_images, "HitObjects", "LongNoteBody", ""),
+    (long_note_tail_images, "HitObjects", "LongNoteEnd", ""),
+    (tick_images, "HitObjects", "Tick", ""),
+    (tick_images_small, "HitObjects", "Tick", "-small"),
+);
+
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Keymode {
     #[serde(skip)] 

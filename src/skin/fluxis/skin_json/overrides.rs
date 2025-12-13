@@ -4,27 +4,28 @@ use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
 
+use crate::define_stage_overrides;
+
+define_stage_overrides!(
+    (health_foreground, "Health/foreground"),
+    (health_background, "Health/background"),
+    (border_left, "Stage/border-left"),
+    (border_right, "Stage/border-right"),
+    (border_right_top, "Stage/border-right-top"),
+    (border_right_bottom, "Stage/border-right-bottom"),
+    (border_left_top, "Stage/border-left-top"),
+    (border_left_bottom, "Stage/border-left-bottom"),
+    (background_top, "Stage/background-top"),
+    (background_bottom, "Stage/background-bottom"),
+    (hitline, "Stage/hitline"),
+    (column_lighting, "Lighting/column-lighting"),
+    (fail_flash, "Gameplay/fail-flash"),
+);
+
 #[derive(Clone, Debug, Default)]
 pub struct Overrides {
     pub stage: StageOverrides,
     pub raw_overrides: IndexMap<String, String>,
-}
-
-#[derive(Clone, Debug, Default)]
-pub struct StageOverrides {
-    pub health_foreground: String,
-    pub health_background: String,
-    pub border_left: String,
-    pub border_right: String,
-    pub border_right_top: String,
-    pub border_right_bottom: String,
-    pub border_left_top: String,
-    pub border_left_bottom: String,
-    pub background_top: String,
-    pub background_bottom: String,
-    pub hitline: String,
-    pub column_lighting: String,
-    pub fail_flash: String,
 }
 
 impl Serialize for Overrides {
@@ -32,30 +33,7 @@ impl Serialize for Overrides {
     where
         S: Serializer,
     {
-        let mut entries: Vec<(&str, &str)> = Vec::new();
-        let stage = &self.stage;
-
-        macro_rules! add {
-            ($key:expr, $val:expr) => {
-                if !$val.is_empty() {
-                    entries.push(($key, &$val));
-                }
-            };
-        }
-
-        add!("Health/foreground", stage.health_foreground);
-        add!("Health/background", stage.health_background);
-        add!("Stage/border-left", stage.border_left);
-        add!("Stage/border-right", stage.border_right);
-        add!("Stage/border-right-top", stage.border_right_top);
-        add!("Stage/border-right-bottom", stage.border_right_bottom);
-        add!("Stage/border-left-top", stage.border_left_top);
-        add!("Stage/border-left-bottom", stage.border_left_bottom);
-        add!("Stage/background-top", stage.background_top);
-        add!("Stage/background-bottom", stage.background_bottom);
-        add!("Stage/hitline", stage.hitline);
-        add!("Lighting/column-lighting", stage.column_lighting);
-        add!("Gameplay/fail-flash", stage.fail_flash);
+        let mut entries = self.stage.serialize();
 
         for (k, v) in &self.raw_overrides {
             entries.push((k.as_str(), v.as_str()));
@@ -92,23 +70,8 @@ impl<'de> Deserialize<'de> for Overrides {
                 let mut overrides = Overrides::default();
 
                 while let Some((key, value)) = map.next_entry::<String, String>()? {
-                    match key.as_str() {
-                        "Health/foreground" => overrides.stage.health_foreground = value,
-                        "Health/background" => overrides.stage.health_background = value,
-                        "Stage/border-left" => overrides.stage.border_left = value,
-                        "Stage/border-right" => overrides.stage.border_right = value,
-                        "Stage/border-right-top" => overrides.stage.border_right_top = value,
-                        "Stage/border-right-bottom" => overrides.stage.border_right_bottom = value,
-                        "Stage/border-left-top" => overrides.stage.border_left_top = value,
-                        "Stage/border-left-bottom" => overrides.stage.border_left_bottom = value,
-                        "Stage/background-top" => overrides.stage.background_top = value,
-                        "Stage/background-bottom" => overrides.stage.background_bottom = value,
-                        "Stage/hitline" => overrides.stage.hitline = value,
-                        "Lighting/column-lighting" => overrides.stage.column_lighting = value,
-                        "Gameplay/fail-flash" => overrides.stage.fail_flash = value,
-                        _ => {
-                            overrides.raw_overrides.insert(key, value);
-                        }
+                    if !overrides.stage.set_field(&key, value.clone()) {
+                        overrides.raw_overrides.insert(key, value);
                     }
                 }
 
