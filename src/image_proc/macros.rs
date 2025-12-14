@@ -22,8 +22,9 @@ macro_rules! process_texture {
 macro_rules! process_texture_mut {
     ($texture:expr, $processor:expr) => {
         {
+            use crate::BinaryState;
             let mut write_guard = $texture.write().unwrap();
-            if let Some(ref mut img) = write_guard.data {
+            if let BinaryState::Loaded(ref mut img) = write_guard.data {
                 $processor(img);
             }
         }

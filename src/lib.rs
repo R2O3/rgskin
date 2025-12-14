@@ -3,13 +3,13 @@ pub(crate) mod converting;
 pub(crate) mod exporting;
 pub(crate) mod importing;
 pub(crate) mod io;
-pub(crate) mod extensions;
 pub(crate) mod common;
 
 mod parse;
 
 pub mod image_proc;
 pub mod utils;
+pub mod extensions;
 
 pub use skin::osu;
 pub use skin::fluxis;
@@ -19,7 +19,8 @@ pub use parse::ini;
 pub use osu::OsuSkin;
 pub use generic::GenericManiaSkin;
 
-pub use io::{Binary, Store, texture};
+pub use extensions::{TextureArcExt, BinaryArcExt};
+pub use io::{Binary, BinaryState, Store, texture};
 
 pub mod assets {
     use std::collections::HashSet;

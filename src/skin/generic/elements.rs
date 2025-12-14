@@ -1,4 +1,4 @@
-use crate::io::texture::Texture;
+use crate::{io::texture::Texture, Binary};
 use image::imageops::FilterType;
 use std::sync::{Arc, RwLock};
 
@@ -22,7 +22,7 @@ pub trait SkinElement: Sync + Send {
         f(&mut *texture)
     }
     
-    fn path(&self) -> String {
+    fn get_path(&self) -> String {
         self.with_texture(|texture| texture.path().to_string())
     }
     

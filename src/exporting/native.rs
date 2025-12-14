@@ -10,16 +10,19 @@ pub fn export_textures(textures: &TextureStore, path: &str) -> io::Result<()> {
     
     for texture_path in textures.get_paths() {
         if let Some(texture_ref) = textures.get(&texture_path) {
-            if let Some(img) = texture_ref.data() {
-                let texture_path_with_ext = change_extension(&texture_path, "png");
-                let output_path = Path::new(path).join(&texture_path_with_ext);
-                
-                if let Some(parent) = output_path.parent() {
-                    fs::create_dir_all(parent)?;
-                }
-                
+            let texture_path_with_ext = change_extension(&texture_path, "png");
+            let output_path = Path::new(path).join(&texture_path_with_ext);
+            
+            if let Some(parent) = output_path.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            
+            if let Some(img) = texture_ref.get_data() {
                 img.save_with_format(&output_path, image::ImageFormat::Png)
                     .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+            }
+            else if let Some(bytes) = texture_ref.get_unloaded_data() {
+                fs::write(&output_path, bytes)?;
             }
         }
     }

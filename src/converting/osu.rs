@@ -15,7 +15,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
     let mut textures = skin.textures;
     let mut keymodes: Vec<Keymode> = Vec::new();
 
-    textures.insert(Texture::empty("blank".to_string()));
+    textures.insert(Texture::from_single_px("blank".to_string()));
     let blank_texture = textures.get_shared("blank").unwrap();
 
     let metadata = Metadata {
@@ -222,7 +222,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
     let mut osu_keymodes: Vec<osu::Keymode> = Vec::new();
 
     let blank_texture: Arc<RwLock<Texture>> = textures.get_shared("blank")
-        .unwrap_or(Arc::new(RwLock::new(Texture::empty("blank".to_string()))));
+        .unwrap_or(Arc::new(RwLock::new(Texture::from_single_px("blank".to_string()))));
 
     let general = General {
         name: skin.metadata.name,
@@ -255,7 +255,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                         }
                     });
                 }
-                receptor.path()
+                receptor.get_path()
             })
             .collect();
 
@@ -275,23 +275,23 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                         }
                     });
                 }
-                receptor.path()
+                receptor.get_path()
             })
             .collect();
 
         let normal_note_images: Vec<String> = keymode.normal_note
             .iter()
-            .map(|note| note.path())
+            .map(|note| note.get_path())
             .collect();
 
         let long_note_head_images: Vec<String> = keymode.long_note_head
             .iter()
-            .map(|note| note.path())
+            .map(|note| note.get_path())
             .collect();
 
         let long_note_body_images: Vec<String> = keymode.long_note_body
             .iter()
-            .map(|note| note.path())
+            .map(|note| note.get_path())
             .collect();
 
         let long_note_tail_images: Vec<String> = keymode.long_note_tail
@@ -304,17 +304,17 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                         flip_vertical(arc_texture);
                     });
                 }
-                note.path()
+                note.get_path()
             })
             .collect();
 
-        if let Some(health_bar_bg) = skin.gameplay.health_bar.background.get_data() {
+        if let Some(health_bar_bg) = skin.gameplay.health_bar.background.get_image() {
             let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-bg".to_string(), health_bar_bg)));
             rotate_90_deg_cw(&texture)?;
             textures.insert(texture.take_texture());
         }
 
-        if let Some(health_bar_colour) = skin.gameplay.health_bar.fill.get_data() {
+        if let Some(health_bar_colour) = skin.gameplay.health_bar.fill.get_image() {
             let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-colour".to_string(), health_bar_colour)));
             rotate_90_deg_cw(&texture)?;
             textures.insert(texture.take_texture());
@@ -322,11 +322,11 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
 
         // these wouldn't be present in other skins
         if !textures.contains("star") {
-            textures.insert(Texture::with_data("star".to_string(), blank_texture.clone_data().unwrap()));
+            textures.insert(Texture::with_data("star".to_string(), blank_texture.clone_image().unwrap()));
         }
 
         if !textures.contains("star2") {
-            textures.insert(Texture::with_data("star2".to_string(), blank_texture.clone_data().unwrap()));
+            textures.insert(Texture::with_data("star2".to_string(), blank_texture.clone_image().unwrap()));
         }
 
         let osu_keymode = osu::Keymode {
@@ -345,7 +345,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             long_note_tail_images,
             lighting_n: keymode.hit_lighting.normal.get_path(),
             lighting_l: keymode.hit_lighting.hold.get_path(),
-            stage_light: keymode.column_lighting.path(),
+            stage_light: keymode.column_lighting.get_path(),
             judgement_line : false,
             ..Default::default()
         };

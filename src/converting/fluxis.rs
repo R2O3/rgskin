@@ -27,7 +27,7 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
     let layout = layout.unwrap_or(FluXisLayout::default());
     let mut keymodes: Vec<Keymode> = Vec::new();
 
-    textures.insert(Texture::empty("blank".to_string()));
+    textures.insert(Texture::from_single_px("blank".to_string()));
     let blank_texture = textures.get_shared("blank").unwrap();
 
     let metadata = Metadata {
@@ -253,32 +253,32 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
         
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
-            .map(|receptor| receptor.path())
+            .map(|receptor| receptor.get_path())
             .collect();
         
         let receptor_images_down: Vec<String> = keymode.receptor_down
             .iter()
-            .map(|receptor| receptor.path())
+            .map(|receptor| receptor.get_path())
             .collect();
         
         let normal_note_images: Vec<String> = keymode.normal_note
             .iter()
-            .map(|note| note.path())
+            .map(|note| note.get_path())
             .collect();
         
         let long_note_head_images: Vec<String> = keymode.long_note_head
             .iter()
-            .map(|note| note.path())
+            .map(|note| note.get_path())
             .collect();
 
         let long_note_body_images: Vec<String> = keymode.long_note_body
             .iter()
-            .map(|note| note.path())
+            .map(|note| note.get_path())
             .collect();
         
         let long_note_tail_images: Vec<String> = keymode.long_note_tail
             .iter()
-            .map(|note| note.path())
+            .map(|note| note.get_path())
             .collect();
         
         fluxis_keymodes.push(skin_json::Keymode {
@@ -317,7 +317,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
 
     skin_json.overrides.stage.health_foreground = health_foreground;
     skin_json.overrides.stage.health_background = health_background;
-    skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.path();
+    skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path();
     skin_json.sync_overrides_from_stage();
     skin_json.sync_overrides_from_keymodes();
     

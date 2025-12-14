@@ -3,4 +3,4 @@ mod store;
 mod binary;
 
 pub use store::Store;
-pub use binary::Binary;
+pub use binary::{Binary, BinaryState};

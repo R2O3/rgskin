@@ -2,7 +2,7 @@ use std::{collections::HashMap, sync::{Arc, RwLock}};
 use wasm_bindgen::prelude::*;
 use js_sys::{Uint8Array, ArrayBuffer, Array};
 use image::ImageError;
-use crate::io::Store;
+use crate::{io::Store, Binary};
 use crate::io::texture::Texture;
 
 #[wasm_bindgen]
@@ -201,7 +201,7 @@ impl Store<Texture> for TextureStore {
             
             let texture_copy = Texture {
                 path: new_path.clone(),
-                data: original_texture.data().clone(),
+                data: original_texture.state().clone(),
             };
             
             drop(original_texture);
@@ -216,20 +216,20 @@ impl Store<Texture> for TextureStore {
             None
         }
     }
-    
+
     fn copy_from_data(&mut self, path: String, data: Self::Data) -> String {
         let texture = Texture::with_data(path.clone(), data);
         self.insert(texture);
         path
     }
-    
+
     fn make_unique_copy(&mut self, original_path: &str, new_base_path: String) -> Option<String> {
         if let Some(original_texture_ref) = self.get_shared(original_path) {
             let original_texture = original_texture_ref.read().unwrap();
             
             let texture_copy = Texture {
                 path: new_base_path.clone(),
-                data: original_texture.data().clone(),
+                data: original_texture.state().clone(),
             };
             
             drop(original_texture);
