@@ -539,45 +539,42 @@ impl Keymode {
     pub fn get_texture_paths(&self) -> HashSet<String> {
         let mut result: HashSet<String> = HashSet::new();
 
-        for asset in &self.receptor_images { result.insert(asset.clone()); };
-        for asset in &self.receptor_images_down { result.insert(asset.clone()); };
-        for asset in &self.normal_note_images { result.insert(asset.clone()); };
-        for asset in &self.long_note_head_images { result.insert(asset.clone()); };
-        for asset in &self.long_note_body_images { result.insert(asset.clone()); };
-        for asset in &self.long_note_tail_images { result.insert(asset.clone()); };
-        
-        let mut insert_string = |str: &str| {
-            if !str.trim().is_empty() {
-                result.insert(str.to_string());
+        let insert_vec = |result: &mut HashSet<String>, vec: &[String]| {
+            result.extend(vec.iter().filter(|s| !s.is_empty()).cloned());
+        };
+
+        let insert_with_fallback = |result: &mut HashSet<String>, custom: &str, fallback: &str| {
+            if custom.trim().is_empty() {
+                result.insert(fallback.to_string());
+            } else {
+                result.insert(custom.to_string());
             }
         };
 
-        insert_string(&self.stage_left);
-        insert_string(&self.stage_right);
-        insert_string(&self.stage_bottom);
-        insert_string(&self.stage_hint);
-        insert_string(&self.stage_light);
-        insert_string(&self.lighting_n);
-        insert_string(&self.lighting_l);
-        insert_string(&self.hit0);
-        insert_string(&self.hit50);
-        insert_string(&self.hit100);
-        insert_string(&self.hit200);
-        insert_string(&self.hit300);
-        insert_string(&self.hit300g);
+        insert_vec(&mut result, &self.receptor_images);
+        insert_vec(&mut result, &self.receptor_images_down);
+        insert_vec(&mut result, &self.normal_note_images);
+        insert_vec(&mut result, &self.long_note_head_images);
+        insert_vec(&mut result, &self.long_note_body_images);
+        insert_vec(&mut result, &self.long_note_tail_images);
 
-        result.insert("mania-hit0".to_string());
-        result.insert("mania-hit50".to_string());
-        result.insert("mania-hit100".to_string());
-        result.insert("mania-hit200".to_string());
-        result.insert("mania-hit300".to_string());
-        result.insert("mania-hit300g".to_string());
-
-        result.insert("mania-stage-left".to_string());
-        result.insert("mania-stage-right".to_string());
-        result.insert("mania-stage-light".to_string());
-
-        result.insert("mania-warningarrow".to_string());
+        insert_with_fallback(&mut result, &self.stage_left, "mania-stage-left");
+        insert_with_fallback(&mut result, &self.stage_right, "mania-stage-right");
+        insert_with_fallback(&mut result, &self.stage_light, "mania-stage-light");
+        insert_with_fallback(&mut result, &self.stage_hint, "mania-stage-hint");
+        insert_with_fallback(&mut result, &self.stage_bottom, "mania-stage-bottom");
+        
+        insert_with_fallback(&mut result, &self.lighting_n, "lightingN");
+        insert_with_fallback(&mut result, &self.lighting_l, "lightingL");
+        
+        insert_with_fallback(&mut result, &self.hit0, "mania-hit0");
+        insert_with_fallback(&mut result, &self.hit50, "mania-hit50");
+        insert_with_fallback(&mut result, &self.hit100, "mania-hit100");
+        insert_with_fallback(&mut result, &self.hit200, "mania-hit200");
+        insert_with_fallback(&mut result, &self.hit300, "mania-hit300");
+        insert_with_fallback(&mut result, &self.hit300g, "mania-hit300g");
+        
+        insert_with_fallback(&mut result, &self.warning_arrow, "mania-warningarrow");
 
         result.insert("lighting".to_string());
         result.insert("lightingA".to_string());

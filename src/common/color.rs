@@ -8,6 +8,12 @@ pub struct Rgba {
     pub alpha: u8,
 }
 
+impl Default for Rgba {
+    fn default() -> Self {
+        Rgba { red: 255, green: 255, blue: 255, alpha: 255 }
+    }
+}
+
 impl Serialize for Rgba {
     fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
     where
