@@ -92,11 +92,8 @@ pub fn import_osu_mania_skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std
     let texture_path_refs: Vec<&str> = string_iter_as_str(texture_paths.iter());
     
     let textures = import_textures_from_dir(path, &texture_path_refs)?;
-    
-    Ok(OsuSkin {
-        skin_ini,
-        textures,
-    })
+
+    Ok(OsuSkin::new(skin_ini, Some(textures)))
 }
 
 pub fn import_fluxis_skin_from_dir(path: &str) -> Result<FluXisSkin, Box<dyn std::error::Error>> {
@@ -106,9 +103,6 @@ pub fn import_fluxis_skin_from_dir(path: &str) -> Result<FluXisSkin, Box<dyn std
     let skin_json = fluxis::SkinJson::from_str(&json_content)?;
     
     let textures = import_all_textures_from_dir(path)?;
-    
-    Ok(FluXisSkin {
-        skin_json,
-        textures,
-    })
+
+    Ok(FluXisSkin::new(skin_json, Some(textures)))
 }

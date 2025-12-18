@@ -20,6 +20,7 @@ use crate::skin::fluxis::{
     SkinJson
 };
 use crate::utils::fluxis::FluXisDimensions;
+use crate::utils::math::Resizer;
 use crate::GenericManiaSkin;
 
 pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -237,7 +238,8 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
         }
     };
 
-    Ok(GenericManiaSkin { 
+    Ok(GenericManiaSkin {
+        resolution: skin.resolution,
         metadata, 
         gameplay, 
         keymodes, 
@@ -247,6 +249,11 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
 
 pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisLayout), Box<dyn std::error::Error>> {
     let mut fluxis_keymodes: Vec<skin_json::Keymode> = Vec::new();
+
+    let resize = Resizer::new(
+        skin.resolution,
+        Some(Vector2::new(FluXisDimensions::X.as_u32(), FluXisDimensions::Y.as_u32()))
+    );
     
     for keymode in &skin.keymodes {
         let key_count = keymode.keymode as u8;
@@ -290,9 +297,12 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
             long_note_body_images,
             long_note_tail_images,
             receptors_first: !keymode.layout.receptor_above_notes,
-            hit_position: (keymode.layout.hit_position * FluXisDimensions::Y.as_f32()).clamp(0.0, FluXisDimensions::Y.as_f32()) as i32,
+            hit_position: resize.to_target_y::<i32>(keymode.layout.hit_position)
+                .clamp(0, FluXisDimensions::Y.as_i32()),
             receptor_offset: keymode.layout.receptor_offset,
-            column_width: (keymode.layout.column_widths.get(0).copied().unwrap_or(0.0) * FluXisDimensions::X.as_f32()) as u32,
+            column_width: resize.to_target_x::<u32>(keymode.layout.column_widths
+                .get(0).copied()
+                .unwrap_or(0.0)),
             tint_notes: false,
             tint_lns: false,
             tint_receptors: false,
@@ -320,11 +330,8 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
     skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path();
     skin_json.sync_overrides_from_stage();
     skin_json.sync_overrides_from_keymodes();
-    
-    let fluxis_skin = FluXisSkin {
-        skin_json,
-        textures: skin.textures,
-    };
+
+    let fluxis_skin = FluXisSkin::new(skin_json, Some(skin.textures));
 
     let mut layout = FluXisLayout::new(skin.metadata.name.clone(), skin.metadata.creator.clone());
 

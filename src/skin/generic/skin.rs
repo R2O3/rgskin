@@ -1,9 +1,11 @@
 use crate::common::traits::ManiaSkin;
+use crate::common::vector::Vector2;
 use crate::generic::gameplay::Gameplay;
 use crate::io::texture::TextureStore;
 use crate::skin::generic::{Keymode, Metadata};
 
 pub struct GenericManiaSkin {
+    pub resolution: Vector2<u32>,
     pub metadata: Metadata,
     pub gameplay: Gameplay,
     pub keymodes: Vec<Keymode>,

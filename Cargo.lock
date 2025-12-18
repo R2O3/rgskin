@@ -225,6 +225,7 @@ dependencies = [
  "image",
  "indexmap",
  "js-sys",
+ "num-traits",
  "paste",
  "serde",
  "serde_derive",

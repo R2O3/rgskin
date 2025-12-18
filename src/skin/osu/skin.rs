@@ -1,18 +1,24 @@
 use crate::common::traits::ManiaSkin;
+use crate::common::vector::Vector2;
 use crate::converting::osu::{from_generic_mania, to_generic_mania};
 use crate::osu::Keymode;
 use crate::skin::generic::GenericManiaSkin;
 use crate::skin::osu::SkinIni;
 use crate::io::texture::TextureStore;
+use crate::utils::osu::OsuDimensions;
 
 pub struct OsuSkin {
+    pub resolution: Vector2<u32>,
     pub skin_ini: SkinIni,
     pub textures: TextureStore
 }
 
 impl OsuSkin {
     pub fn new(skin_ini: SkinIni, textures: Option<TextureStore>) -> Self {
-        Self { skin_ini, textures: textures.unwrap_or(TextureStore::new()) }
+        Self { skin_ini,
+            textures: textures.unwrap_or(TextureStore::new()),
+            resolution: Vector2::new(OsuDimensions::X.as_u32(), OsuDimensions::Y.as_u32())
+        }
     }
 }
 

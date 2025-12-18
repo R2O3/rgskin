@@ -1,4 +1,5 @@
 use std::sync::{Arc, RwLock};
+
 use crate::common::alignment::*;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
@@ -9,6 +10,7 @@ use crate::io::texture::{Texture, TextureProcessor};
 use crate::osu::{self, General, OsuSkin, SkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
+use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
 
 pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -209,17 +211,23 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
         }
     };
     
-    Ok(GenericManiaSkin { 
-        metadata, 
-        gameplay, 
-        keymodes, 
-        textures 
+    Ok(GenericManiaSkin {
+        resolution: skin.resolution,
+        metadata,
+        gameplay,
+        keymodes,
+        textures
     })
 }
 
 pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures;
     let mut osu_keymodes: Vec<osu::Keymode> = Vec::new();
+
+    let resize = Resizer::new(
+        skin.resolution,
+        Some(Vector2::new(OsuDimensions::X.as_u32(), OsuDimensions::Y.as_u32()))
+    );
 
     let blank_texture: Arc<RwLock<Texture>> = textures.get_shared("blank")
         .unwrap_or(Arc::new(RwLock::new(Texture::from_single_px("blank".to_string()))));
@@ -248,7 +256,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                     receptor_processor.process_once_void(texture_arc, |arc_texture| {
                         if let Err(e) = to_osu_column(
                             arc_texture,
-                            (average_column_width * OsuDimensions::X.as_f32()) as u32,
+                            resize.from_target_x::<u32>(average_column_width),
                             receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
                         ) {
                             eprintln!("Failed to process receptor up texture: {}", e);
@@ -268,7 +276,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                     receptor_processor.process_once_void(texture_arc, |arc_texture| {
                         if let Err(e) = to_osu_column(
                             arc_texture,
-                            (average_column_width * OsuDimensions::X.as_f32()) as u32,
+                            resize.from_target_x::<u32>(average_column_width),
                             receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
                         ) {
                             eprintln!("Failed to process receptor down texture: {}", e);
@@ -332,9 +340,12 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         let osu_keymode = osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
-            hit_position: (((1.0 - keymode.layout.hit_position).abs() * (OsuDimensions::Y.as_f32()))) as u32,
-            column_start: (keymode.layout.x_offset * OsuDimensions::X.as_f32()) as u32,
-            column_width: keymode.layout.column_widths.iter().map(|cw| (*cw * OsuDimensions::X.as_f32()) as u32).collect(),
+            hit_position: resize.to_target_y::<u32>((1.0 - keymode.layout.hit_position).abs()),
+            column_start: resize.to_target_x::<u32>(keymode.layout.x_offset),
+            column_width: keymode.layout.column_widths
+                .iter()
+                .map(|cw| (resize.to_target_x::<u32>(*cw)))
+                .collect(),
             column_spacing: keymode.layout.column_spacing,
             column_line_width: vec![0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
             receptor_images,
@@ -346,7 +357,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
             lighting_n: keymode.hit_lighting.normal.get_path(),
             lighting_l: keymode.hit_lighting.hold.get_path(),
             stage_light: keymode.column_lighting.get_path(),
-            judgement_line : false,
+            judgement_line: false,
             ..Default::default()
         };
 
@@ -358,7 +369,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         keymodes: osu_keymodes,
     };
 
-    let osu_dimensions = Vector2::new(OsuDimensions::X.as_f32(), OsuDimensions::Y.as_f32());
+    let osu_dimensions = Vector2::new(OsuDimensions::X.into(), OsuDimensions::Y.into());
 
     for keymode in &mut skin_ini.keymodes {
 
