@@ -22,7 +22,7 @@ impl Texture {
         }
     }
 
-    pub fn from_single_px(path: String) -> Self {
+    pub fn from_blank(path: String) -> Self {
         use image::{ImageBuffer, Rgba};
         let img = ImageBuffer::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
         let dynamic_img = DynamicImage::ImageRgba8(img);

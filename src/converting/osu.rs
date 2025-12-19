@@ -1,6 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::common::alignment::*;
+use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::generic::Gameplay;
@@ -17,7 +18,7 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
     let mut textures = skin.textures;
     let mut keymodes: Vec<Keymode> = Vec::new();
 
-    textures.insert(Texture::from_single_px("blank".to_string()));
+    textures.insert(Texture::from_blank("blank".to_string()));
     let blank_texture = textures.get_shared("blank").unwrap();
 
     let metadata = Metadata {
@@ -132,9 +133,12 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             })
             .collect();
 
+        let show_judgement_line = keymode.judgement_line;
+
         let layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: !keymode.keys_under_notes,
+            show_judgement_line: show_judgement_line,
             x_offset: keymode.column_start as f32 / OsuDimensions::X.as_f32(),
             hit_position: (1.0 - (keymode.hit_position as f32 / OsuDimensions::Y.as_f32())).abs(),
             receptor_offset: max_receptor_offset as i32,
@@ -159,6 +163,10 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
             },
             column_lighting: ColumnLighting { 
                 texture: texture_or_blank(&keymode.stage_light) 
+            },
+            judgement_line: JudgementLine {
+                texture: texture_or_blank(""),
+                color: Rgba::default(),
             }
         });
     }
@@ -230,7 +238,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
     );
 
     let blank_texture: Arc<RwLock<Texture>> = textures.get_shared("blank")
-        .unwrap_or(Arc::new(RwLock::new(Texture::from_single_px("blank".to_string()))));
+        .unwrap_or(Arc::new(RwLock::new(Texture::from_blank("blank".to_string()))));
 
     let general = General {
         name: skin.metadata.name,
@@ -330,17 +338,25 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
 
         // these wouldn't be present in other skins
         if !textures.contains("star") {
-            textures.insert(Texture::with_data("star".to_string(), blank_texture.clone_image().unwrap()));
+            textures.copy("blank", "star");
         }
 
         if !textures.contains("star2") {
-            textures.insert(Texture::with_data("star2".to_string(), blank_texture.clone_image().unwrap()));
+            textures.copy("blank", "star2");
+        }
+
+        if !textures.contains("mania-stage-hint") {
+            textures.copy("blank", "mania-stage-hint");
+        }
+
+        if !textures.contains("mania-warningarrow") {
+            textures.copy("blank", "mania-warningarrow");
         }
 
         let osu_keymode = osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
-            hit_position: resize.to_target_y::<u32>((1.0 - keymode.layout.hit_position).abs()),
+            hit_position: ((1.0 - keymode.layout.hit_position) * resize.target.y as f32) as u32,
             column_start: resize.to_target_x::<u32>(keymode.layout.x_offset),
             column_width: keymode.layout.column_widths
                 .iter()

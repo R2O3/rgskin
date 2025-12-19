@@ -11,11 +11,11 @@ pub trait Store<T> {
     fn is_empty(&self) -> bool;
     fn paths(&self) -> impl Iterator<Item = &str>;
     fn clear(&mut self);
-    fn make_unique(&mut self, new_path: String, item: T) -> String;
-    fn copy(&mut self, original_path: &str, new_path: String) -> Option<String>;
-    fn copy_from_data(&mut self, path: String, data: Self::Data) -> String;
-    fn make_unique_copy(&mut self, original_path: &str, new_base_path: String) -> Option<String>;
-    fn make_unique_from_data(&mut self, path: String, data: Self::Data) -> String;
-    
+    fn make_unique(&mut self, new_path: &str, item: T) -> String;
+    fn copy(&mut self, original_path: &str, new_path: &str) -> Option<String>;
+    fn copy_from_data(&mut self, path: &str, data: Self::Data) -> String;
+    fn make_unique_copy(&mut self, original_path: &str, new_base_path: &str) -> Option<String>;
+    fn make_unique_from_data(&mut self, path: &str, data: Self::Data) -> String;
+
     type Data;
 }

@@ -5,6 +5,7 @@ use crate::common::vector::*;
 pub struct KeymodeLayout {
     pub keymode: u8,
     pub receptor_above_notes: bool,
+    pub show_judgement_line: bool,
     pub x_offset: f32, // relative
     pub hit_position: f32, // relative
     pub receptor_offset: i32,

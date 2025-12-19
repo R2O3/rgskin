@@ -74,17 +74,17 @@ impl TextureStore {
     }
 
     #[wasm_bindgen(js_name = makeUnique)]
-    pub fn make_unique_wasm(&mut self, new_path: String, texture: Texture) -> String {
+    pub fn make_unique_wasm(&mut self, new_path: &str, texture: Texture) -> String {
         self.make_unique(new_path, texture)
     }
 
     #[wasm_bindgen(js_name = copy)]
-    pub fn copy_wasm(&mut self, original_path: &str, new_path: String) -> Option<String> {
+    pub fn copy_wasm(&mut self, original_path: &str, new_path: &str) -> Option<String> {
         self.copy(original_path, new_path)
     }
 
     #[wasm_bindgen(js_name = makeUniqueCopy)]
-    pub fn make_unique_copy_wasm(&mut self, original_path: &str, new_base_path: String) -> Option<String> {
+    pub fn make_unique_copy_wasm(&mut self, original_path: &str, new_base_path: &str) -> Option<String> {
         self.make_unique_copy(original_path, new_base_path)
     }
 
@@ -167,11 +167,11 @@ impl Store<Texture> for TextureStore {
     fn clear(&mut self) {
         self.textures.clear();
     }
-    
-    fn make_unique(&mut self, new_path: String, texture: Texture) -> String {
-        if !self.contains(&new_path) {
+
+    fn make_unique(&mut self, new_path: &str, texture: Texture) -> String {
+        if !self.contains(new_path) {
             self.insert(texture);
-            return new_path;
+            return new_path.to_string();
         }
         
         let (base_name, extension) = if let Some(dot_pos) = new_path.rfind('.') {
@@ -179,7 +179,7 @@ impl Store<Texture> for TextureStore {
             let ext = &new_path[dot_pos..];
             (base.to_string(), ext.to_string())
         } else {
-            (new_path.clone(), String::new())
+            (new_path.to_string(), String::new())
         };
         
         let mut counter = 1;
@@ -195,12 +195,12 @@ impl Store<Texture> for TextureStore {
         }
     }
     
-    fn copy(&mut self, original_path: &str, new_path: String) -> Option<String> {
+    fn copy(&mut self, original_path: &str, new_path: &str) -> Option<String> {
         if let Some(original_texture_ref) = self.get_shared(original_path) {
             let original_texture = original_texture_ref.read().unwrap();
             
             let texture_copy = Texture {
-                path: new_path.clone(),
+                path: new_path.to_string(),
                 data: original_texture.state().clone(),
             };
             
@@ -211,24 +211,24 @@ impl Store<Texture> for TextureStore {
             }
             
             self.insert(texture_copy);
-            Some(new_path)
+            Some(new_path.to_owned())
         } else {
             None
         }
     }
 
-    fn copy_from_data(&mut self, path: String, data: Self::Data) -> String {
-        let texture = Texture::with_data(path.clone(), data);
+    fn copy_from_data(&mut self, path: &str, data: Self::Data) -> String {
+        let texture = Texture::with_data(path.to_string(), data);
         self.insert(texture);
-        path
+        path.to_string()
     }
 
-    fn make_unique_copy(&mut self, original_path: &str, new_base_path: String) -> Option<String> {
+    fn make_unique_copy(&mut self, original_path: &str, new_base_path: &str) -> Option<String> {
         if let Some(original_texture_ref) = self.get_shared(original_path) {
             let original_texture = original_texture_ref.read().unwrap();
             
             let texture_copy = Texture {
-                path: new_base_path.clone(),
+                path: new_base_path.to_string(),
                 data: original_texture.state().clone(),
             };
             
@@ -238,9 +238,9 @@ impl Store<Texture> for TextureStore {
             None
         }
     }
-    
-    fn make_unique_from_data(&mut self, path: String, data: Self::Data) -> String {
-        let texture = Texture::with_data(path.clone(), data);
+
+    fn make_unique_from_data(&mut self, path: &str, data: Self::Data) -> String {
+        let texture = Texture::with_data(path.to_string(), data);
         self.make_unique(path, texture)
     }
 }

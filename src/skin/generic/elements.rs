@@ -1,4 +1,4 @@
-use crate::{io::texture::Texture, Binary};
+use crate::{common::color::Rgba, io::texture::Texture, Binary};
 use image::imageops::FilterType;
 use std::sync::{Arc, RwLock};
 
@@ -33,32 +33,55 @@ pub trait SkinElement: Sync + Send {
 
 macro_rules! skin_element {
     ($name:ident) => {
-        skin_element!($name; texture);
+        skin_element!($name; texture; );
     };
     
     ($name:ident; $primary:ident $(, $extra:ident)*) => {
+        skin_element!($name; $primary $(, $extra)*; );
+    };
+    
+    ($name:ident; $primary:ident $(, $extra:ident)*; $($attr:ident: $attr_type:ty),*) => {
         #[derive(Clone)]
         pub struct $name {
             pub $primary: Arc<RwLock<Texture>>,
             $(pub $extra: Arc<RwLock<Texture>>,)*
+            $(pub $attr: $attr_type,)*
         }
 
         impl $name {
-            pub fn new($primary: Arc<RwLock<Texture>> $(, $extra: Arc<RwLock<Texture>>)*) -> Self {
-                Self { $primary $(, $extra)* }
-            }
-            
-            pub fn with_texture_data($primary: Texture $(, $extra: Texture)*) -> Self {
-                Self {
-                    $primary: Arc::new(RwLock::new($primary)),
-                    $($extra: Arc::new(RwLock::new($extra)),)*
+            pub fn new(
+                $primary: Arc<RwLock<Texture>>
+                $(, $extra: Arc<RwLock<Texture>>)*
+                $(, $attr: $attr_type)*
+            ) -> Self {
+                Self { 
+                    $primary 
+                    $(, $extra)* 
+                    $(, $attr)*
                 }
             }
             
-            pub fn from_path($primary: String $(, $extra: String)*) -> Self {
+            pub fn with_texture_data(
+                $primary: Texture 
+                $(, $extra: Texture)*
+                $(, $attr: $attr_type)*
+            ) -> Self {
+                Self {
+                    $primary: Arc::new(RwLock::new($primary)),
+                    $($extra: Arc::new(RwLock::new($extra)),)*
+                    $( $attr)*
+                }
+            }
+            
+            pub fn from_path(
+                $primary: String 
+                $(, $extra: String)*
+                $(, $attr: $attr_type)*
+            ) -> Self {
                 Self {
                     $primary: Arc::new(RwLock::new(Texture::new($primary))),
                     $($extra: Arc::new(RwLock::new(Texture::new($extra))),)*
+                    $( $attr)*
                 }
             }
             
@@ -89,6 +112,18 @@ macro_rules! skin_element {
                     }
                 }
             )*
+            
+            $(
+                paste::paste! {
+                    pub fn [<get_ $attr>](&self) -> &$attr_type {
+                        &self.$attr
+                    }
+                    
+                    pub fn [<set_ $attr>](&mut self, value: $attr_type) {
+                        self.$attr = value;
+                    }
+                }
+            )*
         }
 
         impl SkinElement for $name {
@@ -112,3 +147,4 @@ skin_element!(LongNoteBody);
 skin_element!(Healthbar; fill, background);
 skin_element!(HitLighting; normal, hold);
 skin_element!(ColumnLighting);
+skin_element!(JudgementLine; texture; color: Rgba);

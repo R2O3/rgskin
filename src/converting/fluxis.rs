@@ -1,5 +1,6 @@
 use std::sync::Arc;
 use crate::common::alignment::*;
+use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::generic::{Gameplay, Keymode, Metadata,};
@@ -28,7 +29,7 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
     let layout = layout.unwrap_or(FluXisLayout::default());
     let mut keymodes: Vec<Keymode> = Vec::new();
 
-    textures.insert(Texture::from_single_px("blank".to_string()));
+    textures.insert(Texture::from_blank("blank".to_string()));
     let blank_texture = textures.get_shared("blank").unwrap();
 
     let metadata = Metadata {
@@ -141,11 +142,14 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             })
             .collect();
 
+        let show_judgement_line = !skin.skin_json.overrides.stage.hitline.trim().is_empty();
+
         let new_layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: !keymode.receptors_first,
+            show_judgement_line: show_judgement_line,
             x_offset: 0.5,
-            hit_position: (keymode.hit_position + max_additional_offset) as f32 / FluXisDimensions::Y.as_f32(),
+            hit_position: (keymode.hit_position) as f32 / FluXisDimensions::Y.as_f32(),
             receptor_offset: keymode.receptor_offset + max_additional_offset,
             column_widths: vec![keymode.column_width as f32 / FluXisDimensions::X.as_f32(); key_count],
             column_spacing: vec![0; key_count],
@@ -153,7 +157,6 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
 
         let column_lighting_path = &skin.skin_json.overrides.stage.column_lighting;
         let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
-
         keymodes.push(Keymode { 
             keymode: key_count as u8,
             layout: new_layout,
@@ -165,7 +168,15 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             long_note_tail: long_note_tail_elements,
             hit_lighting: HitLighting { normal: blank_texture.clone(),
                 hold: blank_texture.clone() },
-            column_lighting: ColumnLighting { texture: texture_or_blank(column_lighting_path) } 
+            column_lighting: ColumnLighting { texture: texture_or_blank(column_lighting_path) },
+            judgement_line: JudgementLine {
+                texture: if !show_judgement_line {
+                    blank_texture.clone()
+                } else {
+                    texture_or_blank(&skin.skin_json.overrides.stage.hitline)
+                },
+                color: Rgba::default(),
+            },
         });
     }
 
@@ -328,6 +339,11 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
     skin_json.overrides.stage.health_foreground = health_foreground;
     skin_json.overrides.stage.health_background = health_background;
     skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path();
+    skin_json.overrides.stage.hitline = if skin.keymodes.first().unwrap().layout.show_judgement_line {
+        skin.keymodes.first().unwrap().judgement_line.get_path()
+    } else {
+        "blank".to_string()
+    };
     skin_json.sync_overrides_from_stage();
     skin_json.sync_overrides_from_keymodes();
 

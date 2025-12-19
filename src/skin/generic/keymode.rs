@@ -14,5 +14,6 @@ pub struct Keymode {
     pub long_note_tail: Vec<LongNoteTail>,
 
     pub hit_lighting: HitLighting,
-    pub column_lighting: ColumnLighting
+    pub column_lighting: ColumnLighting,
+    pub judgement_line: JudgementLine,
 }
