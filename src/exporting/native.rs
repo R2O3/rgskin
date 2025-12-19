@@ -35,7 +35,7 @@ pub fn export_osu_ini(skin_ini: &osu::SkinIni, path: &str) -> io::Result<()> {
         fs::create_dir_all(parent)?;
     }
     
-    let ini_content = skin_ini.to_str();
+    let ini_content = skin_ini.to_string();
     
     fs::write(path, ini_content)?;
     
@@ -47,8 +47,7 @@ pub fn export_fluxis_skin_json(skin_json: &fluxis::SkinJson, path: &str) -> io::
         fs::create_dir_all(parent)?;
     }
     
-    let json_content = skin_json.to_str()
-        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+    let json_content = skin_json.to_string();
     
     fs::write(path, json_content)?;
     

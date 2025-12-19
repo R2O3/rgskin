@@ -11,6 +11,7 @@ use crate::io::texture::{Texture, TextureProcessor};
 use crate::osu::{self, General, OsuSkin, SkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
+use crate::traits::ManiaSkinConfig;
 use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
 

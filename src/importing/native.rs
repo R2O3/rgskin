@@ -1,5 +1,7 @@
 use std::fs;
 use std::path::Path;
+use std::str::FromStr;
+use crate::common::traits::SkinConfig;
 use crate::fluxis::{self, FluXisSkin};
 use crate::osu;
 use crate::utils::io::{get_filename, get_parent, get_stem, join_paths_unix, remove_extension};
@@ -87,7 +89,7 @@ pub fn import_osu_mania_skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std
     
     let skin_ini = osu::SkinIni::from_str(&ini_content)?;
     
-    let texture_paths = skin_ini.get_mania_texture_paths();
+    let texture_paths = skin_ini.get_dynamic_texture_paths();
     
     let texture_path_refs: Vec<&str> = string_iter_as_str(texture_paths.iter());
     

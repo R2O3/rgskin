@@ -21,18 +21,21 @@ pub use generic::GenericManiaSkin;
 
 pub use extensions::{TextureArcExt, BinaryArcExt};
 pub use io::{Binary, BinaryState, Store, texture};
+pub use common::traits;
 
 pub mod assets {
     use std::collections::HashSet;
-    use crate::osu;
+    use crate::{common::traits::SkinConfig, osu};
 
     pub fn get_mania_texture_paths(skin_ini: &osu::SkinIni) -> HashSet<String> {
-        skin_ini.get_mania_texture_paths()
+        skin_ini.get_dynamic_texture_paths()
     }
 }
 
 pub mod load {
     pub mod osu {
+        use std::str::FromStr;
+
         use crate::{converting::osu::{from_generic_mania, to_generic_mania}, io::texture::TextureStore, osu, skin::generic};
 
         pub fn skin_ini(str: &str) -> Result<osu::SkinIni, Box<dyn std::error::Error>> {
@@ -53,6 +56,8 @@ pub mod load {
     }
 
     pub mod fluxis {
+        use std::str::FromStr;
+
         use crate::{converting::fluxis::{from_generic_mania, to_generic_mania}, io::texture::TextureStore, fluxis, skin::generic};
 
         pub fn skin_json(str: &str) -> Result<fluxis::SkinJson, Box<dyn std::error::Error>> {

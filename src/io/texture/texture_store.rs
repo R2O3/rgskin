@@ -243,6 +243,24 @@ impl Store<Texture> for TextureStore {
         let texture = Texture::with_data(path.to_string(), data);
         self.make_unique(path, texture)
     }
+
+    fn keys(&self) -> impl Iterator<Item = &str> {
+        self.textures.keys().map(|s| s.as_str())
+    }
+
+    fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a str, &'a Arc<RwLock<Texture>>)> 
+    where
+        Texture: 'a,
+    {
+        self.textures.iter().map(|(k, v)| (k.as_str(), v))
+    }
+
+    fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = (&'a str, &'a mut Arc<RwLock<Texture>>)> 
+    where
+        Texture: 'a,
+    {
+        self.textures.iter_mut().map(|(k, v)| (k.as_str(), v))
+    }
 }
 
 impl TextureStore {

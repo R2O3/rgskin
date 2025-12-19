@@ -1,5 +1,7 @@
 #![allow(unused)]
 
+use std::{collections::HashSet, str::FromStr};
+
 use crate::GenericManiaSkin;
 
 pub trait ManiaSkin {
@@ -11,8 +13,19 @@ pub trait ManiaSkin {
     fn from_generic_mania(skin: GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>>;
 
     fn get_keymode(&self, keymode: u8) -> Option<&Self::Keymode>;
+    fn get_dynamic_texture_paths(&self) -> HashSet<String>;
 }
 
 // pub trait TaikoSkin {
     
 // }
+
+pub trait SkinConfig: ToString + FromStr {
+    fn get_dynamic_texture_paths(&self) -> HashSet<String>;
+}
+
+pub trait ManiaSkinConfig: SkinConfig {
+    type Keymode;
+
+    fn get_keymode(&self, keymode: u8) -> Option<&Self::Keymode>;
+}

@@ -1,4 +1,6 @@
 use std::collections::HashSet;
+use std::str::FromStr;
+use crate::common::traits::{ManiaSkinConfig, SkinConfig};
 use crate::skin::osu::keymode::Keymode;
 use crate::skin::osu::General;
 use crate::ini::from_ini;
@@ -9,26 +11,8 @@ pub struct SkinIni {
     pub keymodes: Vec<Keymode>
 }
 
-impl SkinIni {
-    pub fn from_str(str: &str) -> Result<Self, Box<dyn std::error::Error>> {
-        let mut general = General::default();
-        let mut keymodes = Vec::new();
-
-        from_ini(str, |section, content| {
-            match section {
-                "General" => general = General::from_str(content)?,
-                
-                "Mania" => keymodes.push(Keymode::from_str(content)?),
-
-                _ => { },
-            }
-            Ok(())
-        })?;
-
-        Ok(SkinIni { general, keymodes })
-    }
-
-    pub fn to_str(&self) -> String {
+impl ToString for SkinIni {
+    fn to_string(&self) -> String {
         let mut result = String::new();
 
         result.push_str("[General]\n");
@@ -43,8 +27,30 @@ impl SkinIni {
 
         result
     }
+}
 
-    pub fn get_mania_texture_paths(&self) -> HashSet<String> {
+impl FromStr for SkinIni {
+    type Err = Box<dyn std::error::Error>;
+
+    fn from_str(str: &str) -> Result<Self, Self::Err> {
+        let mut general = General::default();
+        let mut keymodes = Vec::new();
+
+        from_ini(str, |section, content| {
+            match section {
+                "General" => general = General::from_str(content)?,
+                "Mania" => keymodes.push(Keymode::from_str(content)?),
+                _ => { },
+            }
+            Ok(())
+        })?;
+
+        Ok(SkinIni { general, keymodes })
+    }
+}
+
+impl SkinConfig for SkinIni {
+    fn get_dynamic_texture_paths(&self) -> HashSet<String> {
         let mut result = HashSet::new();
 
         for keymode in &self.keymodes {
@@ -53,8 +59,12 @@ impl SkinIni {
 
         result
     }
+}
 
-    pub fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
+impl ManiaSkinConfig for SkinIni {
+    type Keymode = Keymode;
+
+    fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
         for k in &self.keymodes {
             if k.keymode == keymode { return Some(k); }
         }

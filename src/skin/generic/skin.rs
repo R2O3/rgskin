@@ -3,6 +3,8 @@ use crate::common::vector::Vector2;
 use crate::generic::gameplay::Gameplay;
 use crate::io::texture::TextureStore;
 use crate::skin::generic::{Keymode, Metadata};
+use crate::{texture, BinaryArcExt, Store};
+use crate::extensions::TextureArcExt;
 
 pub struct GenericManiaSkin {
     pub resolution: Vector2<u32>,
@@ -30,5 +32,12 @@ impl ManiaSkin for GenericManiaSkin {
             if k.keymode == keymode { return Some(k); }
         }
         None
+    }
+
+    fn get_dynamic_texture_paths(&self) -> std::collections::HashSet<String> {
+        self.textures.iter()
+        .filter(|t| t.1.is_loaded())
+        .map(|t| t.0.to_string())
+        .collect()
     }
 }

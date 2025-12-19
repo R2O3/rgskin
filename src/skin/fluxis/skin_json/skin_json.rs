@@ -1,12 +1,13 @@
 use indexmap::IndexMap;
+use std::str::FromStr;
+use std::collections::HashSet;
 use crate::{
-    fluxis::skin_json::{
+    common::traits::{ManiaSkinConfig, SkinConfig}, fluxis::skin_json::{
         colors::{JudgementColors, SnapColors},
         info::Info,
         keymode::{Keymode, Keymodes},
         overrides::Overrides,
-    },
-    utils::serde::set_vec_element,
+    }, utils::serde::set_vec_element
 };
 use serde::{
     ser::Serializer,
@@ -70,13 +71,13 @@ impl Serialize for SkinJson {
 }
 
 impl SkinJson {
-    pub fn from_str(json_str: &str) -> Result<Self, Box<dyn std::error::Error>> {
+    fn parse(json_str: &str) -> Result<Self, Box<dyn std::error::Error>> {
         let mut skin: SkinJson = serde_json::from_str(json_str)?;
         skin.parse_keymodes_from_overrides();
         Ok(skin)
     }
 
-    pub fn to_str(&self) -> Result<String, Box<dyn std::error::Error>> {
+    fn serialize(&self) -> Result<String, Box<dyn std::error::Error>> {
         Ok(serde_json::to_string_pretty(&self)?)
     }
 
@@ -177,4 +178,57 @@ impl SkinJson {
         
         Some((keymode, column))
     }
+}
+
+impl ToString for SkinJson {
+    fn to_string(&self) -> String {
+        self.serialize().unwrap_or_else(|_| String::new())
+    }
+}
+
+impl FromStr for SkinJson {
+    type Err = Box<dyn std::error::Error>;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        Self::parse(s)
+    }
+}
+
+impl SkinConfig for SkinJson {
+    fn get_dynamic_texture_paths(&self) -> HashSet<String> {
+        let mut paths = HashSet::new();
+
+        for keymode in &self.keymodes {
+            Keymodes::iter(keymode, |vec, _, _, _| {
+                for img in vec.iter() {
+                    if !img.is_empty() {
+                        paths.insert(img.clone());
+                    }
+                }
+            });
+        }
+
+        for value in self.overrides.raw_overrides.values() {
+            if !value.is_empty() {
+                paths.insert(value.clone());
+            }
+        }
+
+        for (_, value) in self.overrides.stage.get_fields() {
+            if !value.is_empty() {
+                paths.insert(value.clone());
+            }
+        }
+
+        paths
+    }
+}
+
+impl ManiaSkinConfig for SkinJson {
+    type Keymode = Keymode;
+
+    fn get_keymode(&self, keymode: u8) -> Option<&Self::Keymode> {
+        self.keymodes.iter().find(|k| k.keymode == keymode)
+    }
+
 }

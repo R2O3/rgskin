@@ -5,6 +5,7 @@ use crate::osu::Keymode;
 use crate::skin::generic::GenericManiaSkin;
 use crate::skin::osu::SkinIni;
 use crate::io::texture::TextureStore;
+use crate::traits::SkinConfig;
 use crate::utils::osu::OsuDimensions;
 
 pub struct OsuSkin {
@@ -40,5 +41,9 @@ impl ManiaSkin for OsuSkin {
             if k.keymode == keymode { return Some(k); }
         }
         None
+    }
+
+    fn get_dynamic_texture_paths(&self) -> std::collections::HashSet<String> {
+        self.skin_ini.get_dynamic_texture_paths()
     }
 }

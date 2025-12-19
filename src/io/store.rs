@@ -17,5 +17,9 @@ pub trait Store<T> {
     fn make_unique_copy(&mut self, original_path: &str, new_base_path: &str) -> Option<String>;
     fn make_unique_from_data(&mut self, path: &str, data: Self::Data) -> String;
 
+    fn keys(&self) -> impl Iterator<Item = &str>;
+    fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a str, &'a Arc<RwLock<T>>)> where T: 'a;
+    fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = (&'a str, &'a mut Arc<RwLock<T>>)> where T: 'a;
+
     type Data;
 }

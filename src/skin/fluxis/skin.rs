@@ -5,6 +5,7 @@ use crate::fluxis::skin_json::Keymode;
 use crate::skin::generic::GenericManiaSkin;
 use crate::skin::fluxis::{FluXisLayout, SkinJson};
 use crate::io::texture::TextureStore;
+use crate::traits::SkinConfig;
 use crate::utils::fluxis::FluXisDimensions;
 
 pub struct FluXisSkin {
@@ -40,5 +41,9 @@ impl ManiaSkin for FluXisSkin {
             if k.keymode == keymode { return Some(k); }
         }
         None
+    }
+
+    fn get_dynamic_texture_paths(&self) -> std::collections::HashSet<String> {
+        self.skin_json.get_dynamic_texture_paths()
     }
 }
