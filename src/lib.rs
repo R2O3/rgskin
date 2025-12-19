@@ -17,11 +17,31 @@ pub use skin::generic;
 pub use parse::ini;
 
 pub use osu::OsuSkin;
+pub use fluxis::FluXisSkin;
 pub use generic::GenericManiaSkin;
 
 pub use extensions::{TextureArcExt, BinaryArcExt};
 pub use io::{Binary, BinaryState, Store, texture};
 pub use common::traits;
+
+pub mod prelude {
+    pub use crate::OsuSkin;
+    pub use crate::GenericManiaSkin;
+    pub use crate::FluXisSkin;
+    
+    pub use crate::osu::SkinIni;
+    pub use crate::fluxis::{SkinJson, FluXisLayout};
+    
+    pub use crate::io::{Binary, BinaryState, Store};
+    pub use crate::io::texture::{TextureStore, Texture};
+    
+    pub use crate::common::traits::*;
+    pub use crate::extensions::*;
+    
+    pub use crate::load;
+    pub use crate::export;
+    pub use crate::import;
+}
 
 pub mod assets {
     use std::collections::HashSet;
