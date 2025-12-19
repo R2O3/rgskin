@@ -6,6 +6,7 @@ use crate::skin::generic::{Keymode, Metadata};
 use crate::{texture, BinaryArcExt, Store};
 use crate::extensions::TextureArcExt;
 
+#[derive(Clone)]
 pub struct GenericManiaSkin {
     pub resolution: Vector2<u32>,
     pub metadata: Metadata,
@@ -14,17 +15,17 @@ pub struct GenericManiaSkin {
     pub textures: TextureStore
 }
 
-impl ManiaSkin for GenericManiaSkin {
+impl<'a> ManiaSkin<'a> for GenericManiaSkin {
     type Keymode = Keymode;
     type ToParams = ();
     type FromReturn = Self;
 
-    fn to_generic_mania(self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
-        Ok(self)
+    fn to_generic_mania(&self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
+        Ok(self.clone())
     }
 
-    fn from_generic_mania(skin: GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
-        Ok(skin)
+    fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
+        Ok(skin.clone())
     }
 
     fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {

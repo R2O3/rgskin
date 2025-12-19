@@ -24,9 +24,10 @@ use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
 use crate::GenericManiaSkin;
 
-pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
-    let mut textures = skin.textures;
-    let layout = layout.unwrap_or(FluXisLayout::default());
+pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
+    let mut textures = skin.textures.clone();
+    let layout_d = FluXisLayout::default();
+    let layout = layout.unwrap_or(&layout_d);
     let mut keymodes: Vec<Keymode> = Vec::new();
 
     textures.insert(Texture::from_blank("blank".to_string()));
@@ -41,7 +42,7 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
 
     let mut receptor_processor = TextureProcessor::<i32>::new();
 
-    for keymode in skin.skin_json.keymodes {
+    for keymode in &skin.skin_json.keymodes {
         let key_count = keymode.keymode as usize;
         let mut max_additional_offset = 0;
 
@@ -193,6 +194,11 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
             textures.get_shared(&skin.skin_json.overrides.stage.health_foreground).unwrap(),
             textures.get_shared(&skin.skin_json.overrides.stage.health_background).unwrap()
         ),
+        stage: Stage::new(
+            textures.get_shared("Stage/background").unwrap_or(blank_texture.clone()),
+            textures.get_shared(&skin.skin_json.overrides.stage.border_right).unwrap_or(blank_texture.clone()),
+            textures.get_shared(&skin.skin_json.overrides.stage.border_left).unwrap_or(blank_texture.clone()),
+        ),
         layout: HUDLayout {
             combo: (
                 Vector3::new(
@@ -258,7 +264,8 @@ pub fn to_generic_mania(skin: FluXisSkin, layout: Option<FluXisLayout>) -> Resul
     })
 }
 
-pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisLayout), Box<dyn std::error::Error>> {
+pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXisLayout), Box<dyn std::error::Error>> {
+    let mut textures = skin.textures.clone();
     let mut fluxis_keymodes: Vec<skin_json::Keymode> = Vec::new();
 
     let resize = Resizer::new(
@@ -344,10 +351,13 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<(FluXisSkin, FluXisL
     } else {
         "blank".to_string()
     };
+    textures.copy(&skin.gameplay.stage.get_path(), "Stage/background");
+    skin_json.overrides.stage.border_right = skin.gameplay.stage.border_right.get_path();
+    skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.get_path();
     skin_json.sync_overrides_from_stage();
     skin_json.sync_overrides_from_keymodes();
 
-    let fluxis_skin = FluXisSkin::new(skin_json, Some(skin.textures));
+    let fluxis_skin = FluXisSkin::new(skin_json, Some(textures));
 
     let mut layout = FluXisLayout::new(skin.metadata.name.clone(), skin.metadata.creator.clone());
 

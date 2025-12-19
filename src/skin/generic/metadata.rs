@@ -1,3 +1,4 @@
+#[derive(Clone)]
 pub struct Metadata {
     pub name: String,
     pub creator: String,

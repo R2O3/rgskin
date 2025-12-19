@@ -23,16 +23,16 @@ impl FluXisSkin {
     }
 }
 
-impl ManiaSkin for FluXisSkin {
+impl<'a> ManiaSkin<'a> for FluXisSkin {
     type Keymode = Keymode;
-    type ToParams = Option<FluXisLayout>;
+    type ToParams = Option<&'a FluXisLayout>;
     type FromReturn = (FluXisSkin, FluXisLayout);
 
-    fn to_generic_mania(self, params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
+    fn to_generic_mania(&self, params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
         to_generic_mania(self, params)
     }
 
-    fn from_generic_mania(skin: GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
+    fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
         from_generic_mania(skin)
     }
 

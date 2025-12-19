@@ -15,8 +15,8 @@ use crate::traits::ManiaSkinConfig;
 use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
 
-pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
-    let mut textures = skin.textures;
+pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
+    let mut textures = skin.textures.clone();
     let mut keymodes: Vec<Keymode> = Vec::new();
 
     textures.insert(Texture::from_blank("blank".to_string()));
@@ -180,10 +180,13 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
     rotate_90_deg_ccw(&health_bar_fg)?;
     rotate_90_deg_ccw(&health_bar_bg)?;
 
-    let health_bar = Healthbar::new(health_bar_fg, health_bar_bg);
-
     let gameplay = Gameplay {
-        health_bar: health_bar,
+        health_bar: Healthbar::new(health_bar_fg, health_bar_bg),
+        stage: Stage::new(
+            blank_texture.clone(), // TODO: properly implement stage background for osu
+            textures.get_shared("mania-warningarrow").unwrap_or(blank_texture.clone()),
+            textures.get_shared("mania-stage-right").unwrap_or(blank_texture.clone()),
+        ),
         layout: HUDLayout {
             combo: (
                 Vector3::new(
@@ -229,8 +232,8 @@ pub fn to_generic_mania(skin: OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::
     })
 }
 
-pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std::error::Error>> {
-    let mut textures = skin.textures;
+pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn std::error::Error>> {
+    let mut textures = skin.textures.clone();
     let mut osu_keymodes: Vec<osu::Keymode> = Vec::new();
 
     let resize = Resizer::new(
@@ -242,9 +245,9 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
         .unwrap_or(Arc::new(RwLock::new(Texture::from_blank("blank".to_string()))));
 
     let general = General {
-        name: skin.metadata.name,
-        author: skin.metadata.creator,
-        version: skin.metadata.version,
+        name: skin.metadata.name.clone(),
+        author: skin.metadata.creator.clone(),
+        version: skin.metadata.version.clone(),
         cursor_centre: skin.metadata.center_cursor,
         ..Default::default()
     };
@@ -252,7 +255,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
     let mut receptor_processor = TextureProcessor::<()>::new();
     let mut tail_processor = TextureProcessor::<()>::new();
 
-    for keymode in skin.keymodes {
+    for keymode in &skin.keymodes {
         let average_column_width = keymode.layout.average_column_width();
         let receptor_offset = keymode.layout.receptor_offset;
 
@@ -363,7 +366,7 @@ pub fn from_generic_mania(skin: GenericManiaSkin) -> Result<OsuSkin, Box<dyn std
                 .iter()
                 .map(|cw| (resize.to_target_x::<u32>(*cw)))
                 .collect(),
-            column_spacing: keymode.layout.column_spacing,
+            column_spacing: keymode.layout.column_spacing.clone(),
             column_line_width: vec![0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
             receptor_images,
             receptor_images_down,

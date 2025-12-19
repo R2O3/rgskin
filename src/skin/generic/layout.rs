@@ -13,6 +13,7 @@ pub struct KeymodeLayout {
     pub column_spacing: Vec<u32>,
 }
 
+#[derive(Clone)]
 pub struct HUDLayout {
     pub combo: (Vector3<f32>, Alignment),
     pub rating: (Vector3<f32>, Alignment),

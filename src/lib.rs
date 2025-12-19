@@ -66,11 +66,11 @@ pub mod load {
             osu::OsuSkin::new(skin_ini, assets)
         }
 
-        pub fn to_generic(skin: osu::OsuSkin) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
+        pub fn to_generic(skin: &osu::OsuSkin) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
             to_generic_mania(skin)
         }
 
-        pub fn from_generic(skin: generic::GenericManiaSkin) -> Result<osu::OsuSkin, Box<dyn std::error::Error>> {
+        pub fn from_generic(skin: &generic::GenericManiaSkin) -> Result<osu::OsuSkin, Box<dyn std::error::Error>> {
             from_generic_mania(skin)
         }
     }
@@ -92,11 +92,11 @@ pub mod load {
             fluxis::FluXisSkin::new(skin_ini, assets)
         }
 
-        pub fn to_generic(skin: fluxis::FluXisSkin, layout: Option<fluxis::FluXisLayout>) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
+        pub fn to_generic(skin: &fluxis::FluXisSkin, layout: Option<&fluxis::FluXisLayout>) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
             to_generic_mania(skin, layout)
         }
 
-        pub fn from_generic(skin: generic::GenericManiaSkin) -> Result<(fluxis::FluXisSkin, fluxis::FluXisLayout), Box<dyn std::error::Error>> {
+        pub fn from_generic(skin: &generic::GenericManiaSkin) -> Result<(fluxis::FluXisSkin, fluxis::FluXisLayout), Box<dyn std::error::Error>> {
             from_generic_mania(skin)
         }
     }

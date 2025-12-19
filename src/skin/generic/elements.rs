@@ -148,3 +148,4 @@ skin_element!(Healthbar; fill, background);
 skin_element!(HitLighting; normal, hold);
 skin_element!(ColumnLighting);
 skin_element!(JudgementLine; texture; color: Rgba);
+skin_element!(Stage; background, border_right, border_left);

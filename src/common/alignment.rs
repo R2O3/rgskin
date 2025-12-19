@@ -76,6 +76,7 @@ impl BitOr for Anchor {
 
 pub type Origin = Anchor;
 
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Alignment  {
     pub anchor: Anchor,
     pub origin: Origin,

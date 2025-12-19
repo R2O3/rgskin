@@ -23,16 +23,16 @@ impl OsuSkin {
     }
 }
 
-impl ManiaSkin for OsuSkin {
+impl<'a> ManiaSkin<'a> for OsuSkin {
     type Keymode = Keymode;
     type ToParams = ();
     type FromReturn = Self;
 
-    fn to_generic_mania(self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
+    fn to_generic_mania(&self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
         to_generic_mania(self)
     }
 
-    fn from_generic_mania(skin: GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
+    fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
         from_generic_mania(skin)
     }
 
