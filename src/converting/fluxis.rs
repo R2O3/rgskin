@@ -55,12 +55,12 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                             arc.with_image(|img| dist_from_bottom(img, 0.1)) as i32
                         });
                         max_additional_offset = max_additional_offset.max(offset);
-                        ReceptorUp::new(texture)
+                        ReceptorUp::new(Some(texture))
                     } else {
-                        ReceptorUp::new(Arc::clone(&blank_texture))
+                        ReceptorUp::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorUp::new(Arc::clone(&blank_texture))
+                    ReceptorUp::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -74,12 +74,12 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                             tex.with_image(|img| dist_from_bottom(img, 0.1)) as i32
                         });
                         max_additional_offset = max_additional_offset.max(offset);
-                        ReceptorDown::new(texture)
+                        ReceptorDown::new(Some(texture))
                     } else {
-                        ReceptorDown::new(Arc::clone(&blank_texture))
+                        ReceptorDown::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorDown::new(Arc::clone(&blank_texture))
+                    ReceptorDown::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -88,9 +88,9 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
-                    NormalNote::new(textures.get_shared(path).unwrap())
+                    NormalNote::new(textures.get_shared(path))
                 } else {
-                    NormalNote::new(Arc::clone(&blank_texture))
+                    NormalNote::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -102,9 +102,9 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
-                    LongNoteHead::new(textures.get_shared(path).unwrap())
+                    LongNoteHead::new(textures.get_shared(path))
                 } else {
-                    LongNoteHead::new(Arc::clone(&blank_texture))
+                    LongNoteHead::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect()
@@ -113,9 +113,9 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 .iter()
                 .map(|path| {
                     if !path.is_empty() && textures.contains(path) {
-                        LongNoteHead::new(textures.get_shared(path).unwrap())
+                        LongNoteHead::new(textures.get_shared(path))
                     } else {
-                        LongNoteHead::new(Arc::clone(&blank_texture))
+                        LongNoteHead::new(Some(Arc::clone(&blank_texture)))
                     }
                 })
                 .collect()
@@ -125,9 +125,9 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
-                    LongNoteBody::new(textures.get_shared(path).unwrap())
+                    LongNoteBody::new(textures.get_shared(path))
                 } else {
-                    LongNoteBody::new(Arc::clone(&blank_texture))
+                    LongNoteBody::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -136,9 +136,9 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
-                    LongNoteTail::new(textures.get_shared(path).unwrap())
+                    LongNoteTail::new(textures.get_shared(path))
                 } else {
-                    LongNoteTail::new(Arc::clone(&blank_texture))
+                    LongNoteTail::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -167,14 +167,14 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
-            hit_lighting: HitLighting { normal: blank_texture.clone(),
-                hold: blank_texture.clone() },
-            column_lighting: ColumnLighting { texture: texture_or_blank(column_lighting_path) },
+            hit_lighting: HitLighting { normal: Some(blank_texture.clone()),
+                hold: Some(blank_texture.clone()) },
+            column_lighting: ColumnLighting { texture: Some(texture_or_blank(column_lighting_path)) },
             judgement_line: JudgementLine {
                 texture: if !show_judgement_line {
-                    blank_texture.clone()
+                    Some(blank_texture.clone())
                 } else {
-                    texture_or_blank(&skin.skin_json.overrides.stage.hitline)
+                    Some(texture_or_blank(&skin.skin_json.overrides.stage.hitline))
                 },
                 color: Rgba::default(),
             },
@@ -191,13 +191,13 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
 
     let gameplay = Gameplay {
         health_bar: Healthbar::new(
-            textures.get_shared(&skin.skin_json.overrides.stage.health_foreground).unwrap(),
-            textures.get_shared(&skin.skin_json.overrides.stage.health_background).unwrap()
+            textures.get_shared(&skin.skin_json.overrides.stage.health_foreground),
+            textures.get_shared(&skin.skin_json.overrides.stage.health_background)
         ),
         stage: Stage::new(
-            textures.get_shared("Stage/background").unwrap_or(blank_texture.clone()),
-            textures.get_shared(&skin.skin_json.overrides.stage.border_right).unwrap_or(blank_texture.clone()),
-            textures.get_shared(&skin.skin_json.overrides.stage.border_left).unwrap_or(blank_texture.clone()),
+            Some(textures.get_shared("Stage/background").unwrap_or(blank_texture.clone())),
+            Some(textures.get_shared(&skin.skin_json.overrides.stage.border_right).unwrap_or(blank_texture.clone())),
+            Some(textures.get_shared(&skin.skin_json.overrides.stage.border_left).unwrap_or(blank_texture.clone())),
         ),
         layout: HUDLayout {
             combo: (
@@ -278,32 +278,32 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
-            .map(|receptor| receptor.get_path())
+            .map(|receptor| receptor.get_path().unwrap_or_default())
             .collect();
         
         let receptor_images_down: Vec<String> = keymode.receptor_down
             .iter()
-            .map(|receptor| receptor.get_path())
+            .map(|receptor| receptor.get_path().unwrap_or_default())
             .collect();
         
         let normal_note_images: Vec<String> = keymode.normal_note
             .iter()
-            .map(|note| note.get_path())
+            .map(|note| note.get_path().unwrap_or_default())
             .collect();
         
         let long_note_head_images: Vec<String> = keymode.long_note_head
             .iter()
-            .map(|note| note.get_path())
+            .map(|note| note.get_path().unwrap_or_default())
             .collect();
 
         let long_note_body_images: Vec<String> = keymode.long_note_body
             .iter()
-            .map(|note| note.get_path())
+            .map(|note| note.get_path().unwrap_or_default())
             .collect();
         
         let long_note_tail_images: Vec<String> = keymode.long_note_tail
             .iter()
-            .map(|note| note.get_path())
+            .map(|note| note.get_path().unwrap_or_default())
             .collect();
         
         fluxis_keymodes.push(skin_json::Keymode {
@@ -328,8 +328,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         });
     }
     
-    let health_foreground = skin.gameplay.health_bar.fill.get_path();
-    let health_background = skin.gameplay.health_bar.background.get_path();
+    let health_foreground = skin.gameplay.health_bar.fill.as_ref().map(|a| a.get_path()).unwrap_or_default();
+    let health_background = skin.gameplay.health_bar.background.as_ref().map(|a| a.get_path()).unwrap_or_default();
     
     let mut skin_json = SkinJson {
         info: Info {
@@ -345,15 +345,15 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
 
     skin_json.overrides.stage.health_foreground = health_foreground;
     skin_json.overrides.stage.health_background = health_background;
-    skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path();
+    skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path().unwrap_or_default();
     skin_json.overrides.stage.hitline = if skin.keymodes.first().unwrap().layout.show_judgement_line {
-        skin.keymodes.first().unwrap().judgement_line.get_path()
+        skin.keymodes.first().unwrap().judgement_line.get_path().unwrap_or_else(|| "blank".to_string())
     } else {
         "blank".to_string()
     };
-    textures.copy(&skin.gameplay.stage.get_path(), "Stage/background");
-    skin_json.overrides.stage.border_right = skin.gameplay.stage.border_right.get_path();
-    skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.get_path();
+    textures.copy(&skin.gameplay.stage.get_path().unwrap_or_default(), "Stage/background");
+    skin_json.overrides.stage.border_right = skin.gameplay.stage.border_right.as_ref().map(|a| a.get_path()).unwrap_or_default();
+    skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.as_ref().map(|a| a.get_path()).unwrap_or_default();
     skin_json.sync_overrides_from_stage();
     skin_json.sync_overrides_from_keymodes();
 

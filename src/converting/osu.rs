@@ -50,12 +50,12 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                             offset.try_into().unwrap() // TODO: potential panic check later
                         });
                         max_receptor_offset = max_receptor_offset.max(offset);
-                        ReceptorUp::new(texture)
+                        ReceptorUp::new(Some(texture))
                     } else {
-                        ReceptorUp::new(Arc::clone(&blank_texture))
+                        ReceptorUp::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorUp::new(Arc::clone(&blank_texture))
+                    ReceptorUp::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -73,12 +73,12 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                             offset.try_into().unwrap()
                         });
                         max_receptor_offset = max_receptor_offset.max(offset);
-                        ReceptorDown::new(texture)
+                        ReceptorDown::new(Some(texture))
                     } else {
-                        ReceptorDown::new(Arc::clone(&blank_texture))
+                        ReceptorDown::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorDown::new(Arc::clone(&blank_texture))
+                    ReceptorDown::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -87,9 +87,9 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
-                    NormalNote::new(textures.get_shared(path).unwrap())
+                    NormalNote::new(textures.get_shared(path))
                 } else {
-                    NormalNote::new(Arc::clone(&blank_texture))
+                    NormalNote::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -98,9 +98,9 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
-                    LongNoteHead::new(textures.get_shared(path).unwrap())
+                    LongNoteHead::new(textures.get_shared(path))
                 } else {
-                    LongNoteHead::new(Arc::clone(&blank_texture))
+                    LongNoteHead::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -109,9 +109,9 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .iter()
             .map(|path| {
                 if !path.is_empty() && textures.contains(path) {
-                    LongNoteBody::new(textures.get_shared(path).unwrap())
+                    LongNoteBody::new(textures.get_shared(path))
                 } else {
-                    LongNoteBody::new(Arc::clone(&blank_texture))
+                    LongNoteBody::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -124,12 +124,12 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                         tail_processor.process_once_void(&texture, |arc_texture| {
                             flip_vertical(arc_texture);
                         });
-                        LongNoteTail::new(texture)
+                        LongNoteTail::new(Some(texture))
                     } else {
-                        LongNoteTail::new(Arc::clone(&blank_texture))
+                        LongNoteTail::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    LongNoteTail::new(Arc::clone(&blank_texture))
+                    LongNoteTail::new(Some(Arc::clone(&blank_texture)))
                 }
             })
             .collect();
@@ -159,14 +159,14 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
             hit_lighting: HitLighting { 
-                normal: texture_or_blank(&keymode.lighting_n),
-                hold: texture_or_blank(&keymode.lighting_l) 
+                normal: Some(texture_or_blank(&keymode.lighting_n)),
+                hold: Some(texture_or_blank(&keymode.lighting_l)) 
             },
             column_lighting: ColumnLighting { 
-                texture: texture_or_blank(&keymode.stage_light) 
+                texture: Some(texture_or_blank(&keymode.stage_light)) 
             },
             judgement_line: JudgementLine {
-                texture: texture_or_blank(""),
+                texture: Some(texture_or_blank("")),
                 color: Rgba::default(),
             }
         });
@@ -181,11 +181,11 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
     rotate_90_deg_ccw(&health_bar_bg)?;
 
     let gameplay = Gameplay {
-        health_bar: Healthbar::new(health_bar_fg, health_bar_bg),
+        health_bar: Healthbar::new(Some(health_bar_fg), Some(health_bar_bg)),
         stage: Stage::new(
-            blank_texture.clone(), // TODO: properly implement stage background for osu
-            textures.get_shared("mania-warningarrow").unwrap_or(blank_texture.clone()),
-            textures.get_shared("mania-stage-right").unwrap_or(blank_texture.clone()),
+            Some(blank_texture.clone()), // TODO: properly implement stage background for osu
+            Some(textures.get_shared("mania-warningarrow").unwrap_or(blank_texture.clone())),
+            Some(textures.get_shared("mania-stage-right").unwrap_or(blank_texture.clone())),
         ),
         layout: HUDLayout {
             combo: (
@@ -262,82 +262,86 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
             .map(|receptor| {
-                let texture_arc = &receptor.texture;
-                
-                if !Arc::ptr_eq(texture_arc, &blank_texture) {
-                    receptor_processor.process_once_void(texture_arc, |arc_texture| {
-                        if let Err(e) = to_osu_column(
-                            arc_texture,
-                            resize.from_target_x::<u32>(average_column_width),
-                            receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
-                        ) {
-                            eprintln!("Failed to process receptor up texture: {}", e);
-                        }
-                    });
+                if let Some(texture_arc) = &receptor.texture {
+                    if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                        receptor_processor.process_once_void(texture_arc, |arc_texture| {
+                            if let Err(e) = to_osu_column(
+                                arc_texture,
+                                resize.from_target_x::<u32>(average_column_width),
+                                receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
+                            ) {
+                                eprintln!("Failed to process receptor up texture: {}", e);
+                            }
+                        });
+                    }
                 }
-                receptor.get_path()
+                receptor.get_path().unwrap_or_default()
             })
             .collect();
 
         let receptor_images_down: Vec<String> = keymode.receptor_down
             .iter()
             .map(|receptor| {
-                let texture_arc = &receptor.texture;
-                
-                if !Arc::ptr_eq(texture_arc, &blank_texture) {
-                    receptor_processor.process_once_void(texture_arc, |arc_texture| {
-                        if let Err(e) = to_osu_column(
-                            arc_texture,
-                            resize.from_target_x::<u32>(average_column_width),
-                            receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
-                        ) {
-                            eprintln!("Failed to process receptor down texture: {}", e);
-                        }
-                    });
+                if let Some(texture_arc) = &receptor.texture {
+                    if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                        receptor_processor.process_once_void(texture_arc, |arc_texture| {
+                            if let Err(e) = to_osu_column(
+                                arc_texture,
+                                resize.from_target_x::<u32>(average_column_width),
+                                receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
+                            ) {
+                                eprintln!("Failed to process receptor down texture: {}", e);
+                            }
+                        });
+                    }
                 }
-                receptor.get_path()
+                receptor.get_path().unwrap_or_default()
             })
             .collect();
 
         let normal_note_images: Vec<String> = keymode.normal_note
             .iter()
-            .map(|note| note.get_path())
+            .map(|note| note.get_path().unwrap_or_default())
             .collect();
 
         let long_note_head_images: Vec<String> = keymode.long_note_head
             .iter()
-            .map(|note| note.get_path())
+            .map(|note| note.get_path().unwrap_or_default())
             .collect();
 
         let long_note_body_images: Vec<String> = keymode.long_note_body
             .iter()
-            .map(|note| note.get_path())
+            .map(|note| note.get_path().unwrap_or_default())
             .collect();
 
         let long_note_tail_images: Vec<String> = keymode.long_note_tail
             .iter()
             .map(|note| {
-                let texture_arc = &note.texture;
-                
-                if !Arc::ptr_eq(texture_arc, &blank_texture) {
-                    tail_processor.process_once_void(texture_arc, |arc_texture| {
-                        flip_vertical(arc_texture);
-                    });
+                if let Some(texture_arc) = &note.texture {
+                    if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                        tail_processor.process_once_void(texture_arc, |arc_texture| {
+                            flip_vertical(arc_texture);
+                        });
+                    }
                 }
-                note.get_path()
+                note.get_path().unwrap_or_default()
             })
             .collect();
 
-        if let Some(health_bar_bg) = skin.gameplay.health_bar.background.get_image() {
-            let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-bg".to_string(), health_bar_bg)));
-            rotate_90_deg_cw(&texture)?;
-            textures.insert(texture.take_texture());
+        if let Some(bg_arc) = &skin.gameplay.health_bar.background {
+            if let Some(health_bar_bg) = bg_arc.get_image() {
+                let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-bg".to_string(), health_bar_bg)));
+                rotate_90_deg_cw(&texture)?;
+                textures.insert(texture.take_texture());
+            }
         }
 
-        if let Some(health_bar_colour) = skin.gameplay.health_bar.fill.get_image() {
-            let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-colour".to_string(), health_bar_colour)));
-            rotate_90_deg_cw(&texture)?;
-            textures.insert(texture.take_texture());
+        if let Some(fill_arc) = &skin.gameplay.health_bar.fill {
+            if let Some(health_bar_colour) = fill_arc.get_image() {
+                let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-colour".to_string(), health_bar_colour)));
+                rotate_90_deg_cw(&texture)?;
+                textures.insert(texture.take_texture());
+            }
         }
 
         // these wouldn't be present in other skins
@@ -374,9 +378,9 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             long_note_head_images,
             long_note_body_images,
             long_note_tail_images,
-            lighting_n: keymode.hit_lighting.normal.get_path(),
-            lighting_l: keymode.hit_lighting.hold.get_path(),
-            stage_light: keymode.column_lighting.get_path(),
+            lighting_n: keymode.hit_lighting.normal.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            lighting_l: keymode.hit_lighting.hold.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            stage_light: keymode.column_lighting.texture.as_ref().map(|a| a.get_path()).unwrap_or_default(),
             judgement_line: false,
             ..Default::default()
         };
