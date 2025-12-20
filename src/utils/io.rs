@@ -13,6 +13,11 @@ pub fn path_to_win(str: &str) -> String {
 }
 
 #[inline]
+pub fn normalize(str: &str) -> String {
+    path_to_unix(str).to_lowercase()
+}
+
+#[inline]
 pub fn get_extension(path: &str) -> String {
     Path::new(path)
         .extension()

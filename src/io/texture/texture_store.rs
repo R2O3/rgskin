@@ -4,6 +4,7 @@ use js_sys::{Uint8Array, ArrayBuffer, Array};
 use image::ImageError;
 use crate::{io::Store, Binary};
 use crate::io::texture::Texture;
+use crate::utils::io::normalize;
 
 #[wasm_bindgen]
 #[derive(Clone)]
@@ -128,28 +129,33 @@ impl Store<Texture> for TextureStore {
     type Data = image::DynamicImage;
     
     fn insert(&mut self, texture: Texture) {
-        let path = texture.path.clone();
+        let path = normalize(&texture.path);
         self.textures.insert(path, Arc::new(RwLock::new(texture)));
     }
     
     fn get(&self, path: &str) -> Option<std::sync::RwLockReadGuard<'_, Texture>> {
-        self.textures.get(path).map(|arc| arc.read().unwrap())
+        let normalized = normalize(path);
+        self.textures.get(&normalized).map(|arc| arc.read().unwrap())
     }
     
     fn get_shared(&self, path: &str) -> Option<Arc<RwLock<Texture>>> {
-        self.textures.get(path).map(Arc::clone)
+        let normalized = normalize(path);
+        self.textures.get(&normalized).map(Arc::clone)
     }
     
     fn get_mut(&self, path: &str) -> Option<std::sync::RwLockWriteGuard<'_, Texture>> {
-        self.textures.get(path).map(|arc| arc.write().unwrap())
+        let normalized = normalize(path);
+        self.textures.get(&normalized).map(|arc| arc.write().unwrap())
     }
     
     fn contains(&self, path: &str) -> bool {
-        self.textures.contains_key(path)
+        let normalized = normalize(path);
+        self.textures.contains_key(&normalized)
     }
     
     fn remove(&mut self, path: &str) -> Option<Arc<RwLock<Texture>>> {
-        self.textures.remove(path)
+        let normalized = normalize(path);
+        self.textures.remove(&normalized)
     }
     
     fn len(&self) -> usize {
@@ -169,17 +175,18 @@ impl Store<Texture> for TextureStore {
     }
 
     fn make_unique(&mut self, new_path: &str, texture: Texture) -> String {
-        if !self.contains(new_path) {
+        let normalized = normalize(new_path);
+        if !self.contains(&normalized) {
             self.insert(texture);
-            return new_path.to_string();
+            return normalized;
         }
         
-        let (base_name, extension) = if let Some(dot_pos) = new_path.rfind('.') {
-            let base = &new_path[..dot_pos];
-            let ext = &new_path[dot_pos..];
+        let (base_name, extension) = if let Some(dot_pos) = normalized.rfind('.') {
+            let base = &normalized[..dot_pos];
+            let ext = &normalized[dot_pos..];
             (base.to_string(), ext.to_string())
         } else {
-            (new_path.to_string(), String::new())
+            (normalized.clone(), String::new())
         };
         
         let mut counter = 1;
@@ -196,52 +203,57 @@ impl Store<Texture> for TextureStore {
     }
     
     fn copy(&mut self, original_path: &str, new_path: &str) -> Option<String> {
+        let normalized_new = normalize(new_path);
+        
         if let Some(original_texture_ref) = self.get_shared(original_path) {
             let original_texture = original_texture_ref.read().unwrap();
             
             let texture_copy = Texture {
-                path: new_path.to_string(),
+                path: normalized_new.clone(),
                 data: original_texture.state().clone(),
             };
             
             drop(original_texture);
             
-            if self.contains(&new_path) {
+            if self.contains(&normalized_new) {
                 return None;
             }
             
             self.insert(texture_copy);
-            Some(new_path.to_owned())
+            Some(normalized_new)
         } else {
             None
         }
     }
 
     fn copy_from_data(&mut self, path: &str, data: Self::Data) -> String {
-        let texture = Texture::with_data(path.to_string(), data);
+        let normalized = normalize(path);
+        let texture = Texture::with_data(normalized.clone(), data);
         self.insert(texture);
-        path.to_string()
+        normalized
     }
 
     fn make_unique_copy(&mut self, original_path: &str, new_base_path: &str) -> Option<String> {
         if let Some(original_texture_ref) = self.get_shared(original_path) {
             let original_texture = original_texture_ref.read().unwrap();
+            let normalized_new = normalize(new_base_path);
             
             let texture_copy = Texture {
-                path: new_base_path.to_string(),
+                path: normalized_new.clone(),
                 data: original_texture.state().clone(),
             };
             
             drop(original_texture);
-            Some(self.make_unique(new_base_path, texture_copy))
+            Some(self.make_unique(&normalized_new, texture_copy))
         } else {
             None
         }
     }
 
     fn make_unique_from_data(&mut self, path: &str, data: Self::Data) -> String {
-        let texture = Texture::with_data(path.to_string(), data);
-        self.make_unique(path, texture)
+        let normalized = normalize(path);
+        let texture = Texture::with_data(normalized.clone(), data);
+        self.make_unique(&normalized, texture)
     }
 
     fn keys(&self) -> impl Iterator<Item = &str> {
@@ -268,7 +280,8 @@ impl TextureStore {
     where 
         F: FnOnce(&Texture) -> R,
     {
-        let arc = self.textures.get(path)?;
+        let normalized = normalize(path);
+        let arc = self.textures.get(&normalized)?;
         let texture = arc.read().unwrap();
         Some(f(&*texture))
     }
@@ -277,7 +290,8 @@ impl TextureStore {
     where 
         F: FnOnce(&mut Texture) -> R,
     {
-        let arc = self.textures.get(path)?;
+        let normalized = normalize(path);
+        let arc = self.textures.get(&normalized)?;
         let mut texture = arc.write().unwrap();
         Some(f(&mut *texture))
     }
