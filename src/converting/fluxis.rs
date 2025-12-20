@@ -5,7 +5,7 @@ use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::generic::{Gameplay, Keymode, Metadata,};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
-use crate::generic::elements::*;
+use crate::generic::elements::{*, self};
 use crate::image_proc::proc::dist_from_bottom;
 use crate::io::Store;
 use crate::io::texture::{Texture, TextureProcessor};
@@ -177,7 +177,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                     Some(texture_or_blank(&skin.skin_json.overrides.stage.hitline))
                 },
                 color: Rgba::default(),
-            },
+            }
         });
     }
 
@@ -198,6 +198,14 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             Some(textures.get_shared("Stage/background").unwrap_or(blank_texture.clone())),
             Some(textures.get_shared(&skin.skin_json.overrides.stage.border_right).unwrap_or(blank_texture.clone())),
             Some(textures.get_shared(&skin.skin_json.overrides.stage.border_left).unwrap_or(blank_texture.clone())),
+        ),
+        judgement: elements::Judgement::new(
+            textures.get_shared("Judgement/flawless"),
+            textures.get_shared("Judgement/perfect"),
+            textures.get_shared("Judgement/great"),
+            textures.get_shared("Judgement/alright"),
+            textures.get_shared("Judgement/okay"),
+            textures.get_shared("Judgement/miss"),
         ),
         layout: HUDLayout {
             combo: (
@@ -342,6 +350,30 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         judgements: JudgementColors::default(),
         snap_colors: SnapColors::default(),
     };
+
+    if let Some(flawless_arc) = &skin.gameplay.judgement.flawless {
+        textures.copy(&flawless_arc.get_path(), "Judgement/flawless");
+    }
+
+    if let Some(perfect_arc) = &skin.gameplay.judgement.perfect {
+        textures.copy(&perfect_arc.get_path(), "Judgement/perfect");
+    }
+
+    if let Some(great_arc) = &skin.gameplay.judgement.great {
+        textures.copy(&great_arc.get_path(), "Judgement/great");
+    }
+
+    if let Some(good_arc) = &skin.gameplay.judgement.good {
+        textures.copy(&good_arc.get_path(), "Judgement/alright");
+    }
+
+    if let Some(bad_arc) = &skin.gameplay.judgement.bad {
+        textures.copy(&bad_arc.get_path(), "Judgement/okay");
+    }
+
+    if let Some(miss_arc) = &skin.gameplay.judgement.miss {
+        textures.copy(&miss_arc.get_path(), "Judgement/miss");
+    }
 
     skin_json.overrides.stage.health_foreground = health_foreground;
     skin_json.overrides.stage.health_background = health_background;

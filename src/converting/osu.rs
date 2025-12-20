@@ -187,6 +187,14 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             Some(textures.get_shared("mania-warningarrow").unwrap_or(blank_texture.clone())),
             Some(textures.get_shared("mania-stage-right").unwrap_or(blank_texture.clone())),
         ),
+        judgement: Judgement::new(
+            textures.get_shared(&default_keymode.hit300g).or(textures.get_shared("mania-hit300g")),
+            textures.get_shared(&default_keymode.hit300).or(textures.get_shared("mania-hit300")),
+            textures.get_shared(&default_keymode.hit200).or(textures.get_shared("mania-hit200")),
+            textures.get_shared(&default_keymode.hit100).or(textures.get_shared("mania-hit100")),
+            textures.get_shared(&default_keymode.hit50).or(textures.get_shared("mania-hit50")),
+            textures.get_shared(&default_keymode.hit0).or(textures.get_shared("mania-hit0")),
+        ),
         layout: HUDLayout {
             combo: (
                 Vector3::new(
@@ -381,7 +389,13 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             lighting_n: keymode.hit_lighting.normal.as_ref().map(|a| a.get_path()).unwrap_or_default(),
             lighting_l: keymode.hit_lighting.hold.as_ref().map(|a| a.get_path()).unwrap_or_default(),
             stage_light: keymode.column_lighting.texture.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            judgement_line: false,
+            judgement_line: keymode.layout.show_judgement_line,
+            hit0: skin.gameplay.judgement.miss.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            hit50: skin.gameplay.judgement.bad.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            hit100: skin.gameplay.judgement.good.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            hit200: skin.gameplay.judgement.great.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            hit300: skin.gameplay.judgement.perfect.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            hit300g: skin.gameplay.judgement.flawless.as_ref().map(|a| a.get_path()).unwrap_or_default(),
             ..Default::default()
         };
 
