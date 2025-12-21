@@ -4,6 +4,7 @@ use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
+use crate::osu::static_assets;
 use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, flip_vertical, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
 use crate::io::Store;
@@ -175,8 +176,8 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
     let default_keymode = skin.skin_ini.keymodes[0].clone();
     let layout_keymode = skin.skin_ini.get_keymode(4).unwrap_or(&default_keymode);
 
-    let health_bar_fg = textures.get_shared("scorebar-colour").unwrap();
-    let health_bar_bg = textures.get_shared("scorebar-bg").unwrap();
+    let health_bar_fg = textures.get_shared(static_assets::Interface::SCOREBAR_COLOUR).unwrap();
+    let health_bar_bg = textures.get_shared(static_assets::Interface::SCOREBAR_BG).unwrap();
     rotate_90_deg_ccw(&health_bar_fg)?;
     rotate_90_deg_ccw(&health_bar_bg)?;
 
@@ -184,16 +185,24 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         health_bar: Healthbar::new(Some(health_bar_fg), Some(health_bar_bg)),
         stage: Stage::new(
             Some(blank_texture.clone()), // TODO: properly implement stage background for osu
-            Some(textures.get_shared("mania-warningarrow").unwrap_or(blank_texture.clone())),
-            Some(textures.get_shared("mania-stage-right").unwrap_or(blank_texture.clone())),
+            textures.get_shared(&default_keymode.stage_right)
+                .or(textures.get_shared(static_assets::Mania::STAGE_RIGHT)),
+            textures.get_shared(&default_keymode.stage_left)
+                .or(textures.get_shared(static_assets::Mania::STAGE_LEFT)),
         ),
         judgement: Judgement::new(
-            textures.get_shared(&default_keymode.hit300g).or(textures.get_shared("mania-hit300g")),
-            textures.get_shared(&default_keymode.hit300).or(textures.get_shared("mania-hit300")),
-            textures.get_shared(&default_keymode.hit200).or(textures.get_shared("mania-hit200")),
-            textures.get_shared(&default_keymode.hit100).or(textures.get_shared("mania-hit100")),
-            textures.get_shared(&default_keymode.hit50).or(textures.get_shared("mania-hit50")),
-            textures.get_shared(&default_keymode.hit0).or(textures.get_shared("mania-hit0")),
+            textures.get_shared(&default_keymode.hit300g)
+                .or(textures.get_shared(static_assets::Mania::HIT300G)),
+            textures.get_shared(&default_keymode.hit300)
+                .or(textures.get_shared(static_assets::Mania::HIT300)),
+            textures.get_shared(&default_keymode.hit200)
+                .or(textures.get_shared(static_assets::Mania::HIT200)),
+            textures.get_shared(&default_keymode.hit100)
+                .or(textures.get_shared(static_assets::Mania::HIT100)),
+            textures.get_shared(&default_keymode.hit50)
+                .or(textures.get_shared(static_assets::Mania::HIT50)),
+            textures.get_shared(&default_keymode.hit0)
+                .or(textures.get_shared(static_assets::Mania::HIT0)),
         ),
         layout: HUDLayout {
             combo: (
@@ -338,7 +347,10 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
 
         if let Some(bg_arc) = &skin.gameplay.health_bar.background {
             if let Some(health_bar_bg) = bg_arc.get_image() {
-                let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-bg".to_string(), health_bar_bg)));
+                let texture = Arc::new(RwLock::new(
+                    Texture::with_data(static_assets::Interface::SCOREBAR_BG.to_string(),
+                    health_bar_bg
+                )));
                 rotate_90_deg_cw(&texture)?;
                 textures.insert(texture.take_texture());
             }
@@ -346,27 +358,34 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
 
         if let Some(fill_arc) = &skin.gameplay.health_bar.fill {
             if let Some(health_bar_colour) = fill_arc.get_image() {
-                let texture = Arc::new(RwLock::new(Texture::with_data("scorebar-colour".to_string(), health_bar_colour)));
+                let texture = Arc::new(RwLock::new(
+                    Texture::with_data(static_assets::Interface::SCOREBAR_COLOUR.to_string(),
+                    health_bar_colour
+                )));
                 rotate_90_deg_cw(&texture)?;
                 textures.insert(texture.take_texture());
             }
         }
 
         // these wouldn't be present in other skins
-        if !textures.contains("star") {
-            textures.copy("blank", "star");
+        if !textures.contains(static_assets::Interface::STAR) {
+            textures.copy("blank", static_assets::Interface::STAR);
         }
 
-        if !textures.contains("star2") {
-            textures.copy("blank", "star2");
+        if !textures.contains(static_assets::Interface::STAR2) {
+            textures.copy("blank", static_assets::Interface::STAR2);
         }
 
-        if !textures.contains("mania-stage-hint") {
-            textures.copy("blank", "mania-stage-hint");
+        if !textures.contains(static_assets::Interface::SCOREBAR_MARKER) {
+            textures.copy("blank", static_assets::Interface::SCOREBAR_MARKER);
         }
 
-        if !textures.contains("mania-warningarrow") {
-            textures.copy("blank", "mania-warningarrow");
+        if !textures.contains(static_assets::Mania::STAGE_HINT) {
+            textures.copy("blank", static_assets::Mania::STAGE_HINT);
+        }
+
+        if !textures.contains(static_assets::Mania::WARNINGARROW) {
+            textures.copy("blank", static_assets::Mania::WARNINGARROW);
         }
 
         let osu_keymode = osu::Keymode {

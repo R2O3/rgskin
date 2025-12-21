@@ -1,5 +1,6 @@
 use std::collections::HashSet;
 use crate::add_section;
+use crate::osu::static_assets;
 use crate::utils::serde::{
     add_key_value,
     add_key_value_if_not_default,
@@ -554,23 +555,23 @@ impl Keymode {
         insert_vec(&mut result, &self.long_note_body_images);
         insert_vec(&mut result, &self.long_note_tail_images);
 
-        insert_with_fallback(&mut result, &self.stage_left, "mania-stage-left");
-        insert_with_fallback(&mut result, &self.stage_right, "mania-stage-right");
-        insert_with_fallback(&mut result, &self.stage_light, "mania-stage-light");
-        insert_with_fallback(&mut result, &self.stage_hint, "mania-stage-hint");
-        insert_with_fallback(&mut result, &self.stage_bottom, "mania-stage-bottom");
+        insert_with_fallback(&mut result, &self.stage_left, static_assets::Mania::STAGE_LEFT);
+        insert_with_fallback(&mut result, &self.stage_right, static_assets::Mania::STAGE_RIGHT);
+        insert_with_fallback(&mut result, &self.stage_light, static_assets::Mania::STAGE_LIGHT);
+        insert_with_fallback(&mut result, &self.stage_hint, static_assets::Mania::STAGE_HINT);
+        insert_with_fallback(&mut result, &self.stage_bottom, static_assets::Mania::STAGE_BOTTOM);
         
-        insert_with_fallback(&mut result, &self.lighting_n, "lightingN");
-        insert_with_fallback(&mut result, &self.lighting_l, "lightingL");
+        insert_with_fallback(&mut result, &self.lighting_n, static_assets::Mania::LIGHTINGN);
+        insert_with_fallback(&mut result, &self.lighting_l, static_assets::Mania::LIGHTINGL);
         
-        insert_with_fallback(&mut result, &self.hit0, "mania-hit0");
-        insert_with_fallback(&mut result, &self.hit50, "mania-hit50");
-        insert_with_fallback(&mut result, &self.hit100, "mania-hit100");
-        insert_with_fallback(&mut result, &self.hit200, "mania-hit200");
-        insert_with_fallback(&mut result, &self.hit300, "mania-hit300");
-        insert_with_fallback(&mut result, &self.hit300g, "mania-hit300g");
+        insert_with_fallback(&mut result, &self.hit0, static_assets::Mania::HIT0);
+        insert_with_fallback(&mut result, &self.hit50, static_assets::Mania::HIT50);
+        insert_with_fallback(&mut result, &self.hit100, static_assets::Mania::HIT100);
+        insert_with_fallback(&mut result, &self.hit200, static_assets::Mania::HIT200);
+        insert_with_fallback(&mut result, &self.hit300, static_assets::Mania::HIT300);
+        insert_with_fallback(&mut result, &self.hit300g, static_assets::Mania::HIT300G);
         
-        insert_with_fallback(&mut result, &self.warning_arrow, "mania-warningarrow");
+        insert_with_fallback(&mut result, &self.warning_arrow, static_assets::Mania::WARNINGARROW);
 
         result.insert("lighting".to_string());
         result.insert("lightingA".to_string());

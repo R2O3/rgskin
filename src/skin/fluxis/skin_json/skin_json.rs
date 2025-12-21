@@ -128,17 +128,6 @@ impl SkinJson {
         }
     }
 
-    pub fn sync_overrides_from_stage(&mut self) {
-        for (key, value) in self.overrides.stage.get_fields() {
-            if !value.is_empty() && self.overrides.raw_overrides.contains_key(key) {
-                self.overrides.raw_overrides.insert(
-                    key.to_string(),
-                    value.clone()
-                );
-            }
-        }
-    }
-
     pub fn sync_overrides_from_keymodes(&mut self) {
         for keymode in &self.keymodes {
             let k = keymode.keymode;

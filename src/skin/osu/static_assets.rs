@@ -1,0 +1,45 @@
+use crate::def_const_type_enum;
+
+def_const_type_enum! (pub Mania => &'static str {
+    HIT0 => "mania-hit0",
+    HIT50 => "mania-hit50",
+    HIT100 => "mania-hit100",
+    HIT200 => "mania-hit200",
+    HIT300 => "mania-hit300",
+    HIT300G => "mania-hit300g",
+    COMBOBURST => "comboburst-mania",
+    KEY1 => "mania-key1",
+    KEY1D => "mania-key1D",
+    KEY2 => "mania-key2",
+    KEY2D => "mania-key2D",
+    KEYS => "mania-keyS",
+    KEYSD => "mania-keySD",
+    NOTE1 => "mania-note1",
+    NOTE2 => "mania-note2",
+    NOTES => "mania-noteS",
+    NOTE1H => "mania-note1H",
+    NOTE2H => "mania-note2H",
+    NOTESH => "mania-noteSH",
+    NOTE1L => "mania-note1L",
+    NOTE2L => "mania-note2L",
+    NOTESL => "mania-noteSL",
+    NOTE1T => "mania-note1T",
+    NOTE2T => "mania-note2T",
+    NOTEST => "mania-noteST",
+    STAGE_LEFT => "mania-stage-left",
+    STAGE_RIGHT => "mania-stage-right",
+    STAGE_BOTTOM => "mania-stage-bottom",
+    STAGE_LIGHT => "mania-stage-light",
+    STAGE_HINT => "mania-stage-hint",
+    WARNINGARROW => "mania-warningarrow",
+    LIGHTINGL => "lightingL",
+    LIGHTINGN => "lightingN",
+});
+
+def_const_type_enum! (pub Interface => &'static str {
+    STAR => "star",
+    STAR2 => "star2",
+    SCOREBAR_BG => "scorebar-bg",
+    SCOREBAR_COLOUR => "scorebar-colour",
+    SCOREBAR_MARKER => "scorebar-marker"
+});

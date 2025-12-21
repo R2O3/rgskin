@@ -3,6 +3,7 @@ use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
+use crate::fluxis::static_assets;
 use crate::generic::{Gameplay, Keymode, Metadata,};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::{*, self};
@@ -156,7 +157,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             column_spacing: vec![0; key_count],
         };
 
-        let column_lighting_path = &skin.skin_json.overrides.stage.column_lighting;
+        let column_lighting_path = &skin.skin_json.overrides.lighting.column_lighting;
         let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
         keymodes.push(Keymode { 
             keymode: key_count as u8,
@@ -191,21 +192,32 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
 
     let gameplay = Gameplay {
         health_bar: Healthbar::new(
-            textures.get_shared(&skin.skin_json.overrides.stage.health_foreground),
-            textures.get_shared(&skin.skin_json.overrides.stage.health_background)
+            textures.get_shared(&skin.skin_json.overrides.health.foreground)
+                .or(textures.get_shared(static_assets::Health::FOREGROUND)),
+            textures.get_shared(&skin.skin_json.overrides.health.background)
+                .or(textures.get_shared(static_assets::Health::BACKGROUND))
         ),
         stage: Stage::new(
-            Some(textures.get_shared("Stage/background").unwrap_or(blank_texture.clone())),
-            Some(textures.get_shared(&skin.skin_json.overrides.stage.border_right).unwrap_or(blank_texture.clone())),
-            Some(textures.get_shared(&skin.skin_json.overrides.stage.border_left).unwrap_or(blank_texture.clone())),
+            textures.get_shared(&skin.skin_json.overrides.stage.background)
+                .or(textures.get_shared(static_assets::Stage::BACKGROUND)),
+            textures.get_shared(&skin.skin_json.overrides.stage.border_right)
+                .or(textures.get_shared(static_assets::Stage::BORDER_RIGHT)),
+            textures.get_shared(&skin.skin_json.overrides.stage.border_left)
+                .or(textures.get_shared(static_assets::Stage::BORDER_LEFT)),
         ),
         judgement: elements::Judgement::new(
-            textures.get_shared("Judgement/flawless"),
-            textures.get_shared("Judgement/perfect"),
-            textures.get_shared("Judgement/great"),
-            textures.get_shared("Judgement/alright"),
-            textures.get_shared("Judgement/okay"),
-            textures.get_shared("Judgement/miss"),
+            textures.get_shared(&skin.skin_json.overrides.judgement.flawless)
+                .or(textures.get_shared(static_assets::Judgement::FLAWLESS)),
+            textures.get_shared(&skin.skin_json.overrides.judgement.perfect)
+                .or(textures.get_shared(static_assets::Judgement::PERFECT)),
+            textures.get_shared(&skin.skin_json.overrides.judgement.great)
+                .or(textures.get_shared(static_assets::Judgement::GREAT)),
+            textures.get_shared(&skin.skin_json.overrides.judgement.alright)
+                .or(textures.get_shared(static_assets::Judgement::ALRIGHT)),
+            textures.get_shared(&skin.skin_json.overrides.judgement.okay)
+                .or(textures.get_shared(static_assets::Judgement::OKAY)),
+            textures.get_shared(&skin.skin_json.overrides.judgement.miss)
+                .or(textures.get_shared(static_assets::Judgement::MISS)),
         ),
         layout: HUDLayout {
             combo: (
@@ -352,32 +364,32 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     };
 
     if let Some(flawless_arc) = &skin.gameplay.judgement.flawless {
-        textures.copy(&flawless_arc.get_path(), "Judgement/flawless");
+        textures.copy(&flawless_arc.get_path(), static_assets::Judgement::FLAWLESS);
     }
 
     if let Some(perfect_arc) = &skin.gameplay.judgement.perfect {
-        textures.copy(&perfect_arc.get_path(), "Judgement/perfect");
+        textures.copy(&perfect_arc.get_path(), static_assets::Judgement::PERFECT);
     }
 
     if let Some(great_arc) = &skin.gameplay.judgement.great {
-        textures.copy(&great_arc.get_path(), "Judgement/great");
+        textures.copy(&great_arc.get_path(), static_assets::Judgement::GREAT);
     }
 
     if let Some(good_arc) = &skin.gameplay.judgement.good {
-        textures.copy(&good_arc.get_path(), "Judgement/alright");
+        textures.copy(&good_arc.get_path(), static_assets::Judgement::ALRIGHT);
     }
 
     if let Some(bad_arc) = &skin.gameplay.judgement.bad {
-        textures.copy(&bad_arc.get_path(), "Judgement/okay");
+        textures.copy(&bad_arc.get_path(), static_assets::Judgement::OKAY);
     }
 
     if let Some(miss_arc) = &skin.gameplay.judgement.miss {
-        textures.copy(&miss_arc.get_path(), "Judgement/miss");
+        textures.copy(&miss_arc.get_path(), static_assets::Judgement::MISS);
     }
 
-    skin_json.overrides.stage.health_foreground = health_foreground;
-    skin_json.overrides.stage.health_background = health_background;
-    skin_json.overrides.stage.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path().unwrap_or_default();
+    skin_json.overrides.health.foreground = health_foreground;
+    skin_json.overrides.health.background = health_background;
+    skin_json.overrides.lighting.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path().unwrap_or_default();
     skin_json.overrides.stage.hitline = if skin.keymodes.first().unwrap().layout.show_judgement_line {
         skin.keymodes.first().unwrap().judgement_line.get_path().unwrap_or_else(|| "blank".to_string())
     } else {
@@ -386,7 +398,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     textures.copy(&skin.gameplay.stage.get_path().unwrap_or_default(), "Stage/background");
     skin_json.overrides.stage.border_right = skin.gameplay.stage.border_right.as_ref().map(|a| a.get_path()).unwrap_or_default();
     skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.as_ref().map(|a| a.get_path()).unwrap_or_default();
-    skin_json.sync_overrides_from_stage();
     skin_json.sync_overrides_from_keymodes();
 
     let fluxis_skin = FluXisSkin::new(skin_json, Some(textures));

@@ -3,8 +3,9 @@ use serde::de::{MapAccess, Visitor};
 use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
-use crate::define_stage_overrides;
+use crate::define_overrides;
 use crate::fluxis::skin_json::keymode::Keymodes;
+use crate::fluxis::static_assets;
 
 pub(crate) fn extract_keymode_column(s: &str) -> Option<(usize, usize)> {
     let parts: Vec<&str> = s.split('-').collect();
@@ -19,25 +20,53 @@ pub(crate) fn extract_keymode_column(s: &str) -> Option<(usize, usize)> {
     Some((keymode, column))
 }
 
-define_stage_overrides!(
-    (health_foreground, "Health/foreground"),
-    (health_background, "Health/background"),
-    (border_left, "Stage/border-left"),
-    (border_right, "Stage/border-right"),
-    (border_right_top, "Stage/border-right-top"),
-    (border_right_bottom, "Stage/border-right-bottom"),
-    (border_left_top, "Stage/border-left-top"),
-    (border_left_bottom, "Stage/border-left-bottom"),
-    (background_top, "Stage/background-top"),
-    (background_bottom, "Stage/background-bottom"),
-    (hitline, "Stage/hitline"),
-    (column_lighting, "Lighting/column-lighting"),
-    (fail_flash, "Gameplay/fail-flash"),
+define_overrides!(
+    HealthOverrides,
+    (foreground, static_assets::Health::FOREGROUND),
+    (background, static_assets::Health::BACKGROUND),
+);
+
+define_overrides!(
+    StageOverrides,
+    (border_left, static_assets::Stage::BORDER_LEFT),
+    (border_right, static_assets::Stage::BORDER_RIGHT),
+    (border_right_top, static_assets::Stage::BORDER_RIGHT_TOP),
+    (border_right_bottom, static_assets::Stage::BORDER_RIGHT_BOTTOM),
+    (border_left_top, static_assets::Stage::BORDER_LEFT_TOP),
+    (border_left_bottom, static_assets::Stage::BORDER_LEFT_BOTTOM),
+    (background, static_assets::Stage::BACKGROUND),
+    (background_top, static_assets::Stage::BACKGROUND_TOP),
+    (background_bottom, static_assets::Stage::BACKGROUND_BOTTOM),
+    (hitline, static_assets::Stage::HITLINE),
+);
+
+define_overrides!(
+    JudgementOverrides,
+    (miss, static_assets::Judgement::MISS),
+    (okay, static_assets::Judgement::OKAY),
+    (alright, static_assets::Judgement::ALRIGHT),
+    (great, static_assets::Judgement::GREAT),
+    (perfect, static_assets::Judgement::PERFECT),
+    (flawless, static_assets::Judgement::FLAWLESS),
+);
+
+define_overrides!(
+    LightingOverrides,
+    (column_lighting, static_assets::Lighting::COLUMN_LIGHTING),
+);
+
+define_overrides!(
+    GameplayOverrides,
+    (fail_flash, static_assets::Gameplay::FAIL_FLASH),
 );
 
 #[derive(Clone, Debug, Default)]
 pub struct Overrides {
+    pub health: HealthOverrides,
     pub stage: StageOverrides,
+    pub judgement: JudgementOverrides,
+    pub lighting: LightingOverrides,
+    pub gameplay: GameplayOverrides,
     pub raw_overrides: IndexMap<String, String>,
 }
 
@@ -79,7 +108,19 @@ impl Serialize for Overrides {
         non_keymode.sort_by(|a, b| a.0.cmp(&b.0));
         entries.extend(non_keymode);
 
+        for (k, v) in self.health.serialize() {
+            entries.push((k.to_string(), v.to_string()));
+        }
         for (k, v) in self.stage.serialize() {
+            entries.push((k.to_string(), v.to_string()));
+        }
+        for (k, v) in self.judgement.serialize() {
+            entries.push((k.to_string(), v.to_string()));
+        }
+        for (k, v) in self.lighting.serialize() {
+            entries.push((k.to_string(), v.to_string()));
+        }
+        for (k, v) in self.gameplay.serialize() {
             entries.push((k.to_string(), v.to_string()));
         }
 
@@ -112,7 +153,12 @@ impl<'de> Deserialize<'de> for Overrides {
                 let mut overrides = Overrides::default();
 
                 while let Some((key, value)) = map.next_entry::<String, String>()? {
-                    if !overrides.stage.set_field(&key, value.clone()) {
+                    if !overrides.health.set_field(&key, value.clone())
+                        && !overrides.stage.set_field(&key, value.clone())
+                        && !overrides.judgement.set_field(&key, value.clone())
+                        && !overrides.lighting.set_field(&key, value.clone())
+                        && !overrides.gameplay.set_field(&key, value.clone())
+                    {
                         overrides.raw_overrides.insert(key, value);
                     }
                 }

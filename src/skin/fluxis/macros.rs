@@ -1,13 +1,13 @@
 
 #[macro_export]
-macro_rules! define_stage_overrides {
-    ($(($field:ident, $key:expr)),* $(,)?) => {
+macro_rules! define_overrides {
+    ($struct_name:ident, $(($field:ident, $key:expr)),* $(,)?) => {
         #[derive(Clone, Debug, Default)]
-        pub struct StageOverrides {
+        pub struct $struct_name {
             $(pub $field: String,)*
         }
 
-        impl StageOverrides {
+        impl $struct_name {
             pub fn serialize(&self) -> Vec<(&'static str, &str)> {
                 let mut entries = Vec::new();
                 $(
@@ -19,10 +19,13 @@ macro_rules! define_stage_overrides {
             }
 
             pub fn set_field(&mut self, key: &str, value: String) -> bool {
-                match key {
-                    $($key => { self.$field = value; true })*
-                    _ => false,
-                }
+                $(
+                    if key == $key {
+                        self.$field = value;
+                        return true;
+                    }
+                )*
+                false
             }
 
             pub fn get_fields(&self) -> Vec<(&'static str, &String)> {
