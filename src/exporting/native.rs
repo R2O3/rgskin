@@ -8,24 +8,33 @@ use crate::{osu, fluxis, texture::TextureStore};
 pub fn export_textures(textures: &TextureStore, path: &str) -> io::Result<()> {
     fs::create_dir_all(path)?;
     
-    for texture_path in textures.get_paths() {
-        if let Some(texture_ref) = textures.get(&texture_path) {
-            let texture_path_with_ext = change_extension(&texture_path, "png");
-            let output_path = Path::new(path).join(&texture_path_with_ext);
-            
-            if let Some(parent) = output_path.parent() {
-                fs::create_dir_all(parent)?;
-            }
-            
-            if let Some(img) = texture_ref.get_data() {
-                img.save_with_format(&output_path, image::ImageFormat::Png)
-                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-            }
-            else if let Some(bytes) = texture_ref.get_unloaded_data() {
-                fs::write(&output_path, bytes)?;
+    let mut result: io::Result<()> = Ok(());
+    textures.for_each(|texture| {
+        if result.is_err() { return; }
+        let texture_path_with_ext = change_extension(texture.path(), "png");
+        let output_path = Path::new(path).join(&texture_path_with_ext);
+
+        if let Some(parent) = output_path.parent() {
+            if let Err(e) = fs::create_dir_all(parent) {
+                result = Err(e);
+                return;
             }
         }
-    }
+
+        if let Some(img) = texture.get_data() {
+            if let Err(e) = img.save_with_format(&output_path, image::ImageFormat::Png)
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e)) {
+                result = Err(e);
+                return;
+            }
+        } else if let Some(bytes) = texture.get_unloaded_data() {
+            if let Err(e) = fs::write(&output_path, bytes) {
+                result = Err(e);
+                return;
+            }
+        }
+    });
+    result?;
     
     Ok(())
 }

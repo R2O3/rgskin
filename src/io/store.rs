@@ -64,9 +64,8 @@ pub trait Store<T: 'static> {
     fn map(&self) -> &HashMap<String, Arc<RwLock<T>>>;
     fn map_mut(&mut self) -> &mut HashMap<String, Arc<RwLock<T>>>;
 
-    fn insert(&mut self, mut item: T) {
+    fn insert(&mut self, item: T) {
         let path = normalize(Self::get_item_path(&item));
-        Self::set_item_path(&mut item, path.clone());
         self.map_mut().insert(path, Arc::new(RwLock::new(item)));
     }
     
@@ -136,17 +135,17 @@ pub trait Store<T: 'static> {
     fn make_unique(&mut self, new_path: &str, mut item: T) -> String {
         let normalized = normalize(new_path);
         if !self.contains(&normalized) {
-            Self::set_item_path(&mut item, normalized.clone());
+            Self::set_item_path(&mut item, new_path.to_string());
             self.insert(item);
             return normalized;
         }
         
-        let (base_name, extension) = if let Some(dot_pos) = normalized.rfind('.') {
-            let base = &normalized[..dot_pos];
-            let ext = &normalized[dot_pos..];
+        let (base_name, extension) = if let Some(dot_pos) = new_path.rfind('.') {
+            let base = &new_path[..dot_pos];
+            let ext = &new_path[dot_pos..];
             (base.to_string(), ext.to_string())
         } else {
-            (normalized, String::new())
+            (new_path.to_string(), String::new())
         };
         
         let mut counter = 1;
@@ -155,7 +154,7 @@ pub trait Store<T: 'static> {
             if !self.contains(&candidate_path) {
                 Self::set_item_path(&mut item, candidate_path.clone());
                 self.insert(item);
-                return candidate_path;
+                return normalize(&candidate_path);
             }
             counter += 1;
         }
@@ -172,14 +171,14 @@ pub trait Store<T: 'static> {
         let data = Self::clone_item_data(&*original);
         drop(original);
         
-        let new_item = Self::create_item(normalized_new.clone(), data);
+        let new_item = Self::create_item(new_path.to_string(), data);
         self.insert(new_item);
         Some(normalized_new)
     }
 
     fn copy_from_data(&mut self, path: &str, data: Self::Data) -> String {
         let normalized = normalize(path);
-        let item = Self::create_item(normalized.clone(), data);
+        let item = Self::create_item(path.to_string(), data);
         self.insert(item);
         normalized
     }
@@ -190,15 +189,13 @@ pub trait Store<T: 'static> {
         let data = Self::clone_item_data(&*original);
         drop(original);
         
-        let normalized_new = normalize(new_base_path);
-        let new_item = Self::create_item(normalized_new.clone(), data);
-        Some(self.make_unique(&normalized_new, new_item))
+        let new_item = Self::create_item(new_base_path.to_string(), data);
+        Some(self.make_unique(new_base_path, new_item))
     }
 
     fn make_unique_from_data(&mut self, path: &str, data: Self::Data) -> String {
-        let normalized = normalize(path);
-        let item = Self::create_item(normalized.clone(), data);
-        self.make_unique(&normalized, item)
+        let item = Self::create_item(path.to_string(), data);
+        self.make_unique(path, item)
     }
 
     fn with_item<F, R>(&self, path: &str, f: F) -> Option<R>
