@@ -388,11 +388,16 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             textures.copy("blank", static_assets::Mania::WARNINGARROW);
         }
 
+        let source_aspect_ratio = resize.source.y as f32 / resize.source.x as f32;
+        let playfield_center = OsuDimensions::Y.as_f32() / (source_aspect_ratio * 2.0);
+        let column_width = resize.to_target_x::<f32>(keymode.layout.average_column_width());
+        let playfield_width = column_width * keymode.keymode as f32;
+
         let osu_keymode = osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
             hit_position: ((1.0 - keymode.layout.hit_position) * resize.target.y as f32) as u32,
-            column_start: resize.to_target_x::<u32>(keymode.layout.x_offset),
+            column_start: (playfield_center - playfield_width / 2.0) as u32,
             column_width: keymode.layout.column_widths
                 .iter()
                 .map(|cw| (resize.to_target_x::<u32>(*cw)))
