@@ -13,6 +13,7 @@ use serde::{
     ser::Serializer,
     Deserialize, Serialize,
 };
+use crate::fluxis::skin_json::overrides::extract_keymode_column;
 
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct SkinJson {
@@ -106,7 +107,7 @@ impl SkinJson {
         let identifier = parts.last().unwrap();
         let element_type = if parts.len() > 2 { parts[1] } else { "" };
 
-        if let Some((keymode_num, column_str)) = Self::extract_keymode_column(identifier) {
+        if let Some((keymode_num, column_str)) = extract_keymode_column(identifier) {
             if let Some(keymode) = keymodes.iter_mut().find(|km| km.keymode == keymode_num as u8) {
                 let col_idx = column_str.saturating_sub(1);
                 
@@ -164,19 +165,6 @@ impl SkinJson {
                 vec.resize(k, String::new());
             }
         });
-    }
-
-    fn extract_keymode_column(s: &str) -> Option<(usize, usize)> {
-        let parts: Vec<&str> = s.split('-').collect();
-        if parts.len() < 2 { return None; }
-
-        let keymode_part = parts[0];
-        if !keymode_part.ends_with('k') { return None; }
-
-        let keymode = keymode_part.trim_end_matches('k').parse::<usize>().ok()?;
-        let column = parts[1].parse::<usize>().ok()?;
-        
-        Some((keymode, column))
     }
 }
 

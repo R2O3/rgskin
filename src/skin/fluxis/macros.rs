@@ -58,11 +58,25 @@ macro_rules! define_keymode {
                 -> Option<&'a mut Vec<String>> 
             {
                 match (element, element_type, suffix) {
-                    $(
-                        ($element, $element_type, $suffix) => Some(&mut keymode.$field),
-                    )*
+                    $(($element, $element_type, $suffix) => Some(&mut keymode.$field),)*
                     _ => None,
                 }
+            }
+
+            pub fn order(element: &str, element_type: &str, suffix: &str) -> Option<usize> {
+                const FIELDS: &[(&str, &str, &str)] = &[
+                    $(($element, $element_type, $suffix),)*
+                ];
+                
+                FIELDS.iter().position(|&(e, et, s)| e == element && et == element_type && s == suffix)
+            }
+
+            pub fn order_by_type(element: &str, element_type: &str) -> Option<usize> {
+                const FIELDS: &[(&str, &str, &str)] = &[
+                    $(($element, $element_type, $suffix),)*
+                ];
+                
+                FIELDS.iter().position(|&(e, et, _)| e == element && et == element_type)
             }
         }
     };
