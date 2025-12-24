@@ -1,9 +1,7 @@
-use std::collections::HashSet;
-
 use crate::common::traits::ManiaSkin;
 use crate::common::vector::Vector2;
 use crate::converting::osu::{from_generic_mania, to_generic_mania};
-use crate::osu::{static_assets, Keymode};
+use crate::osu::Keymode;
 use crate::sample::SampleStore;
 use crate::skin::generic::GenericManiaSkin;
 use crate::skin::osu::SkinIni;
