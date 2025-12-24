@@ -4,6 +4,7 @@ use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 use crate::extensions::TextureArcExt;
 use crate::io::texture::Texture;
+use crate::BinaryArcExt;
 
 pub struct TextureProcessor<T = ()> {
     processed: HashMap<String, T>,

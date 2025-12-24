@@ -20,6 +20,15 @@ macro_rules! def_const_type_enum {
 
             #[allow(dead_code)]
             pub const VARIANTS: &'static [$ty] = &[$(Self::$variant),+];
+
+            #[allow(dead_code)]
+            pub fn iter_mapped<U, F>(mapper: F) -> impl Iterator<Item = U>
+            where
+                F: Fn($ty) -> U,
+                $ty: Copy,
+            {
+                Self::VARIANTS.iter().copied().map(mapper)
+            }
         }
     };
 }

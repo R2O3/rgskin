@@ -4,6 +4,7 @@ use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
+use crate::generic::sound::*;
 use crate::osu::static_assets;
 use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, flip_vertical, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
@@ -15,9 +16,11 @@ use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
 use crate::traits::ManiaSkinConfig;
 use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
+use crate::BinaryArcExt;
 
 pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
+    let samples = skin.samples.clone();
     let mut keymodes: Vec<Keymode> = Vec::new();
 
     textures.insert(Texture::from_blank("blank".to_string()));
@@ -239,18 +242,38 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             ),
         }
     };
+
+    let sounds = Sounds {
+        ui: UISounds {
+            menu_back_click: samples.get_shared(static_assets::Samples::MENU_BACK_CLICK).as_ref().map(|a| a.get_path()),
+            ui_click: samples.get_shared(static_assets::Samples::CLICK_SHORT_CONFIRM).as_ref().map(|a| a.get_path()),
+            ui_select: samples.get_shared(static_assets::Samples::MENU_FREEPLAY_CLICK).as_ref().map(|a| a.get_path()),
+            ui_hover: samples.get_shared(static_assets::Samples::CLICK_SHORT).as_ref().map(|a| a.get_path())
+        },
+        gameplay: GenericGameplaySounds {
+            miss: samples.get_shared(static_assets::Samples::COMBOBREAK).as_ref().map(|a| a.get_path()),
+            fail: samples.get_shared(static_assets::Samples::FAILSOUND).as_ref().map(|a| a.get_path()),
+            restart: samples.get_shared(static_assets::Samples::PAUSE_RETRY_CLICK).as_ref().map(|a| a.get_path())
+        },
+        mania: ManiaGameplaySounds {
+            hit: samples.get_shared(static_assets::Samples::DRUM_HITNORMAL).as_ref().map(|a| a.get_path())
+        },
+    };
     
     Ok(GenericManiaSkin {
         resolution: skin.resolution,
+        sounds,
         metadata,
         gameplay,
         keymodes,
-        textures
+        textures,
+        samples
     })
 }
 
 pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
+    let mut samples = skin.samples.clone();
     let mut osu_keymodes: Vec<osu::Keymode> = Vec::new();
 
     let resize = Resizer::new(
@@ -388,6 +411,40 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             textures.copy("blank", static_assets::Mania::WARNINGARROW);
         }
 
+        // Samples
+
+        if let Some(s) = &skin.sounds.ui.menu_back_click {
+            samples.copy(s, static_assets::Samples::MENU_BACK_CLICK);
+        }
+
+        if let Some(s) = &skin.sounds.ui.ui_click {
+            samples.copy(s, static_assets::Samples::CLICK_SHORT_CONFIRM);
+        }
+
+        if let Some(s) = &skin.sounds.ui.ui_select {
+            samples.copy(s, static_assets::Samples::MENU_FREEPLAY_CLICK);
+        }
+
+        if let Some(s) = &skin.sounds.ui.ui_hover {
+            samples.copy(s, static_assets::Samples::CLICK_SHORT);
+        }
+
+        if let Some(s) = &skin.sounds.gameplay.miss {
+            samples.copy(s, static_assets::Samples::COMBOBREAK);
+        }
+
+        if let Some(s) = &skin.sounds.gameplay.fail {
+            samples.copy(s, static_assets::Samples::FAILSOUND);
+        }
+
+        if let Some(s) = &skin.sounds.gameplay.restart {
+            samples.copy(s, static_assets::Samples::PAUSE_RETRY_CLICK);
+        }
+
+        if let Some(s) = &skin.sounds.mania.hit {
+            samples.copy(s, static_assets::Samples::DRUM_HITNORMAL);
+        }
+
         let source_aspect_ratio = resize.source.y as f32 / resize.source.x as f32;
         let playfield_center = OsuDimensions::Y.as_f32() / (source_aspect_ratio * 2.0);
         let column_width = resize.to_target_x::<f32>(keymode.layout.average_column_width());
@@ -454,5 +511,5 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         keymode.combo_position = Some(combo_pos.y as u32);
     }
     
-    Ok(OsuSkin::new(skin_ini, Some(textures)))
+    Ok(OsuSkin::new(skin_ini, Some(textures), Some(samples)))
 }

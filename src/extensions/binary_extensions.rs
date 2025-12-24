@@ -7,6 +7,11 @@ pub trait BinaryArcExt<T: Binary> {
     fn is_loaded(&self) -> bool;
     fn is_unloaded(&self) -> bool;
     fn is_empty(&self) -> bool;
+
+    fn get_path(&self) -> String;
+    fn path_ref<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce(&str) -> R;
     
     fn get_data(&self) -> Option<T::LoadedData>
     where
@@ -94,6 +99,18 @@ where
     
     fn is_empty(&self) -> bool {
         self.read().unwrap().is_empty()
+    }
+
+    fn get_path(&self) -> String {
+        self.read().unwrap().path().to_string()
+    }
+    
+    fn path_ref<F, R>(&self, f: F) -> R
+    where
+        F: FnOnce(&str) -> R,
+    {
+        let guard = self.read().unwrap();
+        f(guard.path())
     }
     
     fn get_data(&self) -> Option<T::LoadedData>

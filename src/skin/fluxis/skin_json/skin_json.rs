@@ -2,12 +2,12 @@ use indexmap::IndexMap;
 use std::str::FromStr;
 use std::collections::HashSet;
 use crate::{
-    common::traits::{ManiaSkinConfig, SkinConfig}, fluxis::skin_json::{
+    common::traits::{ManiaSkinConfig, SkinConfig}, fluxis::{skin_json::{
         colors::{JudgementColors, SnapColors},
         info::Info,
         keymode::{Keymode, Keymodes},
         overrides::Overrides,
-    }, utils::serde::set_vec_element
+    }, static_assets}, utils::serde::set_vec_element
 };
 use serde::{
     ser::Serializer,
@@ -172,7 +172,7 @@ impl FromStr for SkinJson {
 }
 
 impl SkinConfig for SkinJson {
-    fn get_dynamic_texture_paths(&self) -> HashSet<String> {
+    fn get_required_texture_paths(&self) -> HashSet<String> {
         let mut paths = HashSet::new();
 
         for keymode in &self.keymodes {
@@ -198,6 +198,12 @@ impl SkinConfig for SkinJson {
         }
 
         paths
+    }
+
+    fn get_required_sample_paths(&self) -> HashSet<String> {
+        let mut result: HashSet<String> = HashSet::new();
+        result.extend(static_assets::Samples::iter_mapped(|s| s.to_string()));
+        result
     }
 }
 

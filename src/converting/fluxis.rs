@@ -4,7 +4,7 @@ use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::fluxis::static_assets;
-use crate::generic::{Gameplay, Keymode, Metadata,};
+use crate::generic::{Gameplay, Keymode, Metadata, sound::*};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::{*, self};
 use crate::image_proc::proc::dist_from_bottom;
@@ -23,10 +23,11 @@ use crate::skin::fluxis::{
 };
 use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
-use crate::GenericManiaSkin;
+use crate::{BinaryArcExt, GenericManiaSkin};
 
 pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
+    let samples = skin.samples.clone();
     let layout_d = FluXisLayout::default();
     let layout = layout.unwrap_or(&layout_d);
     let mut keymodes: Vec<Keymode> = Vec::new();
@@ -275,17 +276,37 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
         }
     };
 
+    let sounds = Sounds {
+        ui: UISounds {
+            menu_back_click: samples.get_shared(static_assets::Samples::UI_BACK).as_ref().map(|a| a.get_path()),
+            ui_click: samples.get_shared(static_assets::Samples::UI_CLICK).as_ref().map(|a| a.get_path()),
+            ui_select: samples.get_shared(static_assets::Samples::UI_SELECT).as_ref().map(|a| a.get_path()),
+            ui_hover: samples.get_shared(static_assets::Samples::UI_HOVER).as_ref().map(|a| a.get_path())
+        },
+        gameplay: GenericGameplaySounds {
+            miss: samples.get_shared(static_assets::Samples::GAMEPLAY_MISS).as_ref().map(|a| a.get_path()),
+            fail: samples.get_shared(static_assets::Samples::GAMEPLAY_FAIL).as_ref().map(|a| a.get_path()),
+            restart: samples.get_shared(static_assets::Samples::GAMEPLAY_RESTART).as_ref().map(|a| a.get_path())
+        },
+        mania: ManiaGameplaySounds {
+            hit: samples.get_shared(static_assets::Samples::GAMEPLAY_HIT).as_ref().map(|a| a.get_path())
+        },
+    };
+
     Ok(GenericManiaSkin {
         resolution: skin.resolution,
-        metadata, 
+        sounds,
+        metadata,
         gameplay, 
         keymodes, 
-        textures 
+        textures,
+        samples
     })
 }
 
 pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXisLayout), Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
+    let mut samples = skin.samples.clone();
     let mut fluxis_keymodes: Vec<skin_json::Keymode> = Vec::new();
 
     let resize = Resizer::new(
@@ -400,7 +421,39 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.as_ref().map(|a| a.get_path()).unwrap_or_default();
     skin_json.sync_overrides_from_keymodes();
 
-    let fluxis_skin = FluXisSkin::new(skin_json, Some(textures));
+    if let Some(s) = &skin.sounds.ui.menu_back_click {
+        samples.copy(s, static_assets::Samples::UI_BACK);
+    }
+    
+    if let Some(s) = &skin.sounds.ui.ui_click {
+        samples.copy(s, static_assets::Samples::UI_CLICK);
+    }
+    
+    if let Some(s) = &skin.sounds.ui.ui_select {
+        samples.copy(s, static_assets::Samples::UI_SELECT);
+    }
+    
+    if let Some(s) = &skin.sounds.ui.ui_hover {
+        samples.copy(s, static_assets::Samples::UI_HOVER);
+    }
+    
+    if let Some(s) = &skin.sounds.gameplay.miss {
+        samples.copy(s, static_assets::Samples::GAMEPLAY_MISS);
+    }
+    
+    if let Some(s) = &skin.sounds.gameplay.fail {
+        samples.copy(s, static_assets::Samples::GAMEPLAY_FAIL);
+    }
+    
+    if let Some(s) = &skin.sounds.gameplay.restart {
+        samples.copy(s, static_assets::Samples::GAMEPLAY_RESTART);
+    }
+    
+    if let Some(s) = &skin.sounds.mania.hit {
+        samples.copy(s, static_assets::Samples::GAMEPLAY_HIT);
+    }
+
+    let fluxis_skin = FluXisSkin::new(skin_json, Some(textures), Some(samples));
 
     let mut layout = FluXisLayout::new(skin.metadata.name.clone(), skin.metadata.creator.clone());
 

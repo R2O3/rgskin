@@ -4,6 +4,7 @@ mod skin;
 mod metadata;
 mod keymode;
 mod gameplay;
+pub mod sound;
 pub mod elements;
 pub mod layout;
 

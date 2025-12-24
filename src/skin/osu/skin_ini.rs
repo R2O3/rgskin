@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::str::FromStr;
 use crate::common::traits::{ManiaSkinConfig, SkinConfig};
+use crate::osu::static_assets;
 use crate::skin::osu::keymode::Keymode;
 use crate::skin::osu::General;
 use crate::ini::from_ini;
@@ -50,13 +51,19 @@ impl FromStr for SkinIni {
 }
 
 impl SkinConfig for SkinIni {
-    fn get_dynamic_texture_paths(&self) -> HashSet<String> {
+    fn get_required_texture_paths(&self) -> HashSet<String> {
         let mut result = HashSet::new();
 
         for keymode in &self.keymodes {
             result.extend(keymode.get_texture_paths());
         }
 
+        result
+    }
+
+    fn get_required_sample_paths(&self) -> HashSet<String> {
+        let mut result: HashSet<String> = HashSet::new();
+        result.extend(static_assets::Samples::iter_mapped(|s| s.to_string()));
         result
     }
 }

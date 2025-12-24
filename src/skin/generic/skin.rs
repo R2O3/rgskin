@@ -1,7 +1,11 @@
+use std::collections::HashSet;
+
 use crate::common::traits::ManiaSkin;
 use crate::common::vector::Vector2;
 use crate::generic::gameplay::Gameplay;
+use crate::generic::sound::Sounds;
 use crate::io::texture::TextureStore;
+use crate::sample::SampleStore;
 use crate::skin::generic::{Keymode, Metadata};
 use crate::{texture, BinaryArcExt, Store};
 use crate::extensions::TextureArcExt;
@@ -9,10 +13,12 @@ use crate::extensions::TextureArcExt;
 #[derive(Clone)]
 pub struct GenericManiaSkin {
     pub resolution: Vector2<u32>,
+    pub sounds: Sounds,
     pub metadata: Metadata,
     pub gameplay: Gameplay,
     pub keymodes: Vec<Keymode>,
-    pub textures: TextureStore
+    pub textures: TextureStore,
+    pub samples: SampleStore
 }
 
 impl<'a> ManiaSkin<'a> for GenericManiaSkin {
@@ -35,9 +41,15 @@ impl<'a> ManiaSkin<'a> for GenericManiaSkin {
         None
     }
 
-    fn get_dynamic_texture_paths(&self) -> std::collections::HashSet<String> {
+    fn get_required_texture_paths(&self) -> HashSet<String> {
         self.textures.iter()
         .filter(|t| t.1.is_loaded())
+        .map(|t| t.0.to_string())
+        .collect()
+    }
+    
+    fn get_required_sample_paths(&self) -> HashSet<String> {
+        self.samples.iter()
         .map(|t| t.0.to_string())
         .collect()
     }

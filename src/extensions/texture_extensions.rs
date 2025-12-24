@@ -6,11 +6,6 @@ use image::DynamicImage;
 use crate::texture::Texture;
 
 pub trait TextureArcExt {
-    fn get_path(&self) -> String;
-    fn path_ref<F, R>(&self, f: F) -> R
-    where
-        F: FnOnce(&str) -> R;
-    
     fn clone_texture(&self) -> Texture;
     fn take_texture(&self) -> Texture;
     
@@ -33,18 +28,6 @@ pub trait TextureArcExt {
 }
 
 impl TextureArcExt for Arc<RwLock<Texture>> {
-    fn get_path(&self) -> String {
-        self.read().unwrap().path.clone()
-    }
-    
-    fn path_ref<F, R>(&self, f: F) -> R
-    where
-        F: FnOnce(&str) -> R,
-    {
-        let guard = self.read().unwrap();
-        f(guard.path())
-    }
-    
     fn clone_texture(&self) -> Texture {
         self.read().unwrap().clone()
     }

@@ -2,6 +2,7 @@
 macro_rules! process_texture {
     ($texture:expr, $processor:expr) => {
         {
+            use crate::Binary;
             let processed_image = {
                 let mut write_guard = $texture.write().unwrap();
                 if let Some(img) = write_guard.take_data() {

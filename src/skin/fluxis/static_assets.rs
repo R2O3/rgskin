@@ -51,3 +51,23 @@ def_const_type_enum! (pub Results => &'static str {
     RANK_C => "Results/rank-c",
     RANK_D => "Results/rank-d",
 });
+
+def_const_type_enum! (pub Samples => &'static str {
+    UI_BACK => "Samples/UI/back",
+    UI_SELECT => "Samples/UI/select",
+    UI_HOVER => "Samples/UI/hover",
+    UI_CLICK => "Samples/UI/click",
+    UI_CLICK_DISABLED => "Samples/UI/click-disabled",
+    UI_SKIN_SELECT_CLICK => "Samples/UI/skin-select-click",
+    
+    COURSE_CONFIRM => "Samples/Course/confirm",
+    COURSE_COMPLETE => "Samples/Course/complete",
+    COURSE_FAILED => "Samples/Course/failed",
+    
+    GAMEPLAY_HIT => "Samples/Gameplay/hit",
+    GAMEPLAY_MISS => "Samples/Gameplay/miss",
+    GAMEPLAY_FAIL => "Samples/Gameplay/fail",
+    GAMEPLAY_RESTART => "Samples/Gameplay/restart",
+    GAMEPLAY_FULL_COMBO => "Samples/Gameplay/full-combo",
+    GAMEPLAY_ALL_FLAWLESS => "Samples/Gameplay/all-flawless"
+});

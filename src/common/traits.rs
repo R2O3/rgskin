@@ -13,7 +13,8 @@ pub trait ManiaSkin<'a> {
     fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>>;
 
     fn get_keymode(&self, keymode: u8) -> Option<&Self::Keymode>;
-    fn get_dynamic_texture_paths(&self) -> HashSet<String>;
+    fn get_required_texture_paths(&self) -> HashSet<String>;
+    fn get_required_sample_paths(&self) -> HashSet<String>;
 }
 
 // pub trait TaikoSkin {
@@ -21,7 +22,8 @@ pub trait ManiaSkin<'a> {
 // }
 
 pub trait SkinConfig: ToString + FromStr {
-    fn get_dynamic_texture_paths(&self) -> HashSet<String>;
+    fn get_required_texture_paths(&self) -> HashSet<String>;
+    fn get_required_sample_paths(&self) -> HashSet<String> { HashSet::new() } // not all games have config for sounds
 }
 
 pub trait ManiaSkinConfig: SkinConfig {
