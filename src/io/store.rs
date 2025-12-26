@@ -234,6 +234,16 @@ pub trait Store<T: 'static> {
         }
     }
 
+    fn retain<F>(&mut self, mut predicate: F)
+    where
+        F: FnMut(&T) -> bool,
+    {
+        self.map_mut().retain(|_, arc| {
+            let guard = arc.read().unwrap();
+            predicate(&*guard)
+        });
+    }
+
     fn wasm_contains(&self, path: &str) -> bool {
         self.contains(path)
     }

@@ -23,6 +23,7 @@ use crate::skin::fluxis::{
 };
 use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
+use crate::utils::skin::cleanup_stores;
 use crate::{BinaryArcExt, GenericManiaSkin};
 
 pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -452,6 +453,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     if let Some(s) = &skin.sounds.mania.hit {
         samples.copy(s, static_assets::Samples::GAMEPLAY_HIT);
     }
+
+    cleanup_stores(&skin_json, Some(&mut textures), Some(&mut samples));
 
     let fluxis_skin = FluXisSkin::new(skin_json, Some(textures), Some(samples));
 

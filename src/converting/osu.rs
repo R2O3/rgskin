@@ -1,5 +1,4 @@
 use std::sync::{Arc, RwLock};
-
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
@@ -16,6 +15,7 @@ use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
 use crate::traits::ManiaSkinConfig;
 use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
+use crate::utils::skin::cleanup_stores;
 use crate::BinaryArcExt;
 
 pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -510,6 +510,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         keymode.score_position = Some(score_pos.y as u32);
         keymode.combo_position = Some(combo_pos.y as u32);
     }
+
+    cleanup_stores(&skin_ini, Some(&mut textures), Some(&mut samples));
     
     Ok(OsuSkin::new(skin_ini, Some(textures), Some(samples)))
 }
