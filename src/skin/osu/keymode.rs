@@ -512,22 +512,30 @@ impl Keymode {
             serialize_string_vec(section, &self.long_note_body_images, &default.long_note_body_images, "NoteImage", "L");
             serialize_string_vec(section, &self.long_note_tail_images, &default.long_note_tail_images, "NoteImage", "T");
         });
-        
-        // misc
-        add_section!(result, self.keymode, "Misc", |section: &mut String| {
-            add_key_value_if_not_default::<String>(section, "WarningArrow", &self.warning_arrow, &default.warning_arrow);
+
+        // judgements
+        add_section!(result, self.keymode, "Judgements", |section: &mut String| {
             add_key_value_if_not_default::<String>(section, "Hit0", &self.hit0, &default.hit0);
             add_key_value_if_not_default::<String>(section, "Hit50", &self.hit50, &default.hit50);
             add_key_value_if_not_default::<String>(section, "Hit100", &self.hit100, &default.hit100);
             add_key_value_if_not_default::<String>(section, "Hit200", &self.hit200, &default.hit200);
             add_key_value_if_not_default::<String>(section, "Hit300", &self.hit300, &default.hit300);
             add_key_value_if_not_default::<String>(section, "Hit300g", &self.hit300g, &default.hit300g);
+        });
+
+        // flips
+        add_section!(result, self.keymode, "Flips", |section: &mut String| {
             serialize_bool_vec_if_not_empty(section, &self.key_flip_when_upside_down_columns, "KeyFlipWhenUpsideDownColumns");
             serialize_bool_vec_if_not_empty(section, &self.key_flip_when_upside_down_down_columns, "KeyFlipWhenUpsideDownDownColumns");
             serialize_bool_vec_if_not_empty(section, &self.note_flip_when_upside_down_columns, "NoteFlipWhenUpsideDownColumns");
             serialize_bool_vec_if_not_empty(section, &self.note_flip_when_upside_down_h_columns, "NoteFlipWhenUpsideDownHColumns");
             serialize_bool_vec_if_not_empty(section, &self.note_flip_when_upside_down_l_columns, "NoteFlipWhenUpsideDownLColumns");
             serialize_bool_vec_if_not_empty(section, &self.note_flip_when_upside_down_t_columns, "NoteFlipWhenUpsideDownTColumns");
+        });
+        
+        // misc
+        add_section!(result, self.keymode, "Misc", |section: &mut String| {
+            add_key_value_if_not_default::<String>(section, "WarningArrow", &self.warning_arrow, &default.warning_arrow);
         });
         
         result
