@@ -16,7 +16,7 @@ use crate::traits::ManiaSkinConfig;
 use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
 use crate::utils::skin::cleanup_stores;
-use crate::BinaryArcExt;
+use crate::BinaryArcExtOption;
 
 pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
@@ -245,18 +245,18 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
     let sounds = Sounds {
         ui: UISounds {
-            menu_back_click: samples.get_shared(static_assets::Samples::MENU_BACK_CLICK).as_ref().map(|a| a.get_path()),
-            ui_click: samples.get_shared(static_assets::Samples::CLICK_SHORT_CONFIRM).as_ref().map(|a| a.get_path()),
-            ui_select: samples.get_shared(static_assets::Samples::MENU_FREEPLAY_CLICK).as_ref().map(|a| a.get_path()),
-            ui_hover: samples.get_shared(static_assets::Samples::CLICK_SHORT).as_ref().map(|a| a.get_path())
+            menu_back_click: samples.get_shared(static_assets::Samples::MENU_BACK_CLICK).get_path(),
+            ui_click: samples.get_shared(static_assets::Samples::CLICK_SHORT_CONFIRM).get_path(),
+            ui_select: samples.get_shared(static_assets::Samples::MENU_FREEPLAY_CLICK).get_path(),
+            ui_hover: samples.get_shared(static_assets::Samples::CLICK_SHORT).get_path()
         },
         gameplay: GenericGameplaySounds {
-            miss: samples.get_shared(static_assets::Samples::COMBOBREAK).as_ref().map(|a| a.get_path()),
-            fail: samples.get_shared(static_assets::Samples::FAILSOUND).as_ref().map(|a| a.get_path()),
-            restart: samples.get_shared(static_assets::Samples::PAUSE_RETRY_CLICK).as_ref().map(|a| a.get_path())
+            miss: samples.get_shared(static_assets::Samples::COMBOBREAK).get_path(),
+            fail: samples.get_shared(static_assets::Samples::FAILSOUND).get_path(),
+            restart: samples.get_shared(static_assets::Samples::PAUSE_RETRY_CLICK).get_path()
         },
         mania: ManiaGameplaySounds {
-            hit: samples.get_shared(static_assets::Samples::DRUM_HITNORMAL).as_ref().map(|a| a.get_path())
+            hit: samples.get_shared(static_assets::Samples::DRUM_HITNORMAL).get_path()
         },
     };
     
@@ -467,16 +467,16 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             long_note_head_images,
             long_note_body_images,
             long_note_tail_images,
-            lighting_n: keymode.hit_lighting.normal.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            lighting_l: keymode.hit_lighting.hold.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            stage_light: keymode.column_lighting.texture.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            lighting_n: keymode.hit_lighting.normal.get_path().unwrap_or_default(),
+            lighting_l: keymode.hit_lighting.hold.get_path().unwrap_or_default(),
+            stage_light: keymode.column_lighting.texture.get_path().unwrap_or_default(),
             judgement_line: keymode.layout.show_judgement_line,
-            hit0: skin.gameplay.judgement.miss.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            hit50: skin.gameplay.judgement.bad.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            hit100: skin.gameplay.judgement.good.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            hit200: skin.gameplay.judgement.great.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            hit300: skin.gameplay.judgement.perfect.as_ref().map(|a| a.get_path()).unwrap_or_default(),
-            hit300g: skin.gameplay.judgement.flawless.as_ref().map(|a| a.get_path()).unwrap_or_default(),
+            hit0: skin.gameplay.judgement.miss.get_path().unwrap_or_default(),
+            hit50: skin.gameplay.judgement.bad.get_path().unwrap_or_default(),
+            hit100: skin.gameplay.judgement.good.get_path().unwrap_or_default(),
+            hit200: skin.gameplay.judgement.great.get_path().unwrap_or_default(),
+            hit300: skin.gameplay.judgement.perfect.get_path().unwrap_or_default(),
+            hit300g: skin.gameplay.judgement.flawless.get_path().unwrap_or_default(),
             ..Default::default()
         };
 

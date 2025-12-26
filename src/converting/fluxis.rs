@@ -24,7 +24,7 @@ use crate::skin::fluxis::{
 use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
 use crate::utils::skin::cleanup_stores;
-use crate::{BinaryArcExt, GenericManiaSkin};
+use crate::{BinaryArcExt, BinaryArcExtOption, GenericManiaSkin};
 
 pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
@@ -279,18 +279,18 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
 
     let sounds = Sounds {
         ui: UISounds {
-            menu_back_click: samples.get_shared(static_assets::Samples::UI_BACK).as_ref().map(|a| a.get_path()),
-            ui_click: samples.get_shared(static_assets::Samples::UI_CLICK).as_ref().map(|a| a.get_path()),
-            ui_select: samples.get_shared(static_assets::Samples::UI_SELECT).as_ref().map(|a| a.get_path()),
-            ui_hover: samples.get_shared(static_assets::Samples::UI_HOVER).as_ref().map(|a| a.get_path())
+            menu_back_click: samples.get_shared(static_assets::Samples::UI_BACK).get_path(),
+            ui_click: samples.get_shared(static_assets::Samples::UI_CLICK).get_path(),
+            ui_select: samples.get_shared(static_assets::Samples::UI_SELECT).get_path(),
+            ui_hover: samples.get_shared(static_assets::Samples::UI_HOVER).get_path()
         },
         gameplay: GenericGameplaySounds {
-            miss: samples.get_shared(static_assets::Samples::GAMEPLAY_MISS).as_ref().map(|a| a.get_path()),
-            fail: samples.get_shared(static_assets::Samples::GAMEPLAY_FAIL).as_ref().map(|a| a.get_path()),
-            restart: samples.get_shared(static_assets::Samples::GAMEPLAY_RESTART).as_ref().map(|a| a.get_path())
+            miss: samples.get_shared(static_assets::Samples::GAMEPLAY_MISS).get_path(),
+            fail: samples.get_shared(static_assets::Samples::GAMEPLAY_FAIL).get_path(),
+            restart: samples.get_shared(static_assets::Samples::GAMEPLAY_RESTART).get_path()
         },
         mania: ManiaGameplaySounds {
-            hit: samples.get_shared(static_assets::Samples::GAMEPLAY_HIT).as_ref().map(|a| a.get_path())
+            hit: samples.get_shared(static_assets::Samples::GAMEPLAY_HIT).get_path()
         },
     };
 
@@ -370,8 +370,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         });
     }
     
-    let health_foreground = skin.gameplay.health_bar.fill.as_ref().map(|a| a.get_path()).unwrap_or_default();
-    let health_background = skin.gameplay.health_bar.background.as_ref().map(|a| a.get_path()).unwrap_or_default();
+    let health_foreground = skin.gameplay.health_bar.fill.get_path().unwrap_or_default();
+    let health_background = skin.gameplay.health_bar.background.get_path().unwrap_or_default();
     
     let mut skin_json = SkinJson {
         info: Info {
@@ -418,8 +418,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         "blank".to_string()
     };
     textures.copy(&skin.gameplay.stage.get_path().unwrap_or_default(), "Stage/background");
-    skin_json.overrides.stage.border_right = skin.gameplay.stage.border_right.as_ref().map(|a| a.get_path()).unwrap_or_default();
-    skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.as_ref().map(|a| a.get_path()).unwrap_or_default();
+    skin_json.overrides.stage.border_right = skin.gameplay.stage.border_right.get_path().unwrap_or_default();
+    skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.get_path().unwrap_or_default();
     skin_json.sync_overrides_from_keymodes();
 
     if let Some(s) = &skin.sounds.ui.menu_back_click {

@@ -20,7 +20,7 @@ pub use osu::OsuSkin;
 pub use fluxis::FluXisSkin;
 pub use generic::GenericManiaSkin;
 
-pub use extensions::{TextureArcExt, BinaryArcExt};
+pub use extensions::{TextureArcExt, BinaryArcExt, BinaryArcExtOption};
 pub use io::{Binary, BinaryState, Store, texture, sample};
 pub use common::traits;
 
