@@ -1,3 +1,4 @@
+use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 
 use crate::define_keymode;
@@ -13,35 +14,67 @@ define_keymode!(
     (tick_images_small, "HitObjects", "Tick", "-small"),
 );
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Keymode {
-    #[serde(skip)] 
+    #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub keymode: u8,
     
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub column_width: u32,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit_position: i32,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub tint_notes: bool,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub tint_lns: bool,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub tint_receptors: bool,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub colors: Vec<String>,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub receptors_first: bool,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub receptor_offset: i32,
     
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub receptor_images: Vec<String>,
+    
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub receptor_images_down: Vec<String>,
+    
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub normal_note_images: Vec<String>,
+    
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub long_note_head_images: Vec<String>,
+    
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub long_note_body_images: Vec<String>,
+    
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub long_note_tail_images: Vec<String>,
+    
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub tick_images: Vec<String>,
+    
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub tick_images_small: Vec<String>,
 }
 

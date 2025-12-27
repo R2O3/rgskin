@@ -1,3 +1,4 @@
+use wasm_bindgen::prelude::*;
 use indexmap::IndexMap;
 use std::str::FromStr;
 use std::collections::HashSet;
@@ -31,6 +32,60 @@ pub struct SkinJson {
 
     #[serde(skip)]
     pub keymodes: Vec<Keymode>,
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen(js_name = SkinJson)]
+pub struct SkinJsonWasm {
+    inner: SkinJson,
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen(js_class = SkinJson)]
+impl SkinJsonWasm {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        Self {
+            inner: SkinJson::default(),
+        }
+    }
+
+    #[wasm_bindgen(js_name = fromJson)]
+    pub fn from_json(json_str: &str) -> Result<SkinJsonWasm, String> {
+        SkinJson::parse(json_str)
+            .map(|inner| SkinJsonWasm { inner })
+            .map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = toJson)]
+    pub fn to_json(&self) -> Result<String, String> {
+        self.inner.serialize().map_err(|e| e.to_string())
+    }
+
+    #[wasm_bindgen(js_name = parseKeymodesFromOverrides)]
+    pub fn parse_keymodes_from_overrides(&mut self) {
+        self.inner.parse_keymodes_from_overrides();
+    }
+
+    #[wasm_bindgen(js_name = syncOverridesFromKeymodes)]
+    pub fn sync_overrides_from_keymodes(&mut self) {
+        self.inner.sync_overrides_from_keymodes();
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn info(&self) -> Info {
+        self.inner.info.clone()
+    }
+
+    #[wasm_bindgen(getter)]
+    pub fn judgements(&self) -> JudgementColors {
+        self.inner.judgements.clone()
+    }
+
+    #[wasm_bindgen(getter, js_name = snapColors)]
+    pub fn snap_colors(&self) -> SnapColors {
+        self.inner.snap_colors.clone()
+    }
 }
 
 impl Serialize for SkinJson {
@@ -213,5 +268,4 @@ impl ManiaSkinConfig for SkinJson {
     fn get_keymode(&self, keymode: u8) -> Option<&Self::Keymode> {
         self.keymodes.iter().find(|k| k.keymode == keymode)
     }
-
 }

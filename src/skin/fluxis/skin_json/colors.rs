@@ -1,14 +1,27 @@
+use wasm_bindgen::prelude::*;
 use serde::{Deserialize, Serialize};
 use crate::common::color::Rgba;
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct JudgementColors {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub flawless: Rgba,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub perfect: Rgba,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub great: Rgba,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub alright: Rgba,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub okay: Rgba,
+    
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub miss: Rgba,
 }
 
@@ -25,24 +38,40 @@ impl Default for JudgementColors {
     }
 }
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct SnapColors {
     #[serde(rename = "1/3")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_3: Rgba,
+    
     #[serde(rename = "1/4")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_4: Rgba,
+    
     #[serde(rename = "1/6")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_6: Rgba,
+    
     #[serde(rename = "1/8")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_8: Rgba,
+    
     #[serde(rename = "1/12")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_12: Rgba,
+    
     #[serde(rename = "1/16")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_16: Rgba,
+    
     #[serde(rename = "1/24")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_24: Rgba,
+    
     #[serde(rename = "1/48")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub snap_1_48: Rgba,
 }
 
