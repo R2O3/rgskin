@@ -1,14 +1,21 @@
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
 use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 use crate::skin::fluxis::layout_json::{component::Component, gameplay::*};
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct FluXisLayout {
     #[serde(rename = "Name")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub name: String,
     #[serde(rename = "Author")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub author: String,
     #[serde(rename = "Gameplay")]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))] // Can't be bothered to
     pub gameplay: Gameplay,
 }
 
