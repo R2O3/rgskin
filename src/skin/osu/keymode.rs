@@ -1,3 +1,6 @@
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
 use std::collections::HashSet;
 use crate::add_section;
 use crate::osu::static_assets;
@@ -15,80 +18,156 @@ use crate::utils::serde::{
 use crate::utils::io::{path_to_unix, path_to_win};
 use crate::common::color::Rgba;
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug)]
 pub struct Keymode {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub keymode: u8,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub keys_under_notes: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub judgement_line: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub upside_down: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub special_style: u8,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub combo_burst_style: u8,
     pub split_stages: Option<bool>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub stage_separation: f32,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub separate_score: bool,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit_position: u32,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub light_position: u32,
     pub score_position: Option<u32>,
     pub combo_position: Option<u32>,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub column_start: u32,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub column_right: u32,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub column_line_width: Vec<u32>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub column_width: Vec<u32>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub column_spacing: Vec<u32>,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub barline_height: f32,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub lighting_n_width: Vec<u32>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub lighting_l_width: Vec<u32>,
     pub width_for_note_height_scale: Option<u32>,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub light_frame_per_second: u32,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub key_flip_when_upside_down: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub key_flip_when_upside_down_columns: Vec<bool>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub key_flip_when_upside_down_down_columns: Vec<bool>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub note_flip_when_upside_down: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub note_flip_when_upside_down_columns: Vec<bool>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub note_flip_when_upside_down_h_columns: Vec<bool>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub note_flip_when_upside_down_l_columns: Vec<bool>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub note_flip_when_upside_down_t_columns: Vec<bool>,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub note_body_style: u8,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub note_body_style_columns: Vec<u8>,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colours: Vec<Rgba>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colour_lights: Vec<Rgba>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colour_column_line: Rgba,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colour_barline: Rgba,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colour_judgement_line: Rgba,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colour_key_warning: Rgba,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colour_hold: Rgba,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub colour_break: Rgba,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub receptor_images: Vec<String>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub receptor_images_down: Vec<String>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub normal_note_images: Vec<String>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub long_note_head_images: Vec<String>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub long_note_body_images: Vec<String>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub long_note_tail_images: Vec<String>,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub stage_left: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub stage_right: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub stage_bottom: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub stage_hint: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub stage_light: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub lighting_n: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub lighting_l: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub warning_arrow: String,
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit0: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit50: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit100: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit200: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit300: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub hit300g: String,
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+impl Keymode {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = fromStr))]
+    pub fn wasm_from_str(content: &str) -> Result<Keymode, String> {
+        Self::from_str(content).map_err(|e| e.to_string())
+    }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = toStr))]
+    pub fn wasm_to_str(&self) -> String {
+        self.to_str()
+    }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = getTexturePaths))]
+    pub fn wasm_get_texture_paths(&self) -> Vec<String> {
+        self.get_texture_paths().into_iter().collect()
+    }
 }
 
 impl Default for Keymode {

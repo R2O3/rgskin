@@ -1,7 +1,6 @@
 use std::ops::BitOr;
 use crate::common::vector::Vector2;
 
-
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum Anchor {

@@ -1,3 +1,6 @@
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
 use crate::common::traits::ManiaSkin;
 use crate::common::vector::Vector2;
 use crate::converting::fluxis::{from_generic_mania, to_generic_mania};
@@ -9,10 +12,15 @@ use crate::io::texture::TextureStore;
 use crate::traits::SkinConfig;
 use crate::utils::fluxis::FluXisDimensions;
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 pub struct FluXisSkin {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub resolution: Vector2<u32>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub skin_json: SkinJson,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub textures: TextureStore,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub samples: SampleStore
 }
 

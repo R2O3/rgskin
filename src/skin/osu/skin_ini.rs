@@ -1,3 +1,6 @@
+#[cfg(target_arch = "wasm32")]
+use wasm_bindgen::prelude::*;
+
 use std::collections::HashSet;
 use std::str::FromStr;
 use crate::common::traits::{ManiaSkinConfig, SkinConfig};
@@ -6,10 +9,31 @@ use crate::skin::osu::keymode::Keymode;
 use crate::skin::osu::General;
 use crate::ini::from_ini;
 
-#[derive(Clone, Debug)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[derive(Clone, Debug, Default)]
 pub struct SkinIni {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub general: General,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))] // TODO: maybe not a good idea to use getter_with_clone
     pub keymodes: Vec<Keymode>
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+impl SkinIni {
+    #[wasm_bindgen(constructor)]
+    pub fn new() -> Self {
+        SkinIni::default()
+    }
+
+    #[wasm_bindgen(js_name = fromStr)]
+    pub fn from_str_wasm(json_str: &str) -> Result<Self, JsError> {
+        Self::from_str(json_str).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    #[wasm_bindgen(js_name = toString)]
+    pub fn to_string_wasm(&self) -> String {
+        self.to_string()
+    }
 }
 
 impl ToString for SkinIni {
@@ -17,7 +41,7 @@ impl ToString for SkinIni {
         let mut result = String::new();
 
         result.push_str("[General]\n");
-        result.push_str(&self.general.to_str());
+        result.push_str(&self.general.to_string());
         result.push('\n');
 
         for keymode in &self.keymodes {
@@ -76,5 +100,33 @@ impl ManiaSkinConfig for SkinIni {
             if k.keymode == keymode { return Some(k); }
         }
         None
+    }
+}
+
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+impl SkinIni {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "fromStr"))]
+    pub fn wasm_from_str(content: &str) -> Result<SkinIni, String> {
+        Self::from_str(content).map_err(|e| e.to_string())
+    }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "toString"))]
+    pub fn wasm_to_string(&self) -> String {
+        self.to_string()
+    }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "getRequiredTexturePaths"))]
+    pub fn wasm_get_required_texture_paths(&self) -> Vec<String> {
+        self.get_required_texture_paths().into_iter().collect()
+    }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "getRequiredSamplePaths"))]
+    pub fn wasm_get_required_sample_paths(&self) -> Vec<String> {
+        self.get_required_sample_paths().into_iter().collect()
+    }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "getKeymode"))]
+    pub fn wasm_get_keymode(&self, keymode: u8) -> Option<Keymode> {
+        self.get_keymode(keymode).cloned()
     }
 }

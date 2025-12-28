@@ -1,4 +1,6 @@
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+
 use serde::{Deserialize, Serialize};
 
 use crate::define_keymode;

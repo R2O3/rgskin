@@ -1,4 +1,6 @@
+#[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
+
 use indexmap::IndexMap;
 use std::str::FromStr;
 use std::collections::HashSet;
@@ -16,75 +18,45 @@ use serde::{
 };
 use crate::fluxis::skin_json::overrides::extract_keymode_column;
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Default, Deserialize)]
 pub struct SkinJson {
     #[serde(default)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub info: Info,
     
     #[serde(default)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub judgements: JudgementColors,
     
     #[serde(rename = "snap-colors", default)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub snap_colors: SnapColors,
     
     #[serde(default)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub overrides: Overrides,
 
     #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub keymodes: Vec<Keymode>,
 }
 
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(js_name = SkinJson)]
-pub struct SkinJsonWasm {
-    inner: SkinJson,
-}
-
-#[cfg(target_arch = "wasm32")]
-#[wasm_bindgen(js_class = SkinJson)]
-impl SkinJsonWasm {
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+impl SkinJson {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        Self {
-            inner: SkinJson::default(),
-        }
+        SkinJson::default()
     }
 
-    #[wasm_bindgen(js_name = fromJson)]
-    pub fn from_json(json_str: &str) -> Result<SkinJsonWasm, String> {
-        SkinJson::parse(json_str)
-            .map(|inner| SkinJsonWasm { inner })
-            .map_err(|e| e.to_string())
+    #[wasm_bindgen(js_name = fromStr)]
+    pub fn from_str_wasm(json_str: &str) -> Result<Self, JsError> {
+        Self::from_str(json_str).map_err(|e| JsError::new(&e.to_string()))
     }
 
-    #[wasm_bindgen(js_name = toJson)]
-    pub fn to_json(&self) -> Result<String, String> {
-        self.inner.serialize().map_err(|e| e.to_string())
-    }
-
-    #[wasm_bindgen(js_name = parseKeymodesFromOverrides)]
-    pub fn parse_keymodes_from_overrides(&mut self) {
-        self.inner.parse_keymodes_from_overrides();
-    }
-
-    #[wasm_bindgen(js_name = syncOverridesFromKeymodes)]
-    pub fn sync_overrides_from_keymodes(&mut self) {
-        self.inner.sync_overrides_from_keymodes();
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn info(&self) -> Info {
-        self.inner.info.clone()
-    }
-
-    #[wasm_bindgen(getter)]
-    pub fn judgements(&self) -> JudgementColors {
-        self.inner.judgements.clone()
-    }
-
-    #[wasm_bindgen(getter, js_name = snapColors)]
-    pub fn snap_colors(&self) -> SnapColors {
-        self.inner.snap_colors.clone()
+    #[wasm_bindgen(js_name = toString)]
+    pub fn to_string_wasm(&self) -> String {
+        self.to_string()
     }
 }
 
