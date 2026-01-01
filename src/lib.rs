@@ -43,70 +43,11 @@ pub mod prelude {
     pub use crate::common::traits::*;
     pub use crate::extensions::*;
     
-    pub use crate::load;
     pub use crate::export;
     pub use crate::import;
 }
 
-pub mod assets {
-    use std::collections::HashSet;
-    use crate::{common::traits::SkinConfig, osu};
-
-    pub fn get_mania_texture_paths(skin_ini: &osu::SkinIni) -> HashSet<String> {
-        skin_ini.get_required_texture_paths()
-    }
-}
-
-pub mod load {
-    pub mod osu {
-        use std::str::FromStr;
-
-        use crate::{converting::osu::{from_generic_mania, to_generic_mania}, io::texture::TextureStore, osu, sample::SampleStore, skin::generic};
-
-        pub fn skin_ini(str: &str) -> Result<osu::SkinIni, Box<dyn std::error::Error>> {
-            osu::SkinIni::from_str(str)
-        }
-
-        pub fn from_ini(skin_ini: osu::SkinIni, textures: Option<TextureStore>, samples: Option<SampleStore>) -> osu::OsuSkin {
-            osu::OsuSkin::new(skin_ini, textures, samples)
-        }
-
-        pub fn to_generic(skin: &osu::OsuSkin) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
-            to_generic_mania(skin)
-        }
-
-        pub fn from_generic(skin: &generic::GenericManiaSkin) -> Result<osu::OsuSkin, Box<dyn std::error::Error>> {
-            from_generic_mania(skin)
-        }
-    }
-
-    pub mod fluxis {
-        use std::str::FromStr;
-
-        use crate::{converting::fluxis::{from_generic_mania, to_generic_mania}, fluxis, io::texture::TextureStore, sample::SampleStore, skin::generic};
-
-        pub fn skin_json(str: &str) -> Result<fluxis::SkinJson, Box<dyn std::error::Error>> {
-            fluxis::SkinJson::from_str(str)
-        }
-
-        pub fn layout_json(str: &str) -> Result<fluxis::FluXisLayout, Box<dyn std::error::Error>> {
-            fluxis::FluXisLayout::from_str(str)
-        }
-
-        pub fn from_json(skin_ini: fluxis::SkinJson, textures: Option<TextureStore>, samples: Option<SampleStore>) -> fluxis::FluXisSkin {
-            fluxis::FluXisSkin::new(skin_ini, textures, samples)
-        }
-
-        pub fn to_generic(skin: &fluxis::FluXisSkin, layout: Option<&fluxis::FluXisLayout>) -> Result<generic::GenericManiaSkin, Box<dyn std::error::Error>> {
-            to_generic_mania(skin, layout)
-        }
-
-        pub fn from_generic(skin: &generic::GenericManiaSkin) -> Result<(fluxis::FluXisSkin, fluxis::FluXisLayout), Box<dyn std::error::Error>> {
-            from_generic_mania(skin)
-        }
-    }
-}
-
+#[cfg(not(target_arch = "wasm32"))]
 pub mod export {
     use std::io;
     use crate::{exporting::native::export_textures, io::texture::TextureStore};
@@ -147,6 +88,50 @@ pub mod export {
     }
 }
 
+#[cfg(all(target_arch = "wasm32", feature = "browser"))]
+pub mod export {
+    use std::collections::HashMap;
+    use wasm_bindgen::JsError;
+    use crate::{exporting::browser::export_textures, io::texture::TextureStore};
+
+    pub fn textures_to_files(textures: &TextureStore) -> Result<HashMap<String, Vec<u8>>, JsError> {
+        export_textures(textures)
+    }
+
+    pub mod osu {
+        use std::collections::HashMap;
+        use wasm_bindgen::JsError;
+        use crate::{exporting::browser::{export_osu_ini, export_osu_skin}, osu};
+
+        pub fn skin_to_files(skin: &osu::OsuSkin) -> Result<HashMap<String, Vec<u8>>, JsError> {
+            export_osu_skin(skin)
+        }
+
+        pub fn ini_to_string(skin_ini: &osu::SkinIni) -> String {
+            export_osu_ini(skin_ini)
+        }
+    }
+
+    pub mod fluxis {
+        use std::collections::HashMap;
+        use wasm_bindgen::JsError;
+        use crate::{exporting::browser::{export_fluxis_layout_json, export_fluxis_skin, export_fluxis_skin_json}, fluxis};
+
+        pub fn skin_to_files(skin: &fluxis::FluXisSkin) -> Result<HashMap<String, Vec<u8>>, JsError> {
+            export_fluxis_skin(skin)
+        }
+
+        pub fn layout_to_string(layout_json: &fluxis::FluXisLayout) -> Result<String, JsError> {
+            export_fluxis_layout_json(layout_json)
+        }
+
+        pub fn json_to_string(skin_json: &fluxis::SkinJson) -> String {
+            export_fluxis_skin_json(skin_json)
+        }
+    }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
 pub mod import {
     use crate::{importing::native::{import_all_textures_from_dir, import_textures_from_dir}, io::texture::TextureStore};
 
@@ -179,6 +164,41 @@ pub mod import {
 
         pub fn json_str_from_dir(path: &str) -> String {
             read_str_from_path(path)
+        }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", feature = "browser"))]
+pub mod import {
+    use std::collections::HashMap;
+    use wasm_bindgen::JsError;
+    use crate::{importing::browser::{import_all_textures_from_files, import_textures_from_files}, io::texture::TextureStore};
+
+    pub fn textures_from_files(files: &HashMap<String, Vec<u8>>, relative_texture_paths: &[&str]) -> Result<TextureStore, JsError>  {
+        import_textures_from_files(files, relative_texture_paths)
+    }
+
+    pub fn all_textures_from_files(files: &HashMap<String, Vec<u8>>) -> Result<TextureStore, JsError>  {
+        import_all_textures_from_files(files)
+    }
+
+    pub mod osu {
+        use std::collections::HashMap;
+        use wasm_bindgen::JsError;
+        use crate::{importing::browser::import_osu_mania_skin_from_files, OsuSkin};
+
+        pub fn skin_from_files(files: &HashMap<String, Vec<u8>>) -> Result<OsuSkin, JsError> {
+            import_osu_mania_skin_from_files(files)
+        }
+    }
+
+    pub mod fluxis {
+        use std::collections::HashMap;
+        use wasm_bindgen::JsError;
+        use crate::{importing::browser::import_fluxis_skin_from_files, fluxis::FluXisSkin};
+
+        pub fn skin_from_files(files: &HashMap<String, Vec<u8>>) -> Result<FluXisSkin, JsError> {
+            import_fluxis_skin_from_files(files)
         }
     }
 }

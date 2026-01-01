@@ -24,6 +24,11 @@ exclude = [
 crate-type = ["cdylib", "rlib"]
 doctest = false # TODO: re add doctest when we have better docs
 
+[features]
+default = []
+node = []
+browser = []
+
 [dependencies]
 include_dir = "0.7.4"
 num-traits = "0.2.19"
