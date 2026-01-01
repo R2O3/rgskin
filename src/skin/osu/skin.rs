@@ -13,6 +13,7 @@ use crate::traits::SkinConfig;
 use crate::utils::osu::OsuDimensions;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[derive(Clone)]
 pub struct OsuSkin {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub resolution: Vector2<u32>,
@@ -60,5 +61,36 @@ impl<'a> ManiaSkin<'a> for OsuSkin {
 
     fn get_required_sample_paths(&self) -> std::collections::HashSet<String> {
         self.skin_ini.get_required_sample_paths()
+    }
+}
+
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
+impl OsuSkin {
+    #[wasm_bindgen(js_name = toGenericMania)]
+    pub fn to_generic_mania_wasm(&self) -> Result<GenericManiaSkin, JsValue> {
+        self.to_generic_mania(())
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen(js_name = fromGenericMania)]
+    pub fn from_generic_mania_wasm(skin: &GenericManiaSkin) -> Result<OsuSkin, JsValue> {
+        Self::from_generic_mania(skin)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    }
+
+    #[wasm_bindgen(js_name = getKeymode)]
+    pub fn get_keymode_wasm(&self, keymode: u8) -> Option<Keymode> {
+        self.get_keymode(keymode).cloned()
+    }
+
+    #[wasm_bindgen(js_name = getRequiredTexturePaths)]
+    pub fn get_required_texture_paths_wasm(&self) -> Vec<String> {
+        self.get_required_texture_paths().into_iter().collect()
+    }
+
+    #[wasm_bindgen(js_name = getRequiredSamplePaths)]
+    pub fn get_required_sample_paths_wasm(&self) -> Vec<String> {
+        self.get_required_sample_paths().into_iter().collect()
     }
 }
