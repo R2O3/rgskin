@@ -69,7 +69,7 @@ impl TextureStore {
 
     #[wasm_bindgen(js_name = getTexturePath)]
     pub fn get_texture_path_wasm(&self, path: &str) -> Option<String> {
-        self.with_item(path, |texture| texture.get_path())
+        self.with_item(path, |texture| texture.get_path().to_string())
     }
 
     #[wasm_bindgen(js_name = textureHasData)]
@@ -112,7 +112,7 @@ impl Store<Texture> for TextureStore {
 }
 
 impl TextureStore {
-    pub fn load_from_bytes(&mut self, path: String, bytes: Vec<u8>) -> Result<(), ImageError> {
+    pub fn load_from_bytes(&mut self, path: String, bytes: &[u8]) -> Result<(), ImageError> {
         let texture = Texture::from_bytes(path, bytes)?;
         self.insert(texture);
         Ok(())
@@ -148,7 +148,7 @@ impl TextureStore {
         self.iter().filter_map(|(_, arc)| {
             let texture = arc.read().unwrap();
             if !texture.has_data() {
-                Some(texture.path().to_string())
+                Some(texture.get_path().to_string())
             } else {
                 None
             }

@@ -18,7 +18,7 @@ use crate::utils::serde::{
 use crate::utils::io::{path_to_unix, path_to_win};
 use crate::common::color::Rgba;
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = OsuKeymode))]
 #[derive(Clone, Debug)]
 pub struct Keymode {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]

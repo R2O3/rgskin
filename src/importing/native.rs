@@ -16,7 +16,7 @@ pub fn import_binaries_from_dir<F>(
     mut loader: F,
 ) -> Result<(), Box<dyn std::error::Error>> 
 where
-    F: FnMut(String, Vec<u8>) -> Result<(), Box<dyn std::error::Error>>,
+    F: FnMut(String, &[u8]) -> Result<(), Box<dyn std::error::Error>>,
 {
     for &relative_path in relative_paths {
         let dir_path = join_paths_unix(path, &get_parent(relative_path));
@@ -30,7 +30,7 @@ where
                         let full_path = join_paths_unix(&dir_path, &file_name);
                         
                         if let Ok(bytes) = fs::read(&full_path) {
-                            loader(relative_path.to_string(), bytes)?;
+                            loader(relative_path.to_string(), &bytes)?;
                             break;
                         }
                     }
@@ -48,7 +48,7 @@ pub fn import_all_binaries_from_dir<F>(
     mut loader: F,
 ) -> Result<(), Box<dyn std::error::Error>>
 where
-    F: FnMut(String, Vec<u8>) -> Result<(), Box<dyn std::error::Error>>,
+    F: FnMut(String, &[u8]) -> Result<(), Box<dyn std::error::Error>>,
 {
     if !std::path::Path::new(path).exists() {
         return Ok(());
@@ -61,7 +61,7 @@ where
         loader: &mut F,
     ) -> Result<(), Box<dyn std::error::Error>>
     where
-        F: FnMut(String, Vec<u8>) -> Result<(), Box<dyn std::error::Error>>,
+        F: FnMut(String, &[u8]) -> Result<(), Box<dyn std::error::Error>>,
     {
         if let Ok(entries) = fs::read_dir(dir_path) {
             for entry in entries.flatten() {
@@ -83,7 +83,7 @@ where
                                 .trim_start_matches('/').trim_start_matches('\\');
                             
                             if let Ok(bytes) = fs::read(&full_path_str) {
-                                loader(remove_extension(relative_path), bytes)?;
+                                loader(remove_extension(relative_path), &bytes)?;
                             }
                         }
                     }

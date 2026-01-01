@@ -5,6 +5,8 @@ pub(crate) mod importing;
 pub(crate) mod io;
 pub(crate) mod common;
 
+mod resources;
+
 mod parse;
 
 pub mod image_proc;
@@ -23,6 +25,8 @@ pub use generic::GenericManiaSkin;
 pub use extensions::{TextureArcExt, BinaryArcExt, BinaryArcExtOption};
 pub use io::{Binary, BinaryState, Store, texture, sample};
 pub use common::traits;
+
+pub(crate) use resources::Resources;
 
 pub mod prelude {
     pub use crate::OsuSkin;

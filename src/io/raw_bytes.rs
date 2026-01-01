@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use js_sys::{Uint8Array, ArrayBuffer};
 use crate::{impl_binary_wasm, io::{Binary, BinaryState}};
 
 #[wasm_bindgen]
@@ -47,7 +46,7 @@ impl Binary for RawBytes {
         &mut self.data
     }
     
-    fn path(&self) -> &str {
+    fn get_path(&self) -> &str {
         &self.path
     }
     

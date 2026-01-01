@@ -42,7 +42,8 @@ pub struct SkinJson {
     pub keymodes: Vec<Keymode>,
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
 impl SkinJson {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {

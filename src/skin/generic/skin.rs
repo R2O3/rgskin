@@ -4,6 +4,7 @@ use crate::common::traits::ManiaSkin;
 use crate::common::vector::Vector2;
 use crate::generic::gameplay::Gameplay;
 use crate::generic::sound::Sounds;
+use crate::generic::UI;
 use crate::io::texture::TextureStore;
 use crate::sample::SampleStore;
 use crate::skin::generic::{Keymode, Metadata};
@@ -15,6 +16,7 @@ pub struct GenericManiaSkin {
     pub resolution: Vector2<u32>,
     pub sounds: Sounds,
     pub metadata: Metadata,
+    pub ui: UI,
     pub gameplay: Gameplay,
     pub keymodes: Vec<Keymode>,
     pub textures: TextureStore,

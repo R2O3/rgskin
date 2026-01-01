@@ -3,10 +3,10 @@ use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
-use crate::generic::sound::*;
+use crate::generic::{sound::*, UI};
 use crate::osu::static_assets;
 use crate::generic::Gameplay;
-use crate::image_proc::proc::{dist_from_bottom, flip_vertical, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
+use crate::image_proc::proc::{dist_from_bottom, flip_vertical, resize_width, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
 use crate::io::Store;
 use crate::io::texture::{Texture, TextureProcessor};
 use crate::osu::{self, General, OsuSkin, SkinIni};
@@ -16,7 +16,7 @@ use crate::traits::ManiaSkinConfig;
 use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
 use crate::utils::skin::cleanup_stores;
-use crate::BinaryArcExtOption;
+use crate::{Binary, BinaryArcExtOption, BinaryState, Resources};
 
 pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
@@ -30,7 +30,6 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         name: skin.skin_ini.general.name.clone(),
         creator: skin.skin_ini.general.author.clone(),
         version: skin.skin_ini.general.version.clone(),
-        center_cursor: skin.skin_ini.general.cursor_centre.clone()
     };
 
     let mut receptor_processor = TextureProcessor::<i32>::new();
@@ -242,6 +241,22 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             ),
         }
     };
+    
+    let ui = UI {
+        cursor: Cursor {
+            texture: textures.get_shared(static_assets::Interface::CURSOR)
+            .or_else(|| {
+                let bytes = Resources::cursor("lazer_cursor.png") // osu!stable cursor sucks
+                    .expect("Failed to load cursor texture");
+                let tex = Texture::from_bytes(
+                    static_assets::Interface::CURSOR.to_string(),
+                    &bytes
+                ).ok()?;
+                Some(Arc::new(RwLock::new(tex)))
+            }),
+            centered: skin.skin_ini.general.cursor_centre.clone(),
+        }
+    };
 
     let sounds = Sounds {
         ui: UISounds {
@@ -264,6 +279,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         resolution: skin.resolution,
         sounds,
         metadata,
+        ui,
         gameplay,
         keymodes,
         textures,
@@ -288,7 +304,9 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         name: skin.metadata.name.clone(),
         author: skin.metadata.creator.clone(),
         version: skin.metadata.version.clone(),
-        cursor_centre: skin.metadata.center_cursor,
+        cursor_centre: skin.ui.cursor.centered,
+        cursor_rotate: false, // hell no
+        cursor_expand: true, // TODO: change this when adding quaver later
         ..Default::default()
     };
 
@@ -409,6 +427,27 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
 
         if !textures.contains(static_assets::Mania::WARNINGARROW) {
             textures.copy("blank", static_assets::Mania::WARNINGARROW);
+        }
+
+        if !textures.contains(static_assets::Interface::CURSORMIDDLE) {
+            textures.copy("blank", static_assets::Interface::CURSORMIDDLE);
+        }
+
+        if !textures.contains(static_assets::Interface::CURSORTRAIL) {
+            textures.copy("blank", static_assets::Interface::CURSORTRAIL);
+        }
+
+        if !textures.contains(static_assets::Interface::CURSOR) {
+            if let Some(cursor_arc) = &skin.ui.cursor.texture {
+                resize_width(cursor_arc, 24, image::imageops::FilterType::Triangle)?;
+            }
+
+            if let Some(cursor_image) = skin.ui.cursor.texture.clone_data() {
+                textures.copy_from_data(
+                    static_assets::Interface::CURSOR,
+                    BinaryState::Loaded(cursor_image)
+                );
+            }
         }
 
         // Samples

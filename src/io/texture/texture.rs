@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use js_sys::{Uint8Array, ArrayBuffer};
 use image::{DynamicImage, ImageError};
 use crate::{impl_binary_wasm, io::{Binary, BinaryState}};
 
@@ -22,6 +21,7 @@ impl Texture {
         }
     }
 
+    #[wasm_bindgen(js_name = fromBlank)]
     pub fn from_blank(path: String) -> Self {
         use image::{ImageBuffer, Rgba};
         let img = ImageBuffer::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
@@ -45,7 +45,7 @@ impl Binary for Texture {
         &mut self.data
     }
     
-    fn path(&self) -> &str {
+    fn get_path(&self) -> &str {
         &self.path
     }
     

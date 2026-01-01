@@ -37,6 +37,11 @@ def_const_type_enum! (pub Mania => &'static str {
 });
 
 def_const_type_enum! (pub Interface => &'static str {
+    CURSOR => "cursor",
+    CURSORMIDDLE => "cursormiddle",
+    CURSOR_SMOKE => "cursor-smoke",
+    CURSORTRAIL => "cursortrail",
+    CURSOR_RIPPLE => "cursor-ripple",
     STAR => "star",
     STAR2 => "star2",
     SCOREBAR_BG => "scorebar-bg",

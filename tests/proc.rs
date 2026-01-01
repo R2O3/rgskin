@@ -6,7 +6,7 @@ use rgc_skin::texture::{Texture, TextureStore};
 #[test]
 fn osu_mania_receptor_draw() -> Result<(), Box<dyn std::error::Error>> {
     let img_bytes = read_file_to_bytes("./tests/assets/k_down.png")?;
-    let texture = Texture::from_bytes("k_down.png".to_string(), img_bytes)?;
+    let texture = Texture::from_bytes("k_down.png".to_string(), &img_bytes)?;
 
     let mut textures = TextureStore::new();
     textures.insert(texture);

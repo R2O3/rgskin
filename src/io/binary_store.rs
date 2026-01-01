@@ -67,7 +67,7 @@ impl BinaryStore {
 
     #[wasm_bindgen(js_name = getBinaryPath)]
     pub fn get_binary_path_wasm(&self, path: &str) -> Option<String> {
-        self.with_item(path, |binary| binary.path().to_string())
+        self.with_item(path, |binary| binary.get_path().to_string())
     }
 
     #[wasm_bindgen(js_name = binaryHasData)]
@@ -117,7 +117,7 @@ impl Store<RawBytes> for BinaryStore {
 }
 
 impl BinaryStore {
-    pub fn load_from_bytes(&mut self, path: String, bytes: Vec<u8>) -> Result<(), String> {
+    pub fn load_from_bytes(&mut self, path: String, bytes: &[u8]) -> Result<(), String> {
         let binary = RawBytes::from_bytes(path, bytes)?;
         self.insert(binary);
         Ok(())
@@ -153,7 +153,7 @@ impl BinaryStore {
         self.iter().filter_map(|(_, arc)| {
             let binary = arc.read().unwrap();
             if !binary.has_data() {
-                Some(binary.path().to_string())
+                Some(binary.get_path().to_string())
             } else {
                 None
             }

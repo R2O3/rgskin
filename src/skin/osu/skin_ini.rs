@@ -18,7 +18,8 @@ pub struct SkinIni {
     pub keymodes: Vec<Keymode>
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg(target_arch = "wasm32")]
+#[wasm_bindgen]
 impl SkinIni {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
@@ -33,6 +34,21 @@ impl SkinIni {
     #[wasm_bindgen(js_name = toString)]
     pub fn to_string_wasm(&self) -> String {
         self.to_string()
+    }
+
+    #[wasm_bindgen(js_name = "getRequiredTexturePaths")]
+    pub fn wasm_get_required_texture_paths(&self) -> Vec<String> {
+        self.get_required_texture_paths().into_iter().collect()
+    }
+
+    #[wasm_bindgen(js_name = "getRequiredSamplePaths")]
+    pub fn wasm_get_required_sample_paths(&self) -> Vec<String> {
+        self.get_required_sample_paths().into_iter().collect()
+    }
+
+    #[wasm_bindgen(js_name = "getKeymode")]
+    pub fn wasm_get_keymode(&self, keymode: u8) -> Option<Keymode> {
+        self.get_keymode(keymode).cloned()
     }
 }
 
@@ -82,6 +98,9 @@ impl SkinConfig for SkinIni {
             result.extend(keymode.get_texture_paths());
         }
 
+        result.extend(static_assets::Mania::iter_mapped(|t| t.to_string()));
+        result.extend(static_assets::Interface::iter_mapped(|t| t.to_string()));
+
         result
     }
 
@@ -100,33 +119,5 @@ impl ManiaSkinConfig for SkinIni {
             if k.keymode == keymode { return Some(k); }
         }
         None
-    }
-}
-
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-impl SkinIni {
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "fromStr"))]
-    pub fn wasm_from_str(content: &str) -> Result<SkinIni, String> {
-        Self::from_str(content).map_err(|e| e.to_string())
-    }
-
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "toString"))]
-    pub fn wasm_to_string(&self) -> String {
-        self.to_string()
-    }
-
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "getRequiredTexturePaths"))]
-    pub fn wasm_get_required_texture_paths(&self) -> Vec<String> {
-        self.get_required_texture_paths().into_iter().collect()
-    }
-
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "getRequiredSamplePaths"))]
-    pub fn wasm_get_required_sample_paths(&self) -> Vec<String> {
-        self.get_required_sample_paths().into_iter().collect()
-    }
-
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = "getKeymode"))]
-    pub fn wasm_get_keymode(&self, keymode: u8) -> Option<Keymode> {
-        self.get_keymode(keymode).cloned()
     }
 }

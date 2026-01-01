@@ -102,7 +102,7 @@ where
     }
 
     fn get_path(&self) -> String {
-        self.read().unwrap().path().to_string()
+        self.read().unwrap().get_path().to_string()
     }
     
     fn path_ref<F, R>(&self, f: F) -> R
@@ -110,7 +110,7 @@ where
         F: FnOnce(&str) -> R,
     {
         let guard = self.read().unwrap();
-        f(guard.path())
+        f(guard.get_path())
     }
     
     fn get_data(&self) -> Option<T::LoadedData>

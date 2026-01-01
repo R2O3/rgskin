@@ -8,6 +8,7 @@ use crate::utils::io::normalize;
 #[macro_export]
 macro_rules! impl_store_wasm {
     ($store_type:ty, $item_type:ty) => {
+        #[cfg(target_arch = "wasm32")]
         #[wasm_bindgen]
         impl $store_type {
             #[wasm_bindgen(js_name = contains)]

@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{sample::SampleStore, texture::TextureStore, traits::SkinConfig, Store};
+use crate::{sample::SampleStore, texture::TextureStore, traits::SkinConfig, Binary, Store};
 
 pub fn cleanup_stores<T: SkinConfig>(config: &T, textures: Option<&mut TextureStore>, samples: Option<&mut SampleStore>) {
     if samples.is_some() {

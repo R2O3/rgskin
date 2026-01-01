@@ -16,7 +16,7 @@ define_keymode!(
     (tick_images_small, "HitObjects", "Tick", "-small"),
 );
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = FluXisKeymode))]
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct Keymode {
     #[serde(skip)]

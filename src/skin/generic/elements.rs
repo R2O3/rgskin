@@ -23,7 +23,7 @@ pub trait SkinElement: Sync + Send {
     }
     
     fn get_path(&self) -> Option<String> {
-        self.with_texture(|texture| texture.path().to_string())
+        self.with_texture(|texture| texture.get_path().to_string())
     }
     
     fn has_data(&self) -> bool {
@@ -150,3 +150,4 @@ skin_element!(ColumnLighting);
 skin_element!(JudgementLine; texture; color: Rgba);
 skin_element!(Judgement; flawless, perfect, great, good, bad, miss);
 skin_element!(Stage; background, border_right, border_left);
+skin_element!(Cursor; texture; centered: bool);

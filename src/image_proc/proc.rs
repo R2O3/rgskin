@@ -106,6 +106,30 @@ pub fn rotate_90_deg_ccw(texture: &Arc<RwLock<Texture>>) -> Result<(), Box<dyn s
     })
 }
 
+pub fn resize_width(
+    texture: &Arc<RwLock<Texture>>, 
+    new_width: u32,
+    filter: image::imageops::FilterType
+) -> Result<(), Box<dyn std::error::Error>> {
+    process_texture!(texture, |img: DynamicImage| {
+        let aspect_ratio = img.height() as f32 / img.width() as f32;
+        let new_height = (new_width as f32 * aspect_ratio) as u32;
+        img.resize_exact(new_width, new_height, filter)
+    })
+}
+
+pub fn resize_height(
+    texture: &Arc<RwLock<Texture>>, 
+    new_height: u32,
+    filter: image::imageops::FilterType
+) -> Result<(), Box<dyn std::error::Error>> {
+    process_texture!(texture, |img: DynamicImage| {
+        let aspect_ratio = img.width() as f32 / img.height() as f32;
+        let new_width = (new_height as f32 * aspect_ratio) as u32;
+        img.resize_exact(new_width, new_height, filter)
+    })
+}
+
 pub fn to_osu_column_draw(texture: &Arc<RwLock<Texture>>, column_width: u32) -> Result<(), Box<dyn std::error::Error>> {
     process_texture!(texture, |img: DynamicImage| {
         let scale_factor = column_width as f32 / OsuDimensions::ReceptorWidth.as_f32();

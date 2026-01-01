@@ -1,10 +1,10 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::fluxis::static_assets;
-use crate::generic::{Gameplay, Keymode, Metadata, sound::*};
+use crate::generic::{sound::*, Gameplay, Keymode, Metadata, UI};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::{*, self};
 use crate::image_proc::proc::dist_from_bottom;
@@ -24,7 +24,7 @@ use crate::skin::fluxis::{
 use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
 use crate::utils::skin::cleanup_stores;
-use crate::{BinaryArcExt, BinaryArcExtOption, GenericManiaSkin};
+use crate::{Binary, BinaryArcExt, BinaryArcExtOption, GenericManiaSkin, Resources};
 
 pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
@@ -39,7 +39,6 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
     let metadata = Metadata {
         name: skin.skin_json.info.name.clone(),
         creator: skin.skin_json.info.creator.clone(),
-        center_cursor: false,
         ..Default::default()
     };
 
@@ -277,6 +276,19 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
         }
     };
 
+    let ui = UI {
+        cursor: Cursor {
+            texture: Some(Arc::new(RwLock::new(
+                Texture::from_bytes(
+                    "Cursor/fluxis_cursor".to_string(),
+                    &Resources::cursor("fluxis_cursor.png")
+                        .expect("Cursor resource not found")
+                ).expect("Failed to load cursor texture")
+            ))),
+            centered: false,
+        }
+    };
+
     let sounds = Sounds {
         ui: UISounds {
             menu_back_click: samples.get_shared(static_assets::Samples::UI_BACK).get_path(),
@@ -298,8 +310,9 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
         resolution: skin.resolution,
         sounds,
         metadata,
-        gameplay, 
-        keymodes, 
+        ui,
+        gameplay,
+        keymodes,
         textures,
         samples
     })

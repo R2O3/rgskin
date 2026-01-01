@@ -36,7 +36,7 @@ where
 
 pub fn export_textures(textures: &TextureStore, path: &str) -> io::Result<()> {
     export_binaries(textures, path, |texture, base_path| {
-        let texture_path_with_ext = change_extension(texture.path(), "png");
+        let texture_path_with_ext = change_extension(texture.get_path(), "png");
         let output_path = Path::new(base_path).join(&texture_path_with_ext);
         
         if let Some(parent) = output_path.parent() {
@@ -56,7 +56,7 @@ pub fn export_textures(textures: &TextureStore, path: &str) -> io::Result<()> {
 
 pub fn export_samples(samples: &SampleStore, path: &str) -> io::Result<()> {
     export_binaries(samples, path, |sample, base_path| {
-        let sample_path_with_ext = change_extension(sample.path(), "wav"); // TODO: preserve original extension to avoid bugs
+        let sample_path_with_ext = change_extension(sample.get_path(), "wav"); // TODO: preserve original extension to avoid bugs
         let output_path = Path::new(base_path).join(&sample_path_with_ext);
         
         if let Some(parent) = output_path.parent() {

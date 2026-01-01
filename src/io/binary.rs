@@ -68,6 +68,10 @@ impl<T> BinaryState<T> {
 #[macro_export]
 macro_rules! impl_binary_wasm {
     ($type:ty, $error_msg:expr) => {
+        #[allow(unused_imports)]
+        use js_sys::{ArrayBuffer, Uint8Array};
+
+        #[cfg(target_arch = "wasm32")]
         #[wasm_bindgen]
         impl $type {
             #[wasm_bindgen(js_name = fromArrayBuffer)]
@@ -95,8 +99,8 @@ macro_rules! impl_binary_wasm {
             }
 
             #[wasm_bindgen(js_name = getPath)]
-            pub fn get_path(&self) -> String {
-                <$type as Binary>::path(self).to_string()
+            pub fn get_path_wasm(&self) -> String {
+                <$type as Binary>::get_path(self).to_string()
             }
 
             #[wasm_bindgen(js_name = hasData)]
@@ -140,20 +144,20 @@ pub trait Binary: Sized {
     
     fn state(&self) -> &BinaryState<Self::LoadedData>;
     fn state_mut(&mut self) -> &mut BinaryState<Self::LoadedData>;
-    fn path(&self) -> &str;
+    fn get_path(&self) -> &str;
     fn new_with_state(path: String, state: BinaryState<Self::LoadedData>) -> Self;
     
     fn decode_bytes(bytes: &[u8]) -> Result<Self::LoadedData, Self::Error>;
     fn encode_to_bytes(data: &Self::LoadedData) -> Result<Vec<u8>, Self::Error>;
     
-    fn from_bytes(path: String, bytes: Vec<u8>) -> Result<Self, Self::Error> {
-        let data = Self::decode_bytes(&bytes)?;
+    fn from_bytes(path: String, bytes: &[u8]) -> Result<Self, Self::Error> {
+        let data = Self::decode_bytes(bytes)?;
         Ok(Self::new_with_state(path, BinaryState::Loaded(data)))
     }
 
     fn from_uint8_array(path: String, array: &Uint8Array) -> Result<Self, Self::Error> {
         let bytes = array.to_vec();
-        Self::from_bytes(path, bytes)
+        Self::from_bytes(path, &bytes)
     }
 
     fn from_array_buffer(path: String, buffer: &ArrayBuffer) -> Result<Self, Self::Error> {
