@@ -2,6 +2,6 @@
     "editor.tabSize": 4,
 
     // uncomment below to enable wasm intellisense
-    // "rust-analyzer.cargo.features": ["browser", "node"],
-    // "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
+    "rust-analyzer.cargo.features": ["node"],
+    "rust-analyzer.cargo.target": "wasm32-unknown-unknown",
 }

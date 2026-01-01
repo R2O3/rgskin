@@ -131,6 +131,47 @@ pub mod export {
     }
 }
 
+#[cfg(all(target_arch = "wasm32", feature = "node"))]
+pub mod export {
+    use std::io;
+    use crate::{exporting::native::export_textures, io::texture::TextureStore};
+
+    pub fn textures_to_dir(textures: &TextureStore, path: &str) -> io::Result<()>  {
+        export_textures(textures, path)
+    }
+
+    pub mod osu {
+        use std::io;
+
+        use crate::{exporting::native::{export_osu_ini, export_osu_skin}, osu};
+
+        pub fn skin_to_dir(skin: &osu::OsuSkin, path: &str) -> io::Result<()> {
+            export_osu_skin(skin, path)
+        }
+
+        pub fn ini_to_dir(skin_ini: &osu::SkinIni, path: &str) -> io::Result<()> {
+            export_osu_ini(skin_ini, path)
+        }
+    }
+
+    pub mod fluxis {
+        use std::io;
+        use crate::{exporting::native::{export_fluxis_layout_json, export_fluxis_skin, export_fluxis_skin_json}, fluxis};
+
+        pub fn skin_to_dir(skin: &fluxis::FluXisSkin, path: &str) -> io::Result<()> {
+            export_fluxis_skin(skin, path)
+        }
+
+        pub fn layout_to_dir(layout_json: &fluxis::FluXisLayout, path: &str) -> io::Result<()> {
+            export_fluxis_layout_json(layout_json, path)
+        }
+
+        pub fn json_to_dir(skin_json: &fluxis::SkinJson, path: &str) -> io::Result<()> {
+            export_fluxis_skin_json(skin_json, path)
+        }
+    }
+}
+
 #[cfg(not(target_arch = "wasm32"))]
 pub mod import {
     use crate::{importing::native::{import_all_textures_from_dir, import_textures_from_dir}, io::texture::TextureStore};
@@ -199,6 +240,46 @@ pub mod import {
 
         pub fn skin_from_files(files: &HashMap<String, Vec<u8>>) -> Result<FluXisSkin, JsError> {
             import_fluxis_skin_from_files(files)
+        }
+    }
+}
+
+#[cfg(all(target_arch = "wasm32", feature = "node"))]
+pub mod import {
+    use wasm_bindgen::JsError;
+    use crate::{importing::native::{import_all_textures_from_dir, import_textures_from_dir}, io::texture::TextureStore};
+
+   pub fn textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, JsError>  {
+        import_textures_from_dir(path, relative_texture_paths).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    pub fn all_textures_from_dir(path: &str) -> Result<TextureStore, JsError>  {
+        import_all_textures_from_dir(path).map_err(|e| JsError::new(&e.to_string()))
+    }
+
+    pub mod osu {
+        use wasm_bindgen::JsError;
+        use crate::{importing::native::{read_str_from_path, import_osu_mania_skin_from_dir}, OsuSkin};
+
+        pub fn skin_from_dir(path: &str) -> Result<OsuSkin, JsError> {
+            import_osu_mania_skin_from_dir(path).map_err(|e| JsError::new(&e.to_string()))
+        }
+
+        pub fn ini_str_from_dir(path: &str) -> String {
+            read_str_from_path(path)
+        }
+    }
+
+    pub mod fluxis {
+        use wasm_bindgen::JsError;
+        use crate::{importing::native::{read_str_from_path, import_fluxis_skin_from_dir}, fluxis::FluXisSkin};
+
+        pub fn skin_from_dir(path: &str) -> Result<FluXisSkin, JsError> {
+            import_fluxis_skin_from_dir(path).map_err(|e| JsError::new(&e.to_string()))
+        }
+
+        pub fn json_str_from_dir(path: &str) -> String {
+            read_str_from_path(path)
         }
     }
 }

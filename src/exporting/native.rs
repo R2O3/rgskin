@@ -1,4 +1,4 @@
-#![cfg(not(target_arch = "wasm32"))]
+#![cfg(not(feature = "browser"))]
 
 use std::io;
 use std::fs;
