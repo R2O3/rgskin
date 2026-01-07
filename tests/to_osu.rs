@@ -1,8 +1,6 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 mod test_dependencies;
-use std::fs;
-
 use test_dependencies::*;
 use rgskin::prelude::*;
 
