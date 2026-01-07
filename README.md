@@ -208,8 +208,8 @@ let osuSkin = new rgskin.OsuSkin(skin_config, textures, null); // last parameter
 
 ##### Preparing the filesMap
 
-The `filesMap` parameter is a JavaScript `Map` object where:
-- Keys are filenames (strings)
+The `filesMap` parameter is a `Map` object where:
+- Keys are relative paths (strings)
 - Values are file contents as `Uint8Array`
 
 Example: Reading files from an HTML file input
