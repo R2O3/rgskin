@@ -1,6 +1,6 @@
 {
   "name": "@r2o3/rgskin",
-  "version": "0.0.11",
+  "version": "0.0.1",
   "description": "A library for loading and creating skins for various rhythm games.",
   "license": "MIT",
   "author": "menvae",
