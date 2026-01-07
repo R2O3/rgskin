@@ -1,7 +1,7 @@
 mod test_dependencies;
 use test_dependencies::*;
-use rgc_skin::{image_proc::proc::to_osu_column_draw, {Binary, Store}, utils::io::join_paths_unix};
-use rgc_skin::texture::{Texture, TextureStore};
+use rgskin::{image_proc::proc::to_osu_column_draw, {Binary, Store}, utils::io::join_paths_unix};
+use rgskin::texture::{Texture, TextureStore};
 
 #[test]
 fn osu_mania_receptor_draw() -> Result<(), Box<dyn std::error::Error>> {

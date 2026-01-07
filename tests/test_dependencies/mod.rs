@@ -1,6 +1,6 @@
 #![allow(unused_imports)]
-extern crate rgc_skin;
-pub use rgc_skin::*;
+extern crate rgskin;
+pub use rgskin::*;
 pub mod util;
 pub use util::*;
 pub mod constants;

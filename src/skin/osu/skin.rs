@@ -7,7 +7,7 @@ use crate::converting::osu::{from_generic_mania, to_generic_mania};
 use crate::osu::Keymode;
 use crate::sample::SampleStore;
 use crate::skin::generic::GenericManiaSkin;
-use crate::skin::osu::SkinIni;
+use crate::skin::osu::OsuSkinIni;
 use crate::io::texture::TextureStore;
 use crate::traits::SkinConfig;
 use crate::utils::osu::OsuDimensions;
@@ -18,15 +18,17 @@ pub struct OsuSkin {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub resolution: Vector2<u32>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub skin_ini: SkinIni,
+    pub skin_ini: OsuSkinIni,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub textures: TextureStore,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub samples: SampleStore
 }
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl OsuSkin {
-    pub fn new(skin_ini: SkinIni, textures: Option<TextureStore>, samples: Option<SampleStore>) -> Self {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
+    pub fn new(skin_ini: OsuSkinIni, textures: Option<TextureStore>, samples: Option<SampleStore>) -> Self {
         Self { skin_ini,
             textures: textures.unwrap_or(TextureStore::new()),
             samples: samples.unwrap_or(SampleStore::new()),

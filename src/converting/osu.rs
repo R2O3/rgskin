@@ -9,7 +9,7 @@ use crate::generic::Gameplay;
 use crate::image_proc::proc::{dist_from_bottom, flip_vertical, resize_width, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
 use crate::io::Store;
 use crate::io::texture::{Texture, TextureProcessor};
-use crate::osu::{self, General, OsuSkin, SkinIni};
+use crate::osu::{self, General, OsuSkin, OsuSkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
 use crate::traits::ManiaSkinConfig;
@@ -522,7 +522,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         osu_keymodes.push(osu_keymode);
     }
     
-    let mut skin_ini = SkinIni {
+    let mut skin_ini = OsuSkinIni {
         general,
         keymodes: osu_keymodes,
     };

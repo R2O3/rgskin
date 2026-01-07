@@ -1,4 +1,6 @@
-#![cfg(not(feature = "browser"))]
+#![allow(unused)]
+
+#![cfg(not(target_arch = "wasm32"))]
 
 use std::fs;
 use std::path::Path;
@@ -152,7 +154,7 @@ pub fn import_osu_mania_skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std
     let ini_path = Path::new(path).join("skin.ini");
     let ini_content = read_str_from_path(ini_path.to_str().unwrap());
 
-    let skin_ini = osu::SkinIni::from_str(&ini_content)?;
+    let skin_ini = osu::OsuSkinIni::from_str(&ini_content)?;
     
     let texture_paths = skin_ini.get_required_texture_paths();
     let sample_paths = skin_ini.get_required_sample_paths();

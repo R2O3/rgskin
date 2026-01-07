@@ -1,7 +1,7 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 mod test_dependencies;
-use rgc_skin::{prelude::*, utils::io::join_paths_unix};
+use rgskin::{prelude::*, utils::io::join_paths_unix};
 use test_dependencies::*;
 
 #[test]

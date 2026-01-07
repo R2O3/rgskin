@@ -3,7 +3,7 @@
 mod test_dependencies;
 use test_dependencies::*;
 use std::str::FromStr;
-use rgc_skin::prelude::*;
+use rgskin::prelude::*;
 
 #[test]
 fn osu_skin_ini_test() -> Result<(), Box<dyn std::error::Error>> {

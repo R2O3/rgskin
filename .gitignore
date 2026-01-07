@@ -1,2 +1,10 @@
+# builds
 /target
+
+# wasm builds
+/pkg
+rgskin-node.tgz
+rgskin-web.tgz
+
+# testing
 /test_export

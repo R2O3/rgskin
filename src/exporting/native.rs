@@ -1,4 +1,4 @@
-#![cfg(not(feature = "browser"))]
+#![cfg(not(target_arch = "wasm32"))]
 
 use std::io;
 use std::fs;
@@ -73,7 +73,7 @@ pub fn export_samples(samples: &SampleStore, path: &str) -> io::Result<()> {
     })
 }
 
-pub fn export_osu_ini(skin_ini: &osu::SkinIni, path: &str) -> io::Result<()> {
+pub fn export_osu_ini(skin_ini: &osu::OsuSkinIni, path: &str) -> io::Result<()> {
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)?;
     }

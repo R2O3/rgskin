@@ -25,7 +25,9 @@ pub struct FluXisSkin {
     pub samples: SampleStore
 }
 
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 impl FluXisSkin {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
     pub fn new(skin_json: SkinJson, textures: Option<TextureStore>, samples: Option<SampleStore>) -> Self {
         Self { skin_json,
             textures: textures.unwrap_or(TextureStore::new()),

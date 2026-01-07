@@ -1,8 +1,8 @@
 [package]
-name = "rgc-skin"
+name = "rgskin"
 version = "0.0.1"
 edition = "2024"
-repository = "https://github.com/menvae/RGC-Skin"
+repository = "https://github.com/menvae/rgskin"
 authors = ["menvae"]
 categories = ["wasm"]
 description = "A library for converting rhythm game skins."

@@ -1,8 +1,10 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 mod test_dependencies;
+use std::fs;
+
 use test_dependencies::*;
-use rgc_skin::prelude::*;
+use rgskin::prelude::*;
 
 #[test]
 pub fn fluxis_to_osu_test() -> Result<(), Box<dyn std::error::Error>> {

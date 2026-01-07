@@ -11,7 +11,7 @@ use crate::ini::from_ini;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Default)]
-pub struct SkinIni {
+pub struct OsuSkinIni {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub general: General,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))] // TODO: maybe not a good idea to use getter_with_clone
@@ -20,10 +20,10 @@ pub struct SkinIni {
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
-impl SkinIni {
+impl OsuSkinIni {
     #[wasm_bindgen(constructor)]
     pub fn new() -> Self {
-        SkinIni::default()
+        OsuSkinIni::default()
     }
 
     #[wasm_bindgen(js_name = fromStr)]
@@ -52,7 +52,7 @@ impl SkinIni {
     }
 }
 
-impl ToString for SkinIni {
+impl ToString for OsuSkinIni {
     fn to_string(&self) -> String {
         let mut result = String::new();
 
@@ -70,7 +70,7 @@ impl ToString for SkinIni {
     }
 }
 
-impl FromStr for SkinIni {
+impl FromStr for OsuSkinIni {
     type Err = Box<dyn std::error::Error>;
 
     fn from_str(str: &str) -> Result<Self, Self::Err> {
@@ -86,11 +86,11 @@ impl FromStr for SkinIni {
             Ok(())
         })?;
 
-        Ok(SkinIni { general, keymodes })
+        Ok(OsuSkinIni { general, keymodes })
     }
 }
 
-impl SkinConfig for SkinIni {
+impl SkinConfig for OsuSkinIni {
     fn get_required_texture_paths(&self) -> HashSet<String> {
         let mut result = HashSet::new();
 
@@ -111,7 +111,7 @@ impl SkinConfig for SkinIni {
     }
 }
 
-impl ManiaSkinConfig for SkinIni {
+impl ManiaSkinConfig for OsuSkinIni {
     type Keymode = Keymode;
 
     fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
