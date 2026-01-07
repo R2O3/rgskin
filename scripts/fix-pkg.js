@@ -1,7 +1,7 @@
 const fs = require('fs');
 const path = require('path');
 
-keywords = [
+Keywords = [
   "wasm",
   "rust",
   "rhythm-game",
