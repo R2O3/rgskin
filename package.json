@@ -1,7 +1,7 @@
 {
   "name": "@r2o3/rgskin",
   "version": "0.0.11",
-  "description": "A library for parsing and writing rhythm game charts.",
+  "description": "A library for loading and creating skins for various rhythm games.",
   "license": "MIT",
   "author": "menvae",
   "repository": {
@@ -9,8 +9,8 @@
     "url": "https://github.com/R2O3/rgskin"
   },
   "scripts": {
-    "build": "wasm-pack build --features node --target nodejs --out-dir dist-node && wasm-pack build --features browser --target web --out-dir dist-web",
-    "build-release": "wasm-pack build --release --features node --target nodejs --out-dir dist-node && wasm-pack build --release --features browser --target web --out-dir dist-web && npm run fix-pkg",
+    "build": "wasm-pack build --target nodejs --out-dir dist-node -- --features node && wasm-pack build --target web --out-dir dist-web -- --features browser",
+    "build-release": "wasm-pack build --release --target nodejs --out-dir dist-node -- --features node && wasm-pack build --release --target web --out-dir dist-web -- --features browser && npm run fix-pkg",
     
     "fix-pkg": "node scripts/fix-pkg.js",
     

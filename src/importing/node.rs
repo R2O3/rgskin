@@ -109,6 +109,17 @@ pub fn import_all_textures_from_dir(path: &str) -> Result<TextureStore, Box<dyn 
     Ok(texture_store)
 }
 
+pub fn import_all_samples_from_dir(path: &str) -> Result<SampleStore, Box<dyn std::error::Error>> {
+    let mut sample_store = SampleStore::new();
+    
+    import_all_binaries_from_dir(path, &["wav", "ogg"], |path, bytes| {
+        sample_store.load_from_bytes(path, bytes)?;
+        Ok(())
+    })?;
+    
+    Ok(sample_store)
+}
+
 pub fn import_samples_from_dir(path: &str, relative_sample_paths: &[&str]) -> Result<SampleStore, Box<dyn std::error::Error>> {
     let mut sample_store = SampleStore::new();
     
