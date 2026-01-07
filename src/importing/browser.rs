@@ -147,7 +147,7 @@ pub fn import_osu_mania_skin_from_files(
         .and_then(|(_, bytes)| String::from_utf8(bytes.clone()).ok())
         .ok_or_else(|| JsError::new("skin.ini not found or invalid UTF-8"))?;
 
-    let skin_ini = osu::SkinIni::from_str(&ini_content)
+    let skin_ini = osu::OsuSkinIni::from_str(&ini_content)
         .map_err(|e| JsError::new(&e.to_string()))?;
     
     let texture_paths = skin_ini.get_required_texture_paths();

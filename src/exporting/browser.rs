@@ -70,7 +70,7 @@ pub fn export_samples(samples: &SampleStore) -> Result<HashMap<String, Vec<u8>>,
     })
 }
 
-pub fn export_osu_ini(skin_ini: &osu::SkinIni) -> String {
+pub fn export_osu_ini(skin_ini: &osu::OsuSkinIni) -> String {
     skin_ini.to_string()
 }
 

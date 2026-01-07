@@ -2,7 +2,7 @@
 name = "rgskin"
 version = "0.0.1"
 edition = "2024"
-repository = "https://github.com/menvae/rgskin"
+repository = "https://github.com/r2o3/rgskin"
 authors = ["menvae"]
 categories = ["wasm"]
 description = "A library for converting rhythm game skins."
