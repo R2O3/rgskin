@@ -84,7 +84,7 @@ Additionally all skins can be converting into a generic version of it.
 Examples:
 ```rust
 OsuSkin::from_generic_mania(&generic); 
-OsuSkin.to_generic_mania();
+OsuSkin.to_generic_mania(()); // yes, the extra parethesis is required.
 ```
 ```rust
 FluXisSkin::from_generic_mania(&generic); 
