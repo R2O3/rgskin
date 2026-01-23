@@ -1,7 +1,7 @@
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-use crate::skin::generic::{elements::*, layout::KeymodeLayout};
+use crate::{skin::generic::{elements::*, layout::KeymodeLayout}, traits::KeymodeInvariant};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone)]
@@ -31,4 +31,8 @@ pub struct Keymode {
     pub column_lighting: ColumnLighting,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub judgement_line: JudgementLine,
+}
+
+impl KeymodeInvariant for Keymode {
+    fn get_keymode(&self) -> u8 { self.keymode }
 }

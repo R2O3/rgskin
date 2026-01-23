@@ -168,3 +168,26 @@ macro_rules! numeric_enum {
         }
     };
 }
+
+#[macro_export]
+macro_rules! derive_merge_for_all {
+    (
+        strategy = $strat:path;
+        $(#[$struct_meta:meta])*
+        pub struct $name:ident {
+            $(
+                $(#[$field_meta:meta])*
+                $field_vis:vis $field_name:ident : $field_type:ty
+            ),* $(,)?
+        }
+    ) => {
+        $(#[$struct_meta])*
+        pub struct $name {
+            $(
+                #[merge(strategy = $strat)]
+                $(#[$field_meta])*
+                $field_vis $field_name: $field_type,
+            )*
+        }
+    };
+}

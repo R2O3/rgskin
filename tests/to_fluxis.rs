@@ -1,14 +1,14 @@
 #![cfg(not(target_arch = "wasm32"))]
 
 mod test_dependencies;
-use rgskin::{prelude::*, utils::io::join_paths_unix};
+use rgskin::utils::io::join_paths_unix;
 use test_dependencies::*;
 
 #[test]
 pub fn osu_to_fluxis_test() -> Result<(), Box<dyn std::error::Error>> {
     benchmark_closure(||
     {
-        let osu_skin = import::osu::skin_from_dir("./tests/skins/BubbleSkin")?;
+        let osu_skin = import::osu::skin_from_dir("./tests/skins/BubbleSkin", false)?;
         let generic_skin = osu_skin.to_generic_mania(())?;
         let fluxis_from_generic = FluXisSkin::from_generic_mania(&generic_skin)?;
         export::fluxis::skin_to_dir(&fluxis_from_generic.0, SKIN_PATH)?;

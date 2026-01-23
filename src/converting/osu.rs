@@ -37,7 +37,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
     for keymode in &skin.skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
-        let average_column_width = keymode.column_width.iter().sum::<u32>() / keymode.column_width.len() as u32;
+        let average_column_width = keymode.column_width.iter().sum::<f32>() / keymode.column_width.len() as f32;
         let mut max_receptor_offset = 0;
 
         let receptor_up_elements: Vec<ReceptorUp> = keymode.receptor_images
@@ -47,7 +47,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
                             let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
-                            if let Err(e) = to_osu_column_draw(arc_texture, average_column_width) {
+                            if let Err(e) = to_osu_column_draw(arc_texture, average_column_width as u32) {
                                 eprintln!("Failed to process receptor texture: {}", e);
                             }
                             offset.try_into().unwrap() // TODO: potential panic check later
@@ -70,7 +70,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
                             let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
-                            if let Err(e) = to_osu_column_draw(arc_texture, average_column_width) {
+                            if let Err(e) = to_osu_column_draw(arc_texture, average_column_width as u32) {
                                 eprintln!("Failed to process receptor texture: {}", e);
                             }
                             offset.try_into().unwrap()
@@ -493,13 +493,13 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
             hit_position: ((1.0 - keymode.layout.hit_position) * resize.target.y as f32) as u32,
-            column_start: (playfield_pos - playfield_width / 2.0) as u32,
+            column_start: (playfield_pos - playfield_width / 2.0),
             column_width: keymode.layout.column_widths
                 .iter()
-                .map(|cw| (resize.to_target_x::<u32>(*cw)))
+                .map(|cw| (resize.to_target_x::<f32>(*cw)))
                 .collect(),
             column_spacing: keymode.layout.column_spacing.clone(),
-            column_line_width: vec![0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
+            column_line_width: vec![0.0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
             receptor_images,
             receptor_images_down,
             normal_note_images,

@@ -155,7 +155,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             hit_position: (keymode.hit_position) as f32 / FluXisDimensions::Y.as_f32(),
             receptor_offset: keymode.receptor_offset + max_additional_offset,
             column_widths: vec![keymode.column_width as f32 / FluXisDimensions::X.as_f32(); key_count],
-            column_spacing: vec![0; key_count],
+            column_spacing: vec![0.0; key_count],
         };
 
         let column_lighting_path = &skin.skin_json.overrides.lighting.column_lighting;

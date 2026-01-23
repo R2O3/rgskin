@@ -1,7 +1,11 @@
 
 #[macro_export]
 macro_rules! define_overrides {
-    ($struct_name:ident, $(($field:ident, $key:expr)),* $(,)?) => {
+    (
+        strategy = $strat:path; 
+        $struct_name:ident, 
+        $(($field:ident, $key:expr)),* $(,)?
+    ) => {
         #[derive(Clone, Debug, Default)]
         pub struct $struct_name {
             $(pub $field: String,)*
@@ -32,6 +36,14 @@ macro_rules! define_overrides {
                 vec![
                     $(($key, &self.$field),)*
                 ]
+            }
+        }
+
+        impl Merge for $struct_name {
+            fn merge(&mut self, other: Self) {
+                $(
+                    $strat(&mut self.$field, &other.$field);
+                )*
             }
         }
     };

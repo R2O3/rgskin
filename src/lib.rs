@@ -238,14 +238,16 @@ pub mod export {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod import {
+    use std::collections::HashSet;
+
     use crate::{importing::native::{import_all_samples_from_dir, import_all_textures_from_dir, import_textures_from_dir, import_samples_from_dir}, io::texture::TextureStore, sample::SampleStore};
 
     pub fn textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>>  {
         import_textures_from_dir(path, relative_texture_paths)
     }
 
-    pub fn all_textures_from_dir(path: &str) -> Result<TextureStore, Box<dyn std::error::Error>>  {
-        import_all_textures_from_dir(path)
+    pub fn all_textures_from_dir(path: &str, load_only: Option<&HashSet<String>>) -> Result<TextureStore, Box<dyn std::error::Error>>  {
+        import_all_textures_from_dir(path, load_only)
     }
 
     pub fn samples_from_dir(path: &str, relative_sample_paths: &[&str]) -> Result<SampleStore, Box<dyn std::error::Error>>  {
@@ -259,8 +261,8 @@ pub mod import {
     pub mod osu {
         use crate::{importing::native::{read_str_from_path, import_osu_mania_skin_from_dir}, OsuSkin};
 
-        pub fn skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std::error::Error>> {
-            import_osu_mania_skin_from_dir(path)
+        pub fn skin_from_dir(path: &str, import_all: bool) -> Result<OsuSkin, Box<dyn std::error::Error>> {
+            import_osu_mania_skin_from_dir(path, import_all)
         }
 
         pub fn ini_str_from_dir(path: &str) -> String {
@@ -271,8 +273,8 @@ pub mod import {
     pub mod fluxis {
         use crate::{importing::native::{read_str_from_path, import_fluxis_skin_from_dir}, fluxis::FluXisSkin};
 
-        pub fn skin_from_dir(path: &str) -> Result<FluXisSkin, Box<dyn std::error::Error>> {
-            import_fluxis_skin_from_dir(path)
+        pub fn skin_from_dir(path: &str, import_all: bool) -> Result<FluXisSkin, Box<dyn std::error::Error>> {
+            import_fluxis_skin_from_dir(path, import_all)
         }
 
         pub fn json_str_from_dir(path: &str) -> String {

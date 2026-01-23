@@ -35,8 +35,9 @@ num-traits = "0.2.19"
 paste = "1.0.15"
 wasm-bindgen = "0.2.100"
 js-sys = "0.3.78"
-image = { version = "0.25.8", default-features = false, features = ["png"] }
+image = { version = "0.25.8", default-features = false, features = ["png", "jpeg"] }
 indexmap = { version = "2.12.0", features = ["serde"] }
+merge = "0.2.0"
 serde = { version = "1.0.228", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1.0.145", default-features = false, features = ["std"] }
 serde_derive = "1.0.228"

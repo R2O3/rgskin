@@ -1,3 +1,4 @@
+use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -13,7 +14,7 @@ use crate::traits::SkinConfig;
 use crate::utils::osu::OsuDimensions;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-#[derive(Clone)]
+#[derive(Clone, Merge)]
 pub struct OsuSkin {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub resolution: Vector2<u32>,

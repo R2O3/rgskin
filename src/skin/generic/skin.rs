@@ -1,3 +1,4 @@
+use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -10,23 +11,25 @@ use crate::generic::UI;
 use crate::io::texture::TextureStore;
 use crate::sample::SampleStore;
 use crate::skin::generic::{Keymode, Metadata};
-use crate::{texture, BinaryArcExt, Store};
+use crate::{texture, utils, BinaryArcExt, Store};
 use crate::extensions::TextureArcExt;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-#[derive(Clone)]
+#[derive(Clone, Merge)]
 pub struct GenericManiaSkin {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub resolution: Vector2<u32>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub sounds: Sounds,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    #[merge(skip)]
     pub metadata: Metadata,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub ui: UI,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub gameplay: Gameplay,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    #[merge(strategy = utils::merge::skin::overwrite_keymode)]
     pub keymodes: Vec<Keymode>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub textures: TextureStore,

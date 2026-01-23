@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::define_keymode;
+use crate::{define_keymode, traits::KeymodeInvariant};
 
 define_keymode!(
     (receptor_images, "Receptor", "", "-up"),
@@ -102,4 +102,8 @@ impl Default for Keymode {
             tick_images_small: Vec::new(),
         }
     }
+}
+
+impl KeymodeInvariant for Keymode {
+    fn get_keymode(&self) -> u8 { self.keymode }
 }

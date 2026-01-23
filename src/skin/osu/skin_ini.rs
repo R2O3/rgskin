@@ -1,3 +1,4 @@
+use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -8,13 +9,15 @@ use crate::osu::static_assets;
 use crate::skin::osu::keymode::Keymode;
 use crate::skin::osu::General;
 use crate::ini::from_ini;
+use crate::utils;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Merge)]
 pub struct OsuSkinIni {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub general: General,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))] // TODO: maybe not a good idea to use getter_with_clone
+    #[merge(strategy = utils::merge::skin::overwrite_keymode)]
     pub keymodes: Vec<Keymode>
 }
 

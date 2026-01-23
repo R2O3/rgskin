@@ -4,15 +4,16 @@ use wasm_bindgen::prelude::*;
 use std::collections::HashSet;
 use crate::add_section;
 use crate::osu::static_assets;
+use crate::traits::KeymodeInvariant;
 use crate::utils::serde::{
     add_key_value,
     add_key_value_if_not_default,
     parse_bool,
     parse_key_value,
-    parse_u32_list,
+    parse_f32_list,
     serialize_bool,
     serialize_bool_vec_if_not_empty,
-    serialize_u32_slice,
+    serialize_f32_slice,
     serialize_vec_if_not_empty
 };
 use crate::utils::io::{path_to_unix, path_to_win};
@@ -48,23 +49,23 @@ pub struct Keymode {
     pub combo_position: Option<u32>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub column_start: u32,
+    pub column_start: f32,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub column_right: u32,
+    pub column_right: f32,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub column_line_width: Vec<u32>,
+    pub column_line_width: Vec<f32>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub column_width: Vec<u32>,
+    pub column_width: Vec<f32>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub column_spacing: Vec<u32>,
+    pub column_spacing: Vec<f32>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub barline_height: f32,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub lighting_n_width: Vec<u32>,
+    pub lighting_n_width: Vec<f32>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub lighting_l_width: Vec<u32>,
-    pub width_for_note_height_scale: Option<u32>,
+    pub lighting_l_width: Vec<f32>,
+    pub width_for_note_height_scale: Option<f32>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub light_frame_per_second: u32,
@@ -186,11 +187,11 @@ impl Default for Keymode {
             light_position: 413,
             score_position: None,
             combo_position: None,
-            column_start: 136,
-            column_right: 19,
-            column_line_width: vec![2; 5],
-            column_width: vec![30; 4],
-            column_spacing: vec![0; 4],
+            column_start: 136.0,
+            column_right: 19.0,
+            column_line_width: vec![2.0; 5],
+            column_width: vec![30.0; 4],
+            column_spacing: vec![0.0; 4],
             barline_height: 1.2,
             lighting_n_width: Vec::new(),
             lighting_l_width: Vec::new(),
@@ -295,9 +296,9 @@ impl Keymode {
 
     fn alloc_vecs(&mut self) {
         let key_count = self.keymode as usize;
-        self.column_line_width = vec![2; key_count + 1];
-        self.column_width = vec![30; key_count];
-        self.column_spacing = vec![0; key_count];
+        self.column_line_width = vec![2.0; key_count + 1];
+        self.column_width = vec![30.0; key_count];
+        self.column_spacing = vec![0.0; key_count];
         self.receptor_images = vec![String::new(); key_count];
         self.receptor_images_down = vec![String::new(); key_count];
         self.normal_note_images = vec![String::new(); key_count];
@@ -318,7 +319,7 @@ impl Keymode {
                 continue;
             }
 
-            let (key_str, value_str) = parse_key_value(line);
+            let (key_str, value_str) = parse_key_value(line).unwrap_or_default();
 
             match key_str {
                 "Keys" => {
@@ -346,12 +347,12 @@ impl Keymode {
                 "ComboPosition" => keymode.combo_position = Some(value_str.parse()?),
                 "ColumnStart" => keymode.column_start = value_str.parse()?,
                 "ColumnRight" => keymode.column_right = value_str.parse()?,
-                "ColumnLineWidth" => keymode.column_line_width = parse_u32_list(value_str),
-                "ColumnWidth" => keymode.column_width = parse_u32_list(value_str),
-                "ColumnSpacing" => keymode.column_spacing = parse_u32_list(value_str),
+                "ColumnLineWidth" => keymode.column_line_width = parse_f32_list(value_str),
+                "ColumnWidth" => keymode.column_width = parse_f32_list(value_str),
+                "ColumnSpacing" => keymode.column_spacing = parse_f32_list(value_str),
                 "BarlineHeight" => keymode.barline_height = value_str.parse().unwrap_or(1.2),
-                "LightingNWidth" => keymode.lighting_n_width = parse_u32_list(value_str),
-                "LightingLWidth" => keymode.lighting_l_width = parse_u32_list(value_str),
+                "LightingNWidth" => keymode.lighting_n_width = parse_f32_list(value_str),
+                "LightingLWidth" => keymode.lighting_l_width = parse_f32_list(value_str),
                 "WidthForNoteHeightScale" => keymode.width_for_note_height_scale = Some(value_str.parse()?),
                 "LightFramePerSecond" => keymode.light_frame_per_second = value_str.parse().unwrap_or(24),
                 "KeyFlipWhenUpsideDown" => keymode.key_flip_when_upside_down = parse_bool(value_str),
@@ -483,19 +484,19 @@ impl Keymode {
         
         // column
         add_section!(result, self.keymode, "Column", |section: &mut String| {
-            add_key_value_if_not_default::<u32>(section, "ColumnStart", &self.column_start, &default.column_start);
-            add_key_value_if_not_default::<u32>(section, "ColumnRight", &self.column_right, &default.column_right);
+            add_key_value_if_not_default::<f32>(section, "ColumnStart", &self.column_start, &default.column_start);
+            add_key_value_if_not_default::<f32>(section, "ColumnRight", &self.column_right, &default.column_right);
             if let Some(width_for_note_height_scale) = self.width_for_note_height_scale {
                 add_key_value(section, "WidthForNoteHeightScale", ": ", &width_for_note_height_scale.to_string(), "\n");
             }
             if self.column_line_width != default.column_line_width {
-                add_key_value(section, "ColumnLineWidth", ": ", &serialize_u32_slice(&self.column_line_width), "\n");
+                add_key_value(section, "ColumnLineWidth", ": ", &serialize_f32_slice(&self.column_line_width), "\n");
             }
             if self.column_width != default.column_width {
-                add_key_value(section, "ColumnWidth", ": ", &serialize_u32_slice(&self.column_width), "\n");
+                add_key_value(section, "ColumnWidth", ": ", &serialize_f32_slice(&self.column_width), "\n");
             }
             if self.column_spacing != default.column_spacing {
-                add_key_value(section, "ColumnSpacing", ": ", &serialize_u32_slice(&self.column_spacing), "\n");
+                add_key_value(section, "ColumnSpacing", ": ", &serialize_f32_slice(&self.column_spacing), "\n");
             }
         });
         
@@ -520,10 +521,10 @@ impl Keymode {
         // lighting
         add_section!(result, self.keymode, "Lighting", |section: &mut String| {
             if !self.lighting_n_width.is_empty() {
-                add_key_value(section, "LightingNWidth", ": ", &serialize_u32_slice(&self.lighting_n_width), "\n");
+                add_key_value(section, "LightingNWidth", ": ", &serialize_f32_slice(&self.lighting_n_width), "\n");
             }
             if !self.lighting_l_width.is_empty() {
-                add_key_value(section, "LightingLWidth", ": ", &serialize_u32_slice(&self.lighting_l_width), "\n");
+                add_key_value(section, "LightingLWidth", ": ", &serialize_f32_slice(&self.lighting_l_width), "\n");
             }
             add_key_value_if_not_default::<String>(section, "LightingN", &self.lighting_n, &default.lighting_n);
             add_key_value_if_not_default::<String>(section, "LightingL", &self.lighting_l, &default.lighting_l);
@@ -675,4 +676,8 @@ impl Keymode {
 
         result
     }
+}
+
+impl KeymodeInvariant for Keymode {
+    fn get_keymode(&self) -> u8 { self.keymode }
 }

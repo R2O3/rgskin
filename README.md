@@ -45,9 +45,11 @@ cargo add rgskin
 use rgskin::prelude::*;
 
 // importing a skin from a directory
-let osu_skin = import::osu::skin_from_dir("path/to/skin").expect("Failed to import skin!");
-let fluxis_skin = import::fluxis::skin_from_dir("path/to/skin").expect("Failed to import skin!");
+let osu_skin = import::osu::skin_from_dir("path/to/skin").expect("Failed to import skin!", false);
+let fluxis_skin = import::fluxis::skin_from_dir("path/to/skin").expect("Failed to import skin!", false);
 ```
+
+The second argument is for if you want to import ALL assets for a skin, it will import all textures but leave the unrequired unloaded, usually recommended when merging skins of the same type as you might need all assets; otherwise if false it will only import and load the required assets.
 
 ##### Manually loading a skin
 
@@ -58,7 +60,7 @@ use rgskin::prelude::*;
 let mut textures = TextureStore::new();
 
 // you can import textures from a directory like this:
-textures = import::all_textures_from_dir("path/to/skin")?;
+textures = import::all_textures_from_dir("path/to/skin", None)?;
 
 // or alternatively if you parse the skin config first, you can import only the textures you need like this:
 let raw_str = import::osu::ini_str_from_dir("path/to/skin");

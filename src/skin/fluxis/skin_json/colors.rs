@@ -1,15 +1,19 @@
+use merge::Merge;
 use serde::{Deserialize, Serialize};
-use crate::common::color::Rgba;
+use crate::{common::color::Rgba, derive_merge_for_all};
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(default)]
-pub struct JudgementColors {
-    pub flawless: Rgba,
-    pub perfect: Rgba,
-    pub great: Rgba,
-    pub alright: Rgba,
-    pub okay: Rgba,
-    pub miss: Rgba,
+derive_merge_for_all! {
+    strategy = crate::utils::merge::any::overwrite;
+    #[derive(Clone, Debug, Serialize, Deserialize, Merge)]
+    #[serde(default)]
+    pub struct JudgementColors {
+        pub flawless: Rgba,
+        pub perfect: Rgba,
+        pub great: Rgba,
+        pub alright: Rgba,
+        pub okay: Rgba,
+        pub miss: Rgba,
+    }
 }
 
 impl Default for JudgementColors {
@@ -25,25 +29,30 @@ impl Default for JudgementColors {
     }
 }
 
-#[derive(Clone, Debug, Serialize, Deserialize)]
-#[serde(default)]
-pub struct SnapColors {
-    #[serde(rename = "1/3")]
-    pub snap_1_3: Rgba,
-    #[serde(rename = "1/4")]
-    pub snap_1_4: Rgba,
-    #[serde(rename = "1/6")]
-    pub snap_1_6: Rgba,
-    #[serde(rename = "1/8")]
-    pub snap_1_8: Rgba,
-    #[serde(rename = "1/12")]
-    pub snap_1_12: Rgba,
-    #[serde(rename = "1/16")]
-    pub snap_1_16: Rgba,
-    #[serde(rename = "1/24")]
-    pub snap_1_24: Rgba,
-    #[serde(rename = "1/48")]
-    pub snap_1_48: Rgba,
+
+
+derive_merge_for_all! {
+    strategy = crate::utils::merge::any::overwrite;
+    #[derive(Clone, Debug, Serialize, Deserialize, Merge)]
+    #[serde(default)]
+    pub struct SnapColors {
+        #[serde(rename = "1/3")]
+        pub snap_1_3: Rgba,
+        #[serde(rename = "1/4")]
+        pub snap_1_4: Rgba,
+        #[serde(rename = "1/6")]
+        pub snap_1_6: Rgba,
+        #[serde(rename = "1/8")]
+        pub snap_1_8: Rgba,
+        #[serde(rename = "1/12")]
+        pub snap_1_12: Rgba,
+        #[serde(rename = "1/16")]
+        pub snap_1_16: Rgba,
+        #[serde(rename = "1/24")]
+        pub snap_1_24: Rgba,
+        #[serde(rename = "1/48")]
+        pub snap_1_48: Rgba,
+    }
 }
 
 impl Default for SnapColors {

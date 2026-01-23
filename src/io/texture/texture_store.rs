@@ -1,4 +1,5 @@
 use std::{collections::HashMap, sync::{Arc, RwLock}};
+use merge::Merge;
 use wasm_bindgen::prelude::*;
 use js_sys::{Uint8Array, ArrayBuffer, Array};
 use image::ImageError;
@@ -6,9 +7,10 @@ use crate::{impl_store_wasm, io::Store, Binary, BinaryState};
 use crate::io::texture::Texture;
 
 #[wasm_bindgen]
-#[derive(Clone)]
+#[derive(Clone, Merge)]
 pub struct TextureStore {
     #[wasm_bindgen(skip)]
+    #[merge(strategy = merge::hashmap::overwrite)]
     textures: HashMap<String, Arc<RwLock<Texture>>>,
 }
 

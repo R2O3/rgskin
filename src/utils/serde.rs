@@ -13,14 +13,24 @@ pub fn parse_u32_list(value: &str) -> Vec<u32> {
 }
 
 #[inline]
+pub fn parse_f32_list(value: &str) -> Vec<f32> {
+    value.split(',')
+            .map(|s| s.trim().parse().unwrap_or(0.0))
+            .collect()
+}
+
+#[inline]
 pub fn parse_bool(value: &str) -> bool {
     value == "1"
 }
 
 #[inline]
-pub fn parse_key_value(raw_str: &str) -> (&str, &str) {
-    let colon_pos = raw_str.find(':').unwrap();
-    (raw_str[..colon_pos].trim(), raw_str[colon_pos + 1..].trim())
+pub fn parse_key_value(raw_str: &str) -> Option<(&str, &str)> {
+    if let Some(colon_pos) = raw_str.find(':') {
+        Some((raw_str[..colon_pos].trim(), raw_str[colon_pos + 1..].trim()))
+    } else {
+        None
+    }
 }
 
 #[inline]
@@ -35,6 +45,11 @@ pub fn serialize_u16_slice(values: &[u16]) -> String {
 
 #[inline]
 pub fn serialize_u32_slice(values: &[u32]) -> String {
+    values.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",")
+}
+
+#[inline]
+pub fn serialize_f32_slice(values: &[f32]) -> String {
     values.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",")
 }
 

@@ -5,14 +5,15 @@
 use std::fs;
 use std::path::Path;
 use std::str::FromStr;
+use std::collections::HashSet;
 use crate::common::traits::SkinConfig;
 use crate::fluxis::{self, FluXisSkin};
-use crate::osu;
+use crate::{osu, Store};
 use crate::sample::SampleStore;
 use crate::utils::io::{get_filename, get_parent, get_stem, join_paths_unix, remove_extension};
 use crate::utils::string::string_iter_as_str;
 use crate::OsuSkin;
-use crate::io::texture::TextureStore;
+use crate::io::texture::{TextureStore, Texture};
 
 pub fn import_binaries_from_dir<F>(
     path: &str,
@@ -112,11 +113,19 @@ pub fn import_textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> 
     Ok(texture_store)
 }
 
-pub fn import_all_textures_from_dir(path: &str) -> Result<TextureStore, Box<dyn std::error::Error>> {
+pub fn import_all_textures_from_dir(path: &str, load_only: Option<&HashSet<String>>) -> Result<TextureStore, Box<dyn std::error::Error>> {
     let mut texture_store = TextureStore::new();
     
     import_all_binaries_from_dir(path, &["png", "jpg", "jpeg"], |path, bytes| {
-        texture_store.load_from_bytes(path, bytes)?;
+        if let Some(load_set) = load_only {
+            if load_set.contains(&path) {
+                texture_store.load_from_bytes(path.clone(), bytes)?;
+            } else {
+                texture_store.insert(Texture::with_unloaded_data(path, bytes.to_vec()));
+            }
+        } else {
+            texture_store.load_from_bytes(path, bytes)?;
+        }
         Ok(())
     })?;
     
@@ -150,7 +159,7 @@ pub fn read_str_from_path(path: &str) -> String {
     fs::read_to_string(path).unwrap_or_default()
 }
 
-pub fn import_osu_mania_skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std::error::Error>> {
+pub fn import_osu_mania_skin_from_dir(path: &str, import_all: bool) -> Result<OsuSkin, Box<dyn std::error::Error>> {
     let ini_path = Path::new(path).join("skin.ini");
     let ini_content = read_str_from_path(ini_path.to_str().unwrap());
 
@@ -162,13 +171,24 @@ pub fn import_osu_mania_skin_from_dir(path: &str) -> Result<OsuSkin, Box<dyn std
     let texture_path_refs: Vec<&str> = string_iter_as_str(texture_paths.iter());
     let sample_path_refs: Vec<&str> = string_iter_as_str(sample_paths.iter());
     
-    let textures = import_textures_from_dir(path, &texture_path_refs)?;
-    let samples = import_samples_from_dir(path, &sample_path_refs)?;
+    let textures;
+    let samples;
+
+    if import_all {
+        let texture_set: HashSet<String> = texture_paths.iter().cloned().collect();
+        
+        textures = import_all_textures_from_dir(path, Some(&texture_set))?;
+        
+        samples = import_all_samples_from_dir(path)?;
+    } else {
+        textures = import_textures_from_dir(path, &texture_path_refs)?;
+        samples = import_samples_from_dir(path, &sample_path_refs)?;
+    }
 
     Ok(OsuSkin::new(skin_ini, Some(textures), Some(samples)))
 }
 
-pub fn import_fluxis_skin_from_dir(path: &str) -> Result<FluXisSkin, Box<dyn std::error::Error>> {
+pub fn import_fluxis_skin_from_dir(path: &str, import_all: bool) -> Result<FluXisSkin, Box<dyn std::error::Error>> {
     let json_path = Path::new(path).join("skin.json");
     let json_content = read_str_from_path(json_path.to_str().unwrap());
     
@@ -177,8 +197,17 @@ pub fn import_fluxis_skin_from_dir(path: &str) -> Result<FluXisSkin, Box<dyn std
     let sample_paths = skin_json.get_required_sample_paths();
     let sample_path_refs: Vec<&str> = string_iter_as_str(sample_paths.iter());
     
-    let textures = import_all_textures_from_dir(path)?;
-    let samples = import_samples_from_dir(path, &sample_path_refs)?;
+    let textures;
+    let samples;
+
+    if import_all {
+        textures = import_all_textures_from_dir(path, None)?;
+        
+        samples = import_all_samples_from_dir(path)?;
+    } else {
+        textures = import_all_textures_from_dir(path, None)?;
+        samples = import_samples_from_dir(path, &sample_path_refs)?;
+    }
 
     Ok(FluXisSkin::new(skin_json, Some(textures), Some(samples)))
 }

@@ -1,12 +1,14 @@
 use std::{collections::HashMap, sync::{Arc, RwLock}};
+use merge::Merge;
 use wasm_bindgen::prelude::*;
 use js_sys::{Uint8Array, ArrayBuffer, Array};
 use crate::{impl_store_wasm, io::{Binary, BinaryState, RawBytes, Store}};
 
 #[wasm_bindgen]
-#[derive(Clone)]
+#[derive(Clone, Merge)]
 pub struct BinaryStore {
     #[wasm_bindgen(skip)]
+    #[merge(strategy = merge::hashmap::overwrite)]
     binaries: HashMap<String, Arc<RwLock<RawBytes>>>,
 }
 

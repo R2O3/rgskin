@@ -1,9 +1,10 @@
 use indexmap::IndexMap;
+use merge::Merge;
 use serde::de::{MapAccess, Visitor};
 use serde::ser::{SerializeMap, Serializer};
 use serde::{Deserialize, Deserializer, Serialize};
 use std::fmt;
-use crate::define_overrides;
+use crate::{define_overrides, utils};
 use crate::fluxis::skin_json::keymode::Keymodes;
 use crate::fluxis::static_assets;
 
@@ -21,12 +22,14 @@ pub(crate) fn extract_keymode_column(s: &str) -> Option<(usize, usize)> {
 }
 
 define_overrides!(
+    strategy = utils::merge::string::overwrite_not_empty;
     HealthOverrides,
     (foreground, static_assets::Health::FOREGROUND),
     (background, static_assets::Health::BACKGROUND),
 );
 
 define_overrides!(
+    strategy = utils::merge::string::overwrite_not_empty;
     StageOverrides,
     (border_left, static_assets::Stage::BORDER_LEFT),
     (border_right, static_assets::Stage::BORDER_RIGHT),
@@ -41,6 +44,7 @@ define_overrides!(
 );
 
 define_overrides!(
+    strategy = utils::merge::string::overwrite_not_empty;
     JudgementOverrides,
     (miss, static_assets::Judgement::MISS),
     (okay, static_assets::Judgement::OKAY),
@@ -51,22 +55,25 @@ define_overrides!(
 );
 
 define_overrides!(
+    strategy = utils::merge::string::overwrite_not_empty;
     LightingOverrides,
     (column_lighting, static_assets::Lighting::COLUMN_LIGHTING),
 );
 
 define_overrides!(
+    strategy = utils::merge::string::overwrite_not_empty;
     GameplayOverrides,
     (fail_flash, static_assets::Gameplay::FAIL_FLASH),
 );
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, Merge)]
 pub struct Overrides {
     pub health: HealthOverrides,
     pub stage: StageOverrides,
     pub judgement: JudgementOverrides,
     pub lighting: LightingOverrides,
     pub gameplay: GameplayOverrides,
+    #[merge(strategy = utils::merge::indexmap::overwrite)]
     pub raw_overrides: IndexMap<String, String>,
 }
 

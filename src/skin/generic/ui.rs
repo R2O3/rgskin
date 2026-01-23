@@ -1,6 +1,11 @@
-use crate::generic::elements::Cursor;
+use merge::Merge;
 
-#[derive(Clone)]
-pub struct UI {
-    pub cursor: Cursor,
+use crate::{derive_merge_for_all, generic::elements::Cursor};
+
+derive_merge_for_all! {
+    strategy = crate::utils::merge::any::overwrite;
+    #[derive(Clone, Merge)]
+    pub struct UI {
+        pub cursor: Cursor,
+    }
 }

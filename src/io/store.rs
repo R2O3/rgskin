@@ -50,6 +50,11 @@ macro_rules! impl_store_wasm {
             pub fn make_unique_copy_wasm(&mut self, original_path: &str, new_base_path: &str) -> Option<String> {
                 <Self as Store<$item_type>>::wasm_make_unique_copy(self, original_path, new_base_path)
             }
+
+            #[wasm_bindgen(js_name = extend)]
+            pub fn extend_wasm(&mut self, other: &$store_type) {
+                <Self as Store<$item_type>>::wasm_extend(self, other)
+            }
         }
     };
 }
@@ -245,6 +250,13 @@ pub trait Store<T: 'static> {
         });
     }
 
+    fn extend(&mut self, other: HashMap<String, Arc<RwLock<T>>>) {
+        for (path, item) in other {
+            let normalized = normalize(&path);
+            self.map_mut().insert(normalized, item);
+        }
+    }
+
     fn wasm_contains(&self, path: &str) -> bool {
         self.contains(path)
     }
@@ -279,5 +291,11 @@ pub trait Store<T: 'static> {
 
     fn wasm_copy(&mut self, original_path: &str, new_path: &str) -> Option<String> {
         self.copy(original_path, new_path)
+    }
+
+    fn wasm_extend(&mut self, other: &Self) {
+        for (path, item) in other.map().iter() {
+            self.map_mut().insert(path.clone(), Arc::clone(item));
+        }
     }
 }

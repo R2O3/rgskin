@@ -1,3 +1,4 @@
+use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -10,7 +11,7 @@ use crate::{
         info::Info,
         keymode::{Keymode, Keymodes},
         overrides::Overrides,
-    }, static_assets}, utils::serde::set_vec_element
+    }, static_assets}, utils::{self, serde::set_vec_element}
 };
 use serde::{
     ser::Serializer,
@@ -19,10 +20,11 @@ use serde::{
 use crate::fluxis::skin_json::overrides::extract_keymode_column;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-#[derive(Clone, Debug, Default, Deserialize)]
+#[derive(Clone, Debug, Default, Deserialize, Merge)]
 pub struct SkinJson {
     #[serde(default)]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[merge(skip)]
     pub info: Info,
     
     #[serde(default)]
@@ -39,6 +41,7 @@ pub struct SkinJson {
 
     #[serde(skip)]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[merge(strategy = utils::merge::skin::overwrite_keymode)]
     pub keymodes: Vec<Keymode>,
 }
 

@@ -5,4 +5,5 @@ pub mod osu;
 pub mod fluxis;
 pub mod math;
 pub mod skin;
+pub mod merge;
 pub(crate) mod macros;
