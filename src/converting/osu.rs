@@ -178,8 +178,8 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
     let default_keymode = skin.skin_ini.keymodes[0].clone();
     let layout_keymode = skin.skin_ini.get_keymode(4).unwrap_or(&default_keymode);
 
-    let health_bar_fg = textures.get_shared(static_assets::Interface::SCOREBAR_COLOUR).unwrap();
-    let health_bar_bg = textures.get_shared(static_assets::Interface::SCOREBAR_BG).unwrap();
+    let health_bar_fg = textures.get_shared(static_assets::Interface::SCOREBAR_COLOUR).unwrap_or(blank_texture.clone());
+    let health_bar_bg = textures.get_shared(static_assets::Interface::SCOREBAR_BG).unwrap_or(blank_texture.clone());
     rotate_90_deg_ccw(&health_bar_fg)?;
     rotate_90_deg_ccw(&health_bar_bg)?;
 
