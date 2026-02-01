@@ -4,20 +4,20 @@ use rgskin::{image_proc::proc::to_osu_column_draw, {Binary, Store}, utils::io::j
 
 #[test]
 fn osu_mania_receptor_draw() -> Result<(), Box<dyn std::error::Error>> {
-    let img_bytes = read_file_to_bytes("./tests/assets/k_down.png")?;
-    let texture = Texture::from_bytes("k_down.png".to_string(), &img_bytes)?;
+    let img_bytes = read_file_to_bytes("./tests/assets/mrkc.png")?;
+    let texture = Texture::from_bytes("mrkc".to_string(), &img_bytes)?;
 
     let mut textures = TextureStore::new();
     textures.insert(texture);
 
-    let texture_ref = textures.get_shared("k_down.png").unwrap();
+    let texture_ref = textures.get_shared("mrkc").unwrap();
 
     benchmark_closure(||
     {
-        to_osu_column_draw(&texture_ref, 68)?;
+        to_osu_column_draw(&texture_ref, 70)?;
         Ok(())
     }, "Osu! mania receptor draw", "to finish processing", "\x1b[0;34m")?;
 
-    write_bytes_to_file(join_paths_unix(ASSET_PATH, "k_down.png").as_str(), texture_ref.read().unwrap().to_bytes()?.as_slice())?;
+    write_bytes_to_file(join_paths_unix(ASSET_PATH, "mrkc.png").as_str(), texture_ref.read().unwrap().to_bytes()?.as_slice())?;
     Ok(())
 }
