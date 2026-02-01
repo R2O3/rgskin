@@ -360,6 +360,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             .iter()
             .map(|note| note.get_path().unwrap_or_default())
             .collect();
+
+        let hit_pos = (keymode.layout.hit_position * FluXisDimensions::Y.as_f32()) + (keymode.layout.receptor_offset as f32 - (keymode.layout.hit_position * resize.source.y as f32));
         
         fluxis_keymodes.push(skin_json::Keymode {
             keymode: key_count,
@@ -370,7 +372,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             long_note_body_images,
             long_note_tail_images,
             receptors_first: !keymode.layout.receptor_above_notes,
-            hit_position: resize.to_target_y::<i32>(keymode.layout.hit_position)
+            hit_position: ((hit_pos + (keymode.layout.receptor_offset as f32 - hit_pos)) as i32)
                 .clamp(0, FluXisDimensions::Y.as_i32()),
             receptor_offset: keymode.layout.receptor_offset,
             column_width: resize.to_target_x::<u32>(keymode.layout.column_widths
