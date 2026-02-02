@@ -279,7 +279,7 @@ dependencies = [
 
 [[package]]
 name = "rgskin"
-version = "0.0.1"
+version = "0.0.2"
 dependencies = [
  "image",
  "include_dir",

@@ -27,7 +27,7 @@ A library for loading and creating skins for various rhythm games. It supports c
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-rgskin = "0.0.1"
+rgskin = "0.0.2"
 ```
 
 Or run:
