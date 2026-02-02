@@ -1,4 +1,6 @@
 use std::sync::{Arc, RwLock};
+use image::GenericImageView;
+
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
@@ -323,6 +325,12 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     let mut samples = skin.samples.clone();
     let mut fluxis_keymodes: Vec<skin_json::Keymode> = Vec::new();
 
+    let blank_texture: Arc<RwLock<Texture>> = textures.get_shared("blank")
+        .unwrap_or(Arc::new(RwLock::new(Texture::from_blank("blank".to_string()))));
+
+    let mut body_processor = TextureProcessor::<()>::new();
+    let mut tail_processor = TextureProcessor::<()>::new();
+
     let resize = Resizer::new(
         skin.resolution,
         Some(Vector2::new(FluXisDimensions::X.as_u32(), FluXisDimensions::Y.as_u32()))
@@ -351,14 +359,56 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             .map(|note| note.get_path().unwrap_or_default())
             .collect();
 
+        
+        // you can't do percy in fluXis (at least not above 4096px)
         let long_note_body_images: Vec<String> = keymode.long_note_body
             .iter()
-            .map(|note| note.get_path().unwrap_or_default())
+            .map(|note| {
+                if let Some(texture_arc) = &note.texture {
+                    if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                        body_processor.process_once_void(texture_arc, |arc_texture| {
+                            arc_texture.data_mut(|img| {
+                                let (width, height) = img.dimensions();
+                                let max_res = FluXisDimensions::MaxResolution.as_u32();
+                                
+                                if width > max_res || height > max_res {
+                                    *img = img.resize_exact(
+                                        width.min(max_res),
+                                        height.min(max_res),
+                                        image::imageops::FilterType::Lanczos3
+                                    );
+                                }
+                            });
+                        });
+                    }
+                }
+                note.get_path().unwrap_or_default()
+            })
             .collect();
-        
+
         let long_note_tail_images: Vec<String> = keymode.long_note_tail
             .iter()
-            .map(|note| note.get_path().unwrap_or_default())
+            .map(|note| {
+                if let Some(texture_arc) = &note.texture {
+                    if !Arc::ptr_eq(texture_arc, &blank_texture) {
+                        tail_processor.process_once_void(texture_arc, |arc_texture| {
+                            arc_texture.data_mut(|img| {
+                                let (width, height) = img.dimensions();
+                                let max_res = FluXisDimensions::MaxResolution.as_u32();
+                                
+                                if width > max_res || height > max_res {
+                                    *img = img.resize_exact(
+                                        width.min(max_res),
+                                        height.min(max_res),
+                                        image::imageops::FilterType::Lanczos3
+                                    );
+                                }
+                            });
+                        });
+                    }
+                }
+                note.get_path().unwrap_or_default()
+            })
             .collect();
 
         let hit_pos = (keymode.layout.hit_position * FluXisDimensions::Y.as_f32()) + (keymode.layout.receptor_offset as f32 - (keymode.layout.hit_position * resize.source.y as f32));
