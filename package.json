@@ -11,20 +11,20 @@
   "scripts": {
     "build": "wasm-pack build --target nodejs --out-dir dist-node -- --features node && wasm-pack build --target web --out-dir dist-web -- --features browser",
     "build-release": "wasm-pack build --release --target nodejs --out-dir dist-node -- --features node && wasm-pack build --release --target web --out-dir dist-web -- --features browser && npm run fix-pkg",
-    
+
     "fix-pkg": "node scripts/fix-pkg.js",
-    
-    "pack-node": "cd dist-node && npm pack && mv rgskin-*.tgz ../rgskin-node.tgz",
-    "pack-web": "cd dist-web && npm pack && mv rgskin-*.tgz ../rgskin-web.tgz",
+
+    "pack-node": "cd dist-node && npm pack && shx mv r2o3-*.tgz ../rgskin-node.tgz",
+    "pack-web": "cd dist-web && npm pack && shx mv r2o3-*.tgz ../rgskin-web.tgz",
     "pack": "npm run build-release && npm run pack-node && npm run pack-web",
-    
+
     "publish-node": "cd dist-node && npm publish --access public",
     "publish-web": "cd dist-web && npm publish --access public",
     "publish": "npm run build-release && npm run publish-node && npm run publish-web",
     
     "prepublish": "npm run build-release"
   },
-  "dependencies": {
-    "wasm-bindgen": "^0.2.0"
+  "devDependencies": {
+    "shx": "^0.4.0"
   }
 }

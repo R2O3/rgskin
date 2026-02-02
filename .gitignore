@@ -8,3 +8,6 @@ rgskin-web.tgz
 
 # testing
 /test_export
+
+# dev
+/node_modules
