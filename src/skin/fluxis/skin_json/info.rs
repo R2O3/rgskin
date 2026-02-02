@@ -6,9 +6,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::derive_merge_for_all;
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 derive_merge_for_all! {
     strategy = crate::utils::merge::any::overwrite;
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
     #[derive(Clone, Debug, Serialize, Deserialize, Merge)]
     #[serde(default)]
     pub struct Info {
