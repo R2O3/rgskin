@@ -8,7 +8,7 @@ use test_dependencies::*;
 pub fn osu_to_fluxis_test() -> Result<(), Box<dyn std::error::Error>> {
     benchmark_closure(||
     {
-        let osu_skin = import::osu::skin_from_dir("./tests/skins/Markitos", false)?;
+        let osu_skin = import::osu::skin_from_dir("./tests/skins/Znx", false)?;
         let generic_skin = osu_skin.to_generic_mania(())?;
         let fluxis_from_generic = FluXisSkin::from_generic_mania(&generic_skin)?;
         export::fluxis::skin_to_dir(&fluxis_from_generic.0, SKIN_PATH)?;

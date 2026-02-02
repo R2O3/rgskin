@@ -5,5 +5,6 @@ numeric_enum! {
         X = 640,
         Y = 480,
         ReceptorWidth = 48,
+        ReceptorHeight = 108,
     }
 }
