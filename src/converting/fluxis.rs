@@ -9,6 +9,7 @@ use crate::fluxis::static_assets;
 use crate::generic::{sound::*, Gameplay, Keymode, Metadata, UI};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::{*, self};
+use crate::image_proc::generate_fluxis_preview;
 use crate::image_proc::proc::dist_from_bottom;
 use crate::io::Store;
 use crate::io::texture::{Texture, TextureProcessor};
@@ -517,6 +518,10 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     
     if let Some(s) = &skin.sounds.mania.hit {
         samples.copy(s, static_assets::Samples::GAMEPLAY_HIT);
+    }
+
+    if let Some(preview) = generate_fluxis_preview(&skin_json, &textures, 512, 512).ok() {
+        textures.insert(Texture::with_data("icon".to_string(), preview));
     }
 
     cleanup_stores(&skin_json, Some(&mut textures), Some(&mut samples));

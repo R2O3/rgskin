@@ -1,5 +1,9 @@
 use crate::def_const_type_enum;
 
+def_const_type_enum! (pub Other => &'static str {
+    ICON => "icon",
+});
+
 def_const_type_enum! (pub Judgement => &'static str {
     MISS => "Judgement/miss",
     OKAY => "Judgement/okay",

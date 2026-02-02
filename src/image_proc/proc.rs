@@ -1,6 +1,10 @@
 use std::sync::{Arc, RwLock};
 use image::{imageops, DynamicImage, GenericImageView, Rgba};
-use crate::{io::texture::Texture, process_texture, process_texture_mut, utils::osu::OsuDimensions}; 
+use crate::{
+    io::texture::Texture,
+    process_texture, process_texture_mut,
+    utils::osu::OsuDimensions
+}; 
 
 pub fn dist_from_bottom(img: &DynamicImage, alpha_tolerance: f32) -> u32 {
     let rgba_img = img.to_rgba8();
@@ -160,4 +164,44 @@ pub fn to_osu_column(texture: &Arc<RwLock<Texture>>, column_width: u32, receptor
         
         pad_image_vertical(trimmed_img, 0, receptor_offset)
     })
+}
+
+pub fn overlay_image(
+    base: &mut image::RgbaImage,
+    overlay: &image::RgbaImage,
+    x: u32,
+    y: u32
+) {
+    for oy in 0..overlay.height() {
+        for ox in 0..overlay.width() {
+            let px = x + ox;
+            let py = y + oy;
+            
+            if px < base.width() && py < base.height() {
+                let src_pixel = overlay.get_pixel(ox, oy);
+                let alpha = src_pixel[3] as f32 / 255.0;
+                
+                if alpha > 0.0 {
+                    let dst_pixel = base.get_pixel(px, py);
+                    let blended = image::Rgba([
+                        blend_channel(dst_pixel[0], src_pixel[0], alpha),
+                        blend_channel(dst_pixel[1], src_pixel[1], alpha),
+                        blend_channel(dst_pixel[2], src_pixel[2], alpha),
+                        blend_alpha(dst_pixel[3], src_pixel[3], alpha),
+                    ]);
+                    base.put_pixel(px, py, blended);
+                }
+            }
+        }
+    }
+}
+
+pub fn blend_channel(bg: u8, fg: u8, alpha: f32) -> u8 {
+    ((fg as f32 * alpha) + (bg as f32 * (1.0 - alpha))) as u8
+}
+
+pub fn blend_alpha(bg: u8, fg: u8, _alpha: f32) -> u8 {
+    let bg_alpha = bg as f32 / 255.0;
+    let fg_alpha = fg as f32 / 255.0;
+    ((fg_alpha + bg_alpha * (1.0 - fg_alpha)) * 255.0) as u8
 }

@@ -228,6 +228,8 @@ impl SkinConfig for SkinJson {
             }
         }
 
+        paths.insert(static_assets::Other::ICON.to_string());
+
         paths
     }
 
