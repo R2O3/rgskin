@@ -1,7 +1,11 @@
 use std::{collections::HashMap, sync::{Arc, RwLock}};
 use merge::Merge;
 use wasm_bindgen::prelude::*;
-use js_sys::{Uint8Array, ArrayBuffer, Array};
+use js_sys::{Uint8Array, ArrayBuffer};
+
+#[cfg(target_arch = "wasm32")]
+use js_sys::Array;
+
 use image::ImageError;
 use crate::{impl_store_wasm, io::Store, Binary, BinaryState};
 use crate::io::texture::Texture;
@@ -14,10 +18,11 @@ pub struct TextureStore {
     textures: HashMap<String, Arc<RwLock<Texture>>>,
 }
 
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl TextureStore {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
+    pub fn new_wasm() -> Self {
         TextureStore {
             textures: HashMap::new(),
         }
@@ -114,6 +119,12 @@ impl Store<Texture> for TextureStore {
 }
 
 impl TextureStore {
+    pub fn new() -> Self {
+        TextureStore {
+            textures: HashMap::new(),
+        }
+    }
+
     pub fn load_from_bytes(&mut self, path: String, bytes: &[u8]) -> Result<(), ImageError> {
         let texture = Texture::from_bytes(path, bytes)?;
         self.insert(texture);

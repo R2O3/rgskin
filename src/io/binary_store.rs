@@ -1,7 +1,11 @@
 use std::{collections::HashMap, sync::{Arc, RwLock}};
 use merge::Merge;
 use wasm_bindgen::prelude::*;
-use js_sys::{Uint8Array, ArrayBuffer, Array};
+use js_sys::{Uint8Array, ArrayBuffer};
+
+#[cfg(target_arch = "wasm32")]
+use js_sys::Array;
+
 use crate::{impl_store_wasm, io::{Binary, BinaryState, RawBytes, Store}};
 
 #[wasm_bindgen]
@@ -12,10 +16,11 @@ pub struct BinaryStore {
     binaries: HashMap<String, Arc<RwLock<RawBytes>>>,
 }
 
+#[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
 impl BinaryStore {
     #[wasm_bindgen(constructor)]
-    pub fn new() -> Self {
+    pub fn new_wasm() -> Self {
         BinaryStore {
             binaries: HashMap::new(),
         }
@@ -119,6 +124,12 @@ impl Store<RawBytes> for BinaryStore {
 }
 
 impl BinaryStore {
+    pub fn new() -> Self {
+        BinaryStore {
+            binaries: HashMap::new(),
+        }
+    }
+
     pub fn load_from_bytes(&mut self, path: String, bytes: &[u8]) -> Result<(), String> {
         let binary = RawBytes::from_bytes(path, bytes)?;
         self.insert(binary);
