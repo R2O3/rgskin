@@ -4,7 +4,7 @@ use wasm_bindgen::prelude::*;
 use std::collections::HashSet;
 use crate::add_section;
 use crate::osu::static_assets;
-use crate::traits::KeymodeInvariant;
+use crate::traits::{LaneFallback, KeymodeInvariant};
 use crate::utils::serde::{
     add_key_value,
     add_key_value_if_not_default,
@@ -680,4 +680,46 @@ impl Keymode {
 
 impl KeymodeInvariant for Keymode {
     fn get_keymode(&self) -> u8 { self.keymode }
+
+    fn get_receptors(&self) -> Vec<String> { self.receptor_images.clone() }
+    fn get_receptors_down(&self) -> Vec<String> { self.receptor_images_down.clone() }
+
+    fn get_normal_notes(&self) -> Vec<String> { self.normal_note_images.clone() }
+
+    fn get_long_note_heads(&self) -> Vec<String> { self.long_note_head_images.clone() }
+    fn get_long_note_bodies(&self) -> Vec<String> { self.long_note_body_images.clone() }
+    fn get_long_note_tails(&self) -> Vec<String> { self.long_note_tail_images.clone() }
+    
+    fn primary_fallback(&self, _lane: usize) -> LaneFallback {
+        LaneFallback {
+            receptor: static_assets::Mania::KEY1.to_string(),
+            receptor_down: static_assets::Mania::KEY1D.to_string(),
+            normal_note: static_assets::Mania::NOTE1.to_string(),
+            long_note_head: static_assets::Mania::NOTE1H.to_string(),
+            long_note_body: static_assets::Mania::NOTE1L.to_string(),
+            long_note_tail: static_assets::Mania::NOTE1T.to_string(),
+        }
+    }
+    
+    fn secondary_fallback(&self, _lane: usize) -> LaneFallback {
+        LaneFallback {
+            receptor: static_assets::Mania::KEY2.to_string(),
+            receptor_down: static_assets::Mania::KEY2D.to_string(),
+            normal_note: static_assets::Mania::NOTE2.to_string(),
+            long_note_head: static_assets::Mania::NOTE2H.to_string(),
+            long_note_body: static_assets::Mania::NOTE2L.to_string(),
+            long_note_tail: static_assets::Mania::NOTE2T.to_string(),
+        }
+    }
+    
+    fn middle_fallback(&self, _lane: usize) -> LaneFallback {
+        LaneFallback {
+            receptor: static_assets::Mania::KEYS.to_string(),
+            receptor_down: static_assets::Mania::KEYSD.to_string(),
+            normal_note: static_assets::Mania::NOTES.to_string(),
+            long_note_head: static_assets::Mania::NOTESH.to_string(),
+            long_note_body: static_assets::Mania::NOTESL.to_string(),
+            long_note_tail: static_assets::Mania::NOTEST.to_string(),
+        }
+    }
 }

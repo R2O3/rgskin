@@ -12,7 +12,7 @@ use crate::io::texture::{Texture, TextureProcessor};
 use crate::osu::{self, General, OsuSkin, OsuSkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
-use crate::traits::ManiaSkinConfig;
+use crate::traits::{KeymodeInvariant, ManiaSkinConfig};
 use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
 use crate::utils::skin::cleanup_stores;
@@ -40,9 +40,22 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         let average_column_width = keymode.column_width.iter().sum::<f32>() / keymode.column_width.len() as f32;
         let mut max_receptor_offset = 0;
 
+        let fallbacks = keymode.get_fallbacks();
+
+        debug_assert!(
+            fallbacks.len() == keymode.receptor_images.len()
+            && fallbacks.len() == keymode.receptor_images_down.len()
+            && fallbacks.len() == keymode.normal_note_images.len()
+            && fallbacks.len() == keymode.long_note_head_images.len()
+            && fallbacks.len() == keymode.long_note_body_images.len()
+            && fallbacks.len() == keymode.long_note_tail_images.len()
+            , "Length of fallbacks doesn't match actual keymode"
+        );
+
         let receptor_up_elements: Vec<ReceptorUp> = keymode.receptor_images
             .iter()
-            .map(|path| {
+            .zip(fallbacks.iter().map(|f| &f.receptor))
+            .map(|(path, fallback_path)| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
@@ -58,14 +71,19 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                         ReceptorUp::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorUp::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        ReceptorUp::new(Some(fallback))
+                    } else { 
+                        ReceptorUp::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let receptor_down_elements: Vec<ReceptorDown> = keymode.receptor_images_down
             .iter()
-            .map(|path| {
+            .zip(fallbacks.iter().map(|f| &f.receptor_down))
+            .map(|(path, fallback_path)| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
@@ -81,47 +99,79 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                         ReceptorDown::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorDown::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        ReceptorDown::new(Some(fallback))
+                    } else {
+                        ReceptorDown::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let normal_note_elements: Vec<NormalNote> = keymode.normal_note_images
             .iter()
-            .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    NormalNote::new(textures.get_shared(path))
+            .zip(fallbacks.iter().map(|f| &f.normal_note))
+            .map(|(path, fallback_path)| {
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        NormalNote::new(Some(texture))
+                    } else {
+                        NormalNote::new(Some(Arc::clone(&blank_texture)))
+                    }
                 } else {
-                    NormalNote::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        NormalNote::new(Some(fallback))
+                    } else {
+                        NormalNote::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let long_note_head_elements: Vec<LongNoteHead> = keymode.long_note_head_images
             .iter()
-            .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    LongNoteHead::new(textures.get_shared(path))
+            .zip(fallbacks.iter().map(|f| &f.long_note_head))
+            .map(|(path, fallback_path)| {
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        LongNoteHead::new(Some(texture))
+                    } else {
+                        LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                    }
                 } else {
-                    LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        LongNoteHead::new(Some(fallback))
+                    } else {
+                        LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let long_note_body_elements: Vec<LongNoteBody> = keymode.long_note_body_images
             .iter()
-            .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    LongNoteBody::new(textures.get_shared(path))
+            .zip(fallbacks.iter().map(|f| &f.long_note_body))
+            .map(|(path, fallback_path)| {
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        LongNoteBody::new(Some(texture))
+                    } else {
+                        LongNoteBody::new(Some(Arc::clone(&blank_texture)))
+                    }
                 } else {
-                    LongNoteBody::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        LongNoteBody::new(Some(fallback))
+                    } else {
+                        LongNoteBody::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let long_note_tail_elements: Vec<LongNoteTail> = keymode.long_note_tail_images
             .iter()
-            .map(|path| {
+            .zip(fallbacks.iter().map(|f| &f.long_note_tail))
+            .map(|(path, fallback_path)| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         tail_processor.process_once_void(&texture, |arc_texture| {
@@ -132,7 +182,14 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                         LongNoteTail::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    LongNoteTail::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        tail_processor.process_once_void(&fallback, |arc_texture| {
+                            flip_vertical(arc_texture);
+                        });
+                        LongNoteTail::new(Some(fallback))
+                    } else {
+                        LongNoteTail::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
@@ -171,7 +228,8 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             judgement_line: JudgementLine {
                 texture: Some(texture_or_blank("")),
                 color: Rgba::default(),
-            }
+            },
+            fallbacks
         });
     }
 

@@ -3,7 +3,7 @@ use wasm_bindgen::prelude::*;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{define_keymode, traits::KeymodeInvariant};
+use crate::{define_keymode, traits::{LaneFallback, KeymodeInvariant}};
 
 define_keymode!(
     (receptor_images, "Receptor", "", "-up"),
@@ -106,4 +106,28 @@ impl Default for Keymode {
 
 impl KeymodeInvariant for Keymode {
     fn get_keymode(&self) -> u8 { self.keymode }
+
+    fn get_receptors(&self) -> Vec<String> { self.receptor_images.clone() }
+    fn get_receptors_down(&self) -> Vec<String> { self.receptor_images_down.clone() }
+
+    fn get_normal_notes(&self) -> Vec<String> { self.normal_note_images.clone() }
+
+    fn get_long_note_heads(&self) -> Vec<String> { self.long_note_head_images.clone() }
+    fn get_long_note_bodies(&self) -> Vec<String> { self.long_note_body_images.clone() }
+    fn get_long_note_tails(&self) -> Vec<String> { self.long_note_tail_images.clone() }
+
+    fn primary_fallback(&self, _lane: usize) -> LaneFallback {
+        let keymode = self.get_keymode();
+
+        LaneFallback {
+            receptor: format!("receptor/{}k-{}-up", keymode, _lane),
+            receptor_down: format!("receptor/{}k-{}-down", keymode, _lane),
+            normal_note: format!("hitobjects/note/{}k-{}", keymode, _lane),
+            long_note_head: format!("hitobjects/longnotestart/{}k-{}", keymode, _lane),
+            long_note_body: format!("hitobjects/longnotebody/{}k-{}", keymode, _lane),
+            long_note_tail: format!("hitobjects/longnoteend/{}k-{}", keymode, _lane),
+        }
+    }
+    fn secondary_fallback(&self, _lane: usize) -> LaneFallback { self.primary_fallback(_lane) }
+    fn middle_fallback(&self, _lane: usize) -> LaneFallback { self.primary_fallback(_lane) }
 }

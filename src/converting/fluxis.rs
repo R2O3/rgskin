@@ -24,6 +24,7 @@ use crate::skin::fluxis::{
     FluXisLayout,
     SkinJson
 };
+use crate::traits::KeymodeInvariant;
 use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
 use crate::utils::skin::cleanup_stores;
@@ -51,9 +52,22 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
         let key_count = keymode.keymode as usize;
         let mut max_additional_offset = 0;
 
+        let fallbacks = keymode.get_fallbacks();
+
+        debug_assert!(
+            fallbacks.len() == keymode.receptor_images.len()
+            && fallbacks.len() == keymode.receptor_images_down.len()
+            && fallbacks.len() == keymode.normal_note_images.len()
+            && fallbacks.len() == keymode.long_note_head_images.len()
+            && fallbacks.len() == keymode.long_note_body_images.len()
+            && fallbacks.len() == keymode.long_note_tail_images.len()
+            , "Length of fallbacks doesn't match actual keymode"
+        );
+
         let receptor_up_elements: Vec<ReceptorUp> = keymode.receptor_images
             .iter()
-            .map(|path| {
+            .zip(fallbacks.iter().map(|f| &f.receptor))
+            .map(|(path, fallback_path)| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc| {
@@ -65,14 +79,19 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                         ReceptorUp::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorUp::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        ReceptorUp::new(Some(fallback))
+                    } else {
+                        ReceptorUp::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let receptor_down_elements: Vec<ReceptorDown> = keymode.receptor_images_down
             .iter()
-            .map(|path| {
+            .zip(fallbacks.iter().map(|f| &f.receptor_down))
+            .map(|(path, fallback_path)| {
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |tex| {
@@ -84,18 +103,31 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                         ReceptorDown::new(Some(Arc::clone(&blank_texture)))
                     }
                 } else {
-                    ReceptorDown::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        ReceptorDown::new(Some(fallback))
+                    } else {
+                        ReceptorDown::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let normal_note_elements: Vec<NormalNote> = keymode.normal_note_images
             .iter()
-            .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    NormalNote::new(textures.get_shared(path))
+            .zip(fallbacks.iter().map(|f| &f.normal_note))
+            .map(|(path, fallback_path)| {
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        NormalNote::new(Some(texture))
+                    } else {
+                        NormalNote::new(Some(Arc::clone(&blank_texture)))
+                    }
                 } else {
-                    NormalNote::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        NormalNote::new(Some(fallback))
+                    } else {
+                        NormalNote::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
@@ -104,23 +136,41 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
 
         let long_note_head_elements: Vec<LongNoteHead> = if fallback_to_normal {
             keymode.normal_note_images
-            .iter()
-            .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    LongNoteHead::new(textures.get_shared(path))
-                } else {
-                    LongNoteHead::new(Some(Arc::clone(&blank_texture)))
-                }
-            })
-            .collect()
+                .iter()
+                .zip(fallbacks.iter().map(|f| &f.normal_note))
+                .map(|(path, fallback_path)| {
+                    if !path.is_empty() {
+                        if let Some(texture) = textures.get_shared(path) {
+                            LongNoteHead::new(Some(texture))
+                        } else {
+                            LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                        }
+                    } else {
+                        if let Some(fallback) = textures.get_shared(fallback_path) {
+                            LongNoteHead::new(Some(fallback))
+                        } else {
+                            LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                        }
+                    }
+                })
+                .collect()
         } else {
             keymode.long_note_head_images
                 .iter()
-                .map(|path| {
-                    if !path.is_empty() && textures.contains(path) {
-                        LongNoteHead::new(textures.get_shared(path))
+                .zip(fallbacks.iter().map(|f| &f.long_note_head))
+                .map(|(path, fallback_path)| {
+                    if !path.is_empty() {
+                        if let Some(texture) = textures.get_shared(path) {
+                            LongNoteHead::new(Some(texture))
+                        } else {
+                            LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                        }
                     } else {
-                        LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                        if let Some(fallback) = textures.get_shared(fallback_path) {
+                            LongNoteHead::new(Some(fallback))
+                        } else {
+                            LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                        }
                     }
                 })
                 .collect()
@@ -128,22 +178,40 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
 
         let long_note_body_elements: Vec<LongNoteBody> = keymode.long_note_body_images
             .iter()
-            .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    LongNoteBody::new(textures.get_shared(path))
+            .zip(fallbacks.iter().map(|f| &f.long_note_body))
+            .map(|(path, fallback_path)| {
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        LongNoteBody::new(Some(texture))
+                    } else {
+                        LongNoteBody::new(Some(Arc::clone(&blank_texture)))
+                    }
                 } else {
-                    LongNoteBody::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        LongNoteBody::new(Some(fallback))
+                    } else {
+                        LongNoteBody::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
 
         let long_note_tail_elements: Vec<LongNoteTail> = keymode.long_note_tail_images
             .iter()
-            .map(|path| {
-                if !path.is_empty() && textures.contains(path) {
-                    LongNoteTail::new(textures.get_shared(path))
+            .zip(fallbacks.iter().map(|f| &f.long_note_tail))
+            .map(|(path, fallback_path)| {
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        LongNoteTail::new(Some(texture))
+                    } else {
+                        LongNoteTail::new(Some(Arc::clone(&blank_texture)))
+                    }
                 } else {
-                    LongNoteTail::new(Some(Arc::clone(&blank_texture)))
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        LongNoteTail::new(Some(fallback))
+                    } else {
+                        LongNoteTail::new(Some(Arc::clone(&blank_texture)))
+                    }
                 }
             })
             .collect();
@@ -182,7 +250,8 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                     Some(texture_or_blank(&skin.skin_json.overrides.stage.hitline))
                 },
                 color: Rgba::default(),
-            }
+            },
+            fallbacks
         });
     }
 

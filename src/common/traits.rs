@@ -1,9 +1,17 @@
 #![allow(unused)]
 
-use std::{collections::HashSet, str::FromStr};
+use core::num;
+use std::{collections::HashSet, rc::Rc, str::FromStr};
 use merge::Merge;
 
-use crate::GenericManiaSkin;
+use crate::{utils::skin::get_lane_type, GenericManiaSkin};
+
+#[derive(Debug, PartialEq, Eq)]
+pub enum LaneType {
+    Primary,
+    Secondary,
+    Middle,
+}
 
 pub trait ManiaSkin<'a>: Merge {
     type Keymode;
@@ -43,4 +51,41 @@ pub trait ManiaSkinConfig: SkinConfig {
 
 pub trait KeymodeInvariant {
     fn get_keymode(&self) -> u8;
+
+    fn get_receptors(&self) -> Vec<String>;
+    fn get_receptors_down(&self) -> Vec<String>;
+
+    fn get_normal_notes(&self) -> Vec<String>;
+
+    fn get_long_note_heads(&self) -> Vec<String>;
+    fn get_long_note_bodies(&self) -> Vec<String>;
+    fn get_long_note_tails(&self) -> Vec<String>;
+
+    fn primary_fallback(&self, _lane: usize) -> LaneFallback;
+    fn secondary_fallback(&self, _lane: usize) -> LaneFallback;
+    fn middle_fallback(&self, _lane: usize) -> LaneFallback;
+
+    fn get_fallbacks(&self) -> Vec<LaneFallback> {
+        let num_keys = self.get_keymode() as usize;
+
+        (0..num_keys)
+            .map(|idx| {
+                match get_lane_type(self.get_keymode(), idx) {
+                    LaneType::Primary => self.primary_fallback(idx+1),
+                    LaneType::Secondary => self.secondary_fallback(idx+1),
+                    LaneType::Middle => self.middle_fallback(idx+1),
+                }
+            })
+            .collect()
+    }
+}
+
+#[derive(Clone, Default)]
+pub struct LaneFallback {
+    pub receptor: String,
+    pub receptor_down: String,
+    pub normal_note: String,
+    pub long_note_head: String,
+    pub long_note_body: String,
+    pub long_note_tail: String,
 }
