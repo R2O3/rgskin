@@ -11,25 +11,22 @@ use crate::utils::io::{get_filename, get_parent, get_stem, remove_extension, nor
 use crate::utils::string::string_iter_as_str;
 use crate::OsuSkin;
 use crate::io::texture::TextureStore;
+use crate::importing::common::{file_matches_target, path_matches_target, extension_matches, SeenFiles};
 
 fn path_matches(file_path: &str, target_relative_path: &str) -> bool {
     let file_name = get_filename(file_path);
-    let file_stem = get_stem(&file_name).to_lowercase();
+    let file_stem = get_stem(&file_name);
     
     let target_parent = get_parent(target_relative_path);
     let target_filename = get_filename(target_relative_path);
-    let target_stem = get_stem(&target_filename).to_lowercase();
     
-    if file_stem != target_stem {
+    if !file_matches_target(&file_stem, &target_filename) {
         return false;
     }
     
     let file_parent = get_parent(file_path);
-    if target_parent.is_empty() {
-        return file_parent.is_empty() || !file_path.contains('/');
-    }
     
-    file_parent.to_lowercase().ends_with(&target_parent.to_lowercase())
+    path_matches_target(file_path, &file_parent, target_relative_path, &target_parent)
 }
 
 pub fn import_binaries_from_files<F>(
@@ -41,12 +38,26 @@ where
     F: FnMut(String, &[u8]) -> Result<(), JsError>,
 {
     for &relative_path in relative_paths {
+        let mut matches: Vec<(&String, &Vec<u8>)> = Vec::new();
+        
         for (file_path, bytes) in files {
             let normalized_path = normalize(file_path);
             if path_matches(&normalized_path, relative_path) {
-                loader(relative_path.to_string(), bytes)?;
-                break;
+                matches.push((file_path, bytes));
             }
+        }
+        
+        let target_filename = get_filename(relative_path);
+        let chosen_file = matches.iter()
+            .find(|(file_path, _)| {
+                let normalized = normalize(file_path);
+                let file_stem = get_stem(&get_filename(&normalized));
+                file_stem == target_filename
+            })
+            .or_else(|| matches.first());
+        
+        if let Some((_, bytes)) = chosen_file {
+            loader(relative_path.to_string(), bytes)?;
         }
     }
     
@@ -61,14 +72,20 @@ pub fn import_all_binaries_from_files<F>(
 where
     F: FnMut(String, &[u8]) -> Result<(), JsError>,
 {
+    let mut seen_files = SeenFiles::new();
+    
     for (file_path, bytes) in files {
         let normalized_path = normalize(file_path);
         
         if let Some(ext_pos) = normalized_path.rfind('.') {
-            let ext = &normalized_path[ext_pos + 1..].to_lowercase();
-            if extensions.contains(&ext.as_str()) {
+            let ext = &normalized_path[ext_pos + 1..];
+            
+            if extension_matches(ext, extensions) {
                 let path_without_ext = remove_extension(&normalized_path);
-                loader(path_without_ext, bytes)?;
+                
+                if seen_files.try_insert(&path_without_ext) {
+                    loader(path_without_ext, bytes)?;
+                }
             }
         }
     }

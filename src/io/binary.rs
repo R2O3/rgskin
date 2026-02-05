@@ -1,3 +1,5 @@
+use std::fmt::Debug;
+
 use js_sys::{Uint8Array, ArrayBuffer};
 
 #[derive(Clone, Debug)]
@@ -138,7 +140,7 @@ macro_rules! impl_binary_wasm {
     };
 }
 
-pub trait Binary: Sized {
+pub trait Binary: Sized + Debug {
     type Error;
     type LoadedData;
     

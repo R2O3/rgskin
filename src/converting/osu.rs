@@ -208,11 +208,12 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             column_spacing: keymode.column_spacing.clone(),
         };
 
-        let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
-
-        let stage_background = Texture::with_data("stage_bg".to_string(),
-            generate_stage_background(keymode.colours.clone(), (layout.average_column_width() as f32 * OsuDimensions::ReceptorScale.as_f32()) as u32)
+        let stage_texture = Texture::with_data("stage_bg".to_string(),
+            generate_stage_background(keymode.colours.clone(), (layout.average_column_width() as f32 * OsuDimensions::X.as_f32()) as u32)
         );
+        let stage_background = textures.insert(stage_texture);
+
+        let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
 
         keymodes.push(Keymode { 
             keymode: key_count as u8,
@@ -235,7 +236,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 color: Rgba::default(),
             },
             stage: Stage::new(
-                Some(Arc::new(RwLock::new(stage_background))),
+                Some(stage_background),
                 textures.get_shared(&keymode.stage_right)
                     .or(textures.get_shared(static_assets::Mania::STAGE_RIGHT)),
                 textures.get_shared(&keymode.stage_left)

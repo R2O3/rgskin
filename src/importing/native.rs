@@ -1,5 +1,4 @@
 #![allow(unused)]
-
 #![cfg(not(target_arch = "wasm32"))]
 
 use std::fs;
@@ -14,6 +13,7 @@ use crate::utils::io::{get_filename, get_parent, get_stem, join_paths_unix, remo
 use crate::utils::string::string_iter_as_str;
 use crate::OsuSkin;
 use crate::io::texture::{TextureStore, Texture};
+use crate::importing::common::{file_matches_target, extension_matches, choose_best_match, SeenFiles, should_load_from_set};
 
 pub fn import_binaries_from_dir<F>(
     path: &str,
@@ -28,17 +28,24 @@ where
         let filename = get_filename(relative_path);
         
         if let Ok(entries) = fs::read_dir(&dir_path) {
+            let mut matches: Vec<(String, String)> = Vec::new();
+            
             for entry in entries.flatten() {
                 if let Ok(file_name) = entry.file_name().into_string() {
                     let file_stem = get_stem(&file_name);
-                    if file_stem == filename {
+                    
+                    if file_matches_target(&file_stem, &filename) {
                         let full_path = join_paths_unix(&dir_path, &file_name);
-                        
-                        if let Ok(bytes) = fs::read(&full_path) {
-                            loader(relative_path.to_string(), &bytes)?;
-                            break;
-                        }
+                        matches.push((file_name, full_path));
                     }
+                }
+            }
+            
+            let chosen_file = choose_best_match(&matches, &filename, |name| get_stem(name));
+            
+            if let Some((_, full_path)) = chosen_file {
+                if let Ok(bytes) = fs::read(full_path) {
+                    loader(relative_path.to_string(), &bytes)?;
                 }
             }
         }
@@ -64,6 +71,7 @@ where
         base_path: &str,
         extensions: &[&str],
         loader: &mut F,
+        seen_files: &mut SeenFiles,
     ) -> Result<(), Box<dyn std::error::Error>>
     where
         F: FnMut(String, &[u8]) -> Result<(), Box<dyn std::error::Error>>,
@@ -74,11 +82,12 @@ where
                 
                 if entry_path.is_dir() {
                     if let Some(path_str) = entry_path.to_str() {
-                        recurse(path_str, base_path, extensions, loader)?;
+                        recurse(path_str, base_path, extensions, loader, seen_files)?;
                     }
                 } else if let Some(ext) = entry_path.extension() {
-                    let ext_lower = ext.to_string_lossy().to_lowercase();
-                    if extensions.contains(&ext_lower.as_str()) {
+                    let ext_str = ext.to_string_lossy();
+                    
+                    if extension_matches(&ext_str, extensions) {
                         if let (Some(full_path_str), Some(file_name)) = 
                             (entry_path.to_str(), entry_path.file_name().and_then(|n| n.to_str())) {
                             
@@ -87,8 +96,12 @@ where
                                 .unwrap_or(file_name)
                                 .trim_start_matches('/').trim_start_matches('\\');
                             
-                            if let Ok(bytes) = fs::read(&full_path_str) {
-                                loader(remove_extension(relative_path), &bytes)?;
+                            let path_without_ext = remove_extension(relative_path);
+                            
+                            if seen_files.try_insert(&path_without_ext) {
+                                if let Ok(bytes) = fs::read(&full_path_str) {
+                                    loader(path_without_ext.to_string(), &bytes)?;
+                                }
                             }
                         }
                     }
@@ -98,7 +111,8 @@ where
         Ok(())
     }
     
-    recurse(path, path, extensions, &mut loader)?;
+    let mut seen_files = SeenFiles::new();
+    recurse(path, path, extensions, &mut loader, &mut seen_files)?;
     Ok(())
 }
 
@@ -118,7 +132,7 @@ pub fn import_all_textures_from_dir(path: &str, load_only: Option<&HashSet<Strin
     
     import_all_binaries_from_dir(path, &["png", "jpg", "jpeg"], |path, bytes| {
         if let Some(load_set) = load_only {
-            if load_set.contains(&path) {
+            if should_load_from_set(&path, load_set) {
                 texture_store.load_from_bytes(path.clone(), bytes)?;
             } else {
                 texture_store.insert(Texture::with_unloaded_data(path, bytes.to_vec()));

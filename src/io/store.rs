@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 use wasm_bindgen::prelude::*;
 use js_sys::Array;
@@ -59,7 +60,7 @@ macro_rules! impl_store_wasm {
     };
 }
 
-pub trait Store<T: 'static> {
+pub trait Store<T: 'static>: Debug {
     type Data;
 
     fn create_item(path: String, data: Self::Data) -> T;
@@ -70,9 +71,11 @@ pub trait Store<T: 'static> {
     fn map(&self) -> &HashMap<String, Arc<RwLock<T>>>;
     fn map_mut(&mut self) -> &mut HashMap<String, Arc<RwLock<T>>>;
 
-    fn insert(&mut self, item: T) {
+    fn insert(&mut self, item: T) -> Arc<RwLock<T>> {
         let path = normalize(Self::get_item_path(&item));
-        self.map_mut().insert(path, Arc::new(RwLock::new(item)));
+        let arc = Arc::new(RwLock::new(item));
+        self.map_mut().insert(path, arc.clone());
+        arc
     }
     
     fn get(&self, path: &str) -> Option<std::sync::RwLockReadGuard<'_, T>> {

@@ -2,7 +2,7 @@ use wasm_bindgen::prelude::*;
 use crate::{impl_binary_wasm, io::{Binary, BinaryState}};
 
 #[wasm_bindgen]
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct RawBytes {
     #[wasm_bindgen(getter_with_clone)]
     pub path: String,

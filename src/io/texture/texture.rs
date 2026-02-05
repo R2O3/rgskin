@@ -1,3 +1,4 @@
+use std::fmt;
 use wasm_bindgen::prelude::*;
 use image::{DynamicImage, ImageError};
 use crate::{impl_binary_wasm, io::{Binary, BinaryState}};
@@ -91,6 +92,15 @@ impl Texture {
     
     pub fn get_loaded_data(&self) -> Option<&DynamicImage> {
         self.get_data()
+    }
+}
+
+impl fmt::Debug for Texture {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Texture")
+         .field("path", &self.path)
+         .field("has data", &self.data.has_data())
+         .finish()
     }
 }
 

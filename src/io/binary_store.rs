@@ -5,7 +5,7 @@ use js_sys::{Uint8Array, ArrayBuffer, Array};
 use crate::{impl_store_wasm, io::{Binary, BinaryState, RawBytes, Store}};
 
 #[wasm_bindgen]
-#[derive(Clone, Merge)]
+#[derive(Clone, Merge, Debug)]
 pub struct BinaryStore {
     #[wasm_bindgen(skip)]
     #[merge(strategy = merge::hashmap::overwrite)]

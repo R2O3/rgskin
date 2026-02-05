@@ -1,5 +1,5 @@
 use std::sync::{Arc, RwLock};
-use image::{imageops, DynamicImage, GenericImageView, Rgba};
+use image::{imageops::{self, FilterType}, DynamicImage, GenericImageView, Rgba};
 use crate::{
     io::texture::Texture,
     process_texture, process_texture_mut,
@@ -152,6 +152,12 @@ pub fn fill_rect(
             base.put_pixel(px, py, *color);
         }
     }
+}
+
+// stupid I know but the simplest and works
+pub fn get_dominant_color(img: &DynamicImage, filter: FilterType) -> Rgba<u8> {
+    let resized = img.resize_exact(1, 1, filter);
+    resized.get_pixel(0, 0)
 }
 
 pub fn overlay_image(

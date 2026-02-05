@@ -7,7 +7,7 @@ use crate::{impl_store_wasm, io::Store, Binary, BinaryState};
 use crate::io::texture::Texture;
 
 #[wasm_bindgen]
-#[derive(Clone, Merge)]
+#[derive(Clone, Merge, Debug)]
 pub struct TextureStore {
     #[wasm_bindgen(skip)]
     #[merge(strategy = merge::hashmap::overwrite)]

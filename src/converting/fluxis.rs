@@ -1,5 +1,6 @@
 use std::sync::{Arc, RwLock};
-use image::GenericImageView;
+use image::imageops::FilterType;
+use image::{GenericImageView, ImageBuffer};
 
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
@@ -10,7 +11,7 @@ use crate::generic::{sound::*, Gameplay, Keymode, Metadata, UI};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::{*, self};
 use crate::image_proc::generate_fluxis_preview;
-use crate::image_proc::proc::dist_from_bottom;
+use crate::image_proc::proc::{dist_from_bottom, get_dominant_color, overlay_image, trim_image_vertical};
 use crate::io::Store;
 use crate::io::texture::{Texture, TextureProcessor};
 use crate::skin::fluxis::layout_json::component::*;
@@ -473,6 +474,26 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
                                         image::imageops::FilterType::Lanczos3
                                     );
                                 }
+                                
+                                let dom_col = if let Some(stage_arc) = keymode.stage.background.as_ref() {
+                                    if let Some(stage_img) = stage_arc.get_data() {
+                                        get_dominant_color(&stage_img, FilterType::Lanczos3)
+                                    } else {
+                                        image::Rgba([0, 0, 0, 255])
+                                    }
+                                } else {
+                                    image::Rgba([0, 0, 0, 255])
+                                };
+
+                                let mut bg = ImageBuffer::from_pixel(img.width(), img.height(), dom_col);
+
+                                *img = trim_image_vertical(img.clone(), 0.2);
+                                let bg_height = bg.height();
+
+                                let img_buffer = img.to_rgba8();
+                                overlay_image(&mut bg, &img_buffer, 0, bg_height.saturating_sub(img.height()) + 1);
+
+                                *img = image::DynamicImage::ImageRgba8(bg);
                             });
                         });
                     }
@@ -554,9 +575,19 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     } else {
         "blank".to_string()
     };
-    textures.copy(&default_keymode.stage.get_path().unwrap_or_default(), "Stage/background");
+    
+    skin_json.overrides.stage.background = default_keymode.stage.background.get_path().unwrap_or_default();
     skin_json.overrides.stage.border_right = default_keymode.stage.border_right.get_path().unwrap_or_default();
     skin_json.overrides.stage.border_left = default_keymode.stage.border_left.get_path().unwrap_or_default();
+
+    skin_json.overrides.stage.border_left_bottom = blank_texture.get_path();
+    skin_json.overrides.stage.border_right_bottom = blank_texture.get_path();
+    skin_json.overrides.stage.background_bottom = blank_texture.get_path();
+
+    skin_json.overrides.stage.border_left_top = blank_texture.get_path();
+    skin_json.overrides.stage.border_right_top = blank_texture.get_path();
+    skin_json.overrides.stage.background_top = blank_texture.get_path();
+
     skin_json.sync_overrides_from_keymodes();
 
     if let Some(s) = &skin.sounds.ui.menu_back_click {

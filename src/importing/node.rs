@@ -1,5 +1,4 @@
 #![allow(unused)]
-
 #![cfg(feature = "node")]
 
 #[cfg(all(target_arch = "wasm32", feature = "node"))]
@@ -8,6 +7,7 @@ use crate::common::traits::SkinConfig;
 use crate::io::texture::TextureStore;
 use crate::sample::SampleStore;
 use crate::utils::io::{get_filename, get_parent, get_stem, remove_extension};
+use crate::importing::common::{file_matches_target, extension_matches, choose_best_match, SeenFiles};
 use std::str::FromStr;
 
 pub fn import_binaries_from_dir<F>(
@@ -23,15 +23,22 @@ where
         let filename = get_filename(relative_path);
         
         if let Ok(entries) = node::read_dir(&dir_path) {
+            let mut matches: Vec<(String, String)> = Vec::new();
+            
             for entry in entries {
                 let file_stem = get_stem(&entry);
-                if file_stem == filename {
+                
+                if file_matches_target(&file_stem, &filename) {
                     let full_path = node::join_path(&dir_path, &entry);
-                    
-                    if let Ok(bytes) = node::read_file_bytes(&full_path) {
-                        loader(relative_path.to_string(), &bytes)?;
-                        break;
-                    }
+                    matches.push((entry, full_path));
+                }
+            }
+            
+            let chosen_file = choose_best_match(&matches, &filename, |name| get_stem(name));
+            
+            if let Some((_, full_path)) = chosen_file {
+                if let Ok(bytes) = node::read_file_bytes(full_path) {
+                    loader(relative_path.to_string(), &bytes)?;
                 }
             }
         }
@@ -53,6 +60,7 @@ where
         base_path: &str,
         extensions: &[&str],
         loader: &mut F,
+        seen_files: &mut SeenFiles,
     ) -> Result<(), Box<dyn std::error::Error>>
     where
         F: FnMut(String, &[u8]) -> Result<(), Box<dyn std::error::Error>>,
@@ -62,18 +70,23 @@ where
                 let entry_path = node::join_path(dir_path, &entry);
                 
                 if node::is_directory(&entry_path)? {
-                    recurse(&entry_path, base_path, extensions, loader)?;
+                    recurse(&entry_path, base_path, extensions, loader, seen_files)?;
                 } else {
                     if let Some(ext_pos) = entry.rfind('.') {
-                        let ext = &entry[ext_pos + 1..].to_lowercase();
-                        if extensions.contains(&ext.as_str()) {
+                        let ext = &entry[ext_pos + 1..];
+                        
+                        if extension_matches(ext, extensions) {
                             let relative_path = entry_path
                                 .strip_prefix(base_path)
                                 .unwrap_or(&entry)
                                 .trim_start_matches('/').trim_start_matches('\\');
                             
-                            if let Ok(bytes) = node::read_file_bytes(&entry_path) {
-                                loader(remove_extension(relative_path), &bytes)?;
+                            let path_without_ext = remove_extension(relative_path);
+                            
+                            if seen_files.try_insert(&path_without_ext) {
+                                if let Ok(bytes) = node::read_file_bytes(&entry_path) {
+                                    loader(path_without_ext.to_string(), &bytes)?;
+                                }
                             }
                         }
                     }
@@ -83,7 +96,8 @@ where
         Ok(())
     }
     
-    recurse(path, path, extensions, &mut loader)?;
+    let mut seen_files = SeenFiles::new();
+    recurse(path, path, extensions, &mut loader, &mut seen_files)?;
     Ok(())
 }
 
