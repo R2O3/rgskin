@@ -8,7 +8,6 @@ derive_merge_for_all! {
     #[derive(Clone, Merge)]
     pub struct Gameplay {
         pub health_bar: Healthbar,
-        pub stage: Stage,
         pub judgement: Judgement,
         #[merge(skip)]
         pub layout: HUDLayout

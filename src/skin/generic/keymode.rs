@@ -33,6 +33,9 @@ pub struct Keymode {
     pub judgement_line: JudgementLine,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub stage: Stage,
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub fallbacks: Vec<LaneFallback>,
 }
 

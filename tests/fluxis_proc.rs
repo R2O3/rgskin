@@ -5,7 +5,7 @@ use rgskin::{image_proc::generate_fluxis_preview, utils::io::join_paths_unix};
 use test_dependencies::*;
 
 #[test]
-pub fn fluxis_to_osu_test() -> Result<(), Box<dyn std::error::Error>> {
+pub fn fluxis_preview_test() -> Result<(), Box<dyn std::error::Error>> {
     benchmark_closure(||
     {
         let osu_skin = import::osu::skin_from_dir("./tests/skins/Pl0x", false)?;
@@ -15,7 +15,7 @@ pub fn fluxis_to_osu_test() -> Result<(), Box<dyn std::error::Error>> {
         let img = generate_fluxis_preview(&fluxis_skin.skin_json, &fluxis_skin.textures, 1024, 1024)?;
         img.save_with_format(join_paths_unix(ASSET_PATH, "preview.png"), image::ImageFormat::Png)?;
         Ok(())
-    }, "fluXis to Osu! mania", "to finish converting", "\x1b[0;32m")?;
+    }, "Generating fluXis skin preview", "to finish", "\x1b[0;32m")?;
     
     Ok(())
 }

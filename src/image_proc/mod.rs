@@ -1,5 +1,7 @@
 pub mod proc;
-mod fluxis_preview;
+mod fluxis;
+mod osu;
 
 pub(crate) mod macros;
-pub use fluxis_preview::generate_fluxis_preview;
+pub use fluxis::*;
+pub use osu::*;

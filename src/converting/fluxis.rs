@@ -24,7 +24,7 @@ use crate::skin::fluxis::{
     FluXisLayout,
     SkinJson
 };
-use crate::traits::KeymodeInvariant;
+use crate::traits::{KeymodeInvariant, ManiaSkin};
 use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
 use crate::utils::skin::cleanup_stores;
@@ -251,6 +251,14 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 },
                 color: Rgba::default(),
             },
+            stage: Stage::new(
+                textures.get_shared(&skin.skin_json.overrides.stage.background)
+                    .or(textures.get_shared(static_assets::Stage::BACKGROUND)),
+                textures.get_shared(&skin.skin_json.overrides.stage.border_right)
+                    .or(textures.get_shared(static_assets::Stage::BORDER_RIGHT)),
+                textures.get_shared(&skin.skin_json.overrides.stage.border_left)
+                    .or(textures.get_shared(static_assets::Stage::BORDER_LEFT)),
+            ),
             fallbacks
         });
     }
@@ -269,14 +277,6 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 .or(textures.get_shared(static_assets::Health::FOREGROUND)),
             textures.get_shared(&skin.skin_json.overrides.health.background)
                 .or(textures.get_shared(static_assets::Health::BACKGROUND))
-        ),
-        stage: Stage::new(
-            textures.get_shared(&skin.skin_json.overrides.stage.background)
-                .or(textures.get_shared(static_assets::Stage::BACKGROUND)),
-            textures.get_shared(&skin.skin_json.overrides.stage.border_right)
-                .or(textures.get_shared(static_assets::Stage::BORDER_RIGHT)),
-            textures.get_shared(&skin.skin_json.overrides.stage.border_left)
-                .or(textures.get_shared(static_assets::Stage::BORDER_LEFT)),
         ),
         judgement: elements::Judgement::new(
             textures.get_shared(&skin.skin_json.overrides.judgement.flawless)
@@ -543,18 +543,20 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     if let Some(miss_arc) = &skin.gameplay.judgement.miss {
         textures.copy(&miss_arc.get_path(), static_assets::Judgement::MISS);
     }
+    
+    let default_keymode = skin.get_keymode(4).unwrap_or(skin.keymodes.first().unwrap());
 
     skin_json.overrides.health.foreground = health_foreground;
     skin_json.overrides.health.background = health_background;
-    skin_json.overrides.lighting.column_lighting = skin.keymodes.first().unwrap().column_lighting.get_path().unwrap_or_default();
-    skin_json.overrides.stage.hitline = if skin.keymodes.first().unwrap().layout.show_judgement_line {
-        skin.keymodes.first().unwrap().judgement_line.get_path().unwrap_or_else(|| "blank".to_string())
+    skin_json.overrides.lighting.column_lighting = default_keymode.column_lighting.get_path().unwrap_or_default();
+    skin_json.overrides.stage.hitline = if default_keymode.layout.show_judgement_line {
+        default_keymode.judgement_line.get_path().unwrap_or_else(|| "blank".to_string())
     } else {
         "blank".to_string()
     };
-    textures.copy(&skin.gameplay.stage.get_path().unwrap_or_default(), "Stage/background");
-    skin_json.overrides.stage.border_right = skin.gameplay.stage.border_right.get_path().unwrap_or_default();
-    skin_json.overrides.stage.border_left = skin.gameplay.stage.border_left.get_path().unwrap_or_default();
+    textures.copy(&default_keymode.stage.get_path().unwrap_or_default(), "Stage/background");
+    skin_json.overrides.stage.border_right = default_keymode.stage.border_right.get_path().unwrap_or_default();
+    skin_json.overrides.stage.border_left = default_keymode.stage.border_left.get_path().unwrap_or_default();
     skin_json.sync_overrides_from_keymodes();
 
     if let Some(s) = &skin.sounds.ui.menu_back_click {

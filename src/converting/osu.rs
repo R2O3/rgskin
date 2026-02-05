@@ -4,9 +4,10 @@ use crate::common::color::Rgba;
 use crate::common::vector::*;
 use crate::extensions::TextureArcExt;
 use crate::generic::{sound::*, UI};
+use crate::image_proc::{generate_stage_background, to_osu_column, to_osu_column_draw};
 use crate::osu::static_assets;
 use crate::generic::Gameplay;
-use crate::image_proc::proc::{dist_from_bottom, flip_vertical, resize_width, rotate_90_deg_ccw, rotate_90_deg_cw, to_osu_column, to_osu_column_draw};
+use crate::image_proc::proc::{dist_from_bottom, flip_vertical, resize_width, rotate_90_deg_ccw, rotate_90_deg_cw};
 use crate::io::Store;
 use crate::io::texture::{Texture, TextureProcessor};
 use crate::osu::{self, General, OsuSkin, OsuSkinIni};
@@ -209,6 +210,10 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
 
+        let stage_background = Texture::with_data("stage_bg".to_string(),
+            generate_stage_background(keymode.colours.clone(), (layout.average_column_width() as f32 * OsuDimensions::ReceptorScale.as_f32()) as u32)
+        );
+
         keymodes.push(Keymode { 
             keymode: key_count as u8,
             layout,
@@ -229,12 +234,19 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 texture: Some(texture_or_blank("")),
                 color: Rgba::default(),
             },
+            stage: Stage::new(
+                Some(Arc::new(RwLock::new(stage_background))),
+                textures.get_shared(&keymode.stage_right)
+                    .or(textures.get_shared(static_assets::Mania::STAGE_RIGHT)),
+                textures.get_shared(&keymode.stage_left)
+                    .or(textures.get_shared(static_assets::Mania::STAGE_LEFT)),
+            ),
             fallbacks
         });
     }
 
-    let default_keymode = skin.skin_ini.keymodes[0].clone();
-    let layout_keymode = skin.skin_ini.get_keymode(4).unwrap_or(&default_keymode);
+    let default_keymode_fallback = osu::Keymode::default();
+    let default_keymode = skin.skin_ini.get_keymode(4).unwrap_or(skin.skin_ini.keymodes.first().unwrap_or(&default_keymode_fallback));
 
     let health_bar_fg = textures.get_shared(static_assets::Interface::SCOREBAR_COLOUR).unwrap_or(blank_texture.clone());
     let health_bar_bg = textures.get_shared(static_assets::Interface::SCOREBAR_BG).unwrap_or(blank_texture.clone());
@@ -243,13 +255,6 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
     let gameplay = Gameplay {
         health_bar: Healthbar::new(Some(health_bar_fg), Some(health_bar_bg)),
-        stage: Stage::new(
-            Some(blank_texture.clone()), // TODO: properly implement stage background for osu
-            textures.get_shared(&default_keymode.stage_right)
-                .or(textures.get_shared(static_assets::Mania::STAGE_RIGHT)),
-            textures.get_shared(&default_keymode.stage_left)
-                .or(textures.get_shared(static_assets::Mania::STAGE_LEFT)),
-        ),
         judgement: Judgement::new(
             textures.get_shared(&default_keymode.hit300g)
                 .or(textures.get_shared(static_assets::Mania::HIT300G)),
@@ -268,7 +273,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             combo: (
                 Vector3::new(
                     0.5,
-                    layout_keymode.combo_position.unwrap_or_default() as f32 / OsuDimensions::Y.as_f32(),
+                    default_keymode.combo_position.unwrap_or_default() as f32 / OsuDimensions::Y.as_f32(),
                     1.0
                 ),
                 Alignment { anchor: Anchor::BottomLeft, origin: Origin::BottomLeft }
@@ -292,7 +297,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             judgement: (
                 Vector3::new(
                     0.5,
-                    layout_keymode.score_position.unwrap_or_default() as f32 / OsuDimensions::Y.as_f32(),
+                    default_keymode.score_position.unwrap_or_default() as f32 / OsuDimensions::Y.as_f32(),
                     1.0
                 ),
                 Alignment { anchor: Anchor::Centre, origin: Origin::Centre }

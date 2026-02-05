@@ -1,7 +1,7 @@
 use image::{DynamicImage, Rgba};
 use crate::{
     fluxis::{skin_json::Keymode, SkinJson},
-    image_proc::proc::overlay_image,
+    image_proc::proc::{fill_rect, overlay_image},
     prelude::TextureStore,
     traits::ManiaSkinConfig,
     BinaryArcExt,
@@ -66,9 +66,7 @@ fn draw_background(
     }
     
     if use_black_bg {
-        for pixel in canvas.pixels_mut() {
-            *pixel = Rgba([0, 0, 0, 255]);
-        }
+        fill_rect(canvas, &Rgba([0, 0, 0, 255]), 0, 0, width, height);
     }
 }
 
