@@ -1,11 +1,11 @@
 [package]
 name = "rgskin"
-version = "0.0.2"
+version = "0.0.3"
 edition = "2024"
 repository = "https://github.com/r2o3/rgskin"
 authors = ["menvae"]
 categories = ["wasm"]
-description = "A library for converting rhythm game skins."
+description = "A library for converting, loading and creating skins for various rhythm games."
 keywords = [
   "wasm",
   "rhythm-game",
