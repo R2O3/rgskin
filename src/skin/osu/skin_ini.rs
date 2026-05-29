@@ -6,7 +6,7 @@ use std::collections::HashSet;
 use std::str::FromStr;
 use crate::common::traits::{ManiaSkinConfig, SkinConfig};
 use crate::osu::static_assets;
-use crate::skin::osu::keymode::Keymode;
+use crate::skin::osu::Keymode;
 use crate::skin::osu::General;
 use crate::ini::from_ini;
 use crate::utils;

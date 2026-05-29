@@ -34,6 +34,15 @@ pub fn parse_key_value(raw_str: &str) -> Option<(&str, &str)> {
 }
 
 #[inline]
+pub fn parse_key_value_eq(raw_str: &str) -> Option<(&str, &str)> {
+    if let Some(eq_pos) = raw_str.find('=') {
+        Some((raw_str[..eq_pos].trim(), raw_str[eq_pos + 1..].trim()))
+    } else {
+        None
+    }
+}
+
+#[inline]
 pub fn serialize_bool(value: bool) -> u8 {
     if value { 1 } else { 0 }
 }
@@ -87,7 +96,8 @@ pub fn add_key_value(template: &mut String, key: &str, sep: &str, value: &str, e
 #[inline]
 pub fn add_key_value_if_not_default<T>(
     result: &mut String, 
-    key: &str, 
+    key: &str,
+    sep: &str,
     value: &T, 
     default_value: &T
 ) 
@@ -97,7 +107,7 @@ where
     if value != default_value {
         let value_str = value.to_string();
         if !value_str.is_empty() {
-            add_key_value(result, key, ": ", &value_str, "\n");
+            add_key_value(result, key, sep, &value_str, "\n");
         }
     }
 }

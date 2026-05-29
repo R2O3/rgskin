@@ -14,6 +14,7 @@ pub mod utils;
 pub mod extensions;
 
 pub use skin::osu;
+pub use skin::quaver;
 pub use skin::fluxis;
 pub use skin::generic;
 pub use parse::ini;
@@ -34,6 +35,7 @@ pub mod prelude {
     pub use crate::FluXisSkin;
     
     pub use crate::osu::OsuSkinIni;
+    pub use crate::quaver::QuaSkinIni;
     pub use crate::fluxis::{SkinJson, FluXisLayout};
     
     pub use crate::io::{Binary, RawBytes, BinaryState, BinaryStore, Store};

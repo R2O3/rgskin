@@ -1,10 +1,16 @@
+use merge::Merge;
 use serde::{Deserialize, Deserializer, Serialize, Serializer};
+use crate::utils;
 
-#[derive(Clone, Copy, PartialEq, Eq, Debug)]
+#[derive(Clone, Copy, PartialEq, Eq, Debug, Merge)]
 pub struct Rgba {
+    #[merge(strategy = utils::merge::any::overwrite)]
     pub red: u8,
+    #[merge(strategy = utils::merge::any::overwrite)]
     pub green: u8,
+    #[merge(strategy = utils::merge::any::overwrite)]
     pub blue: u8,
+    #[merge(strategy = utils::merge::any::overwrite)]
     pub alpha: u8,
 }
 
@@ -40,8 +46,8 @@ impl Rgba {
 
     pub fn from_str(s: &str) -> Result<Self, String> {
         let parts: Vec<&str> = s.split(',').collect();
-        if parts.len() != 4 {
-            return Err(format!("expected 4 comma-separated values, got {}", parts.len()));
+        if parts.len() != 3 && parts.len() != 4 {
+            return Err(format!("Expected 3 or 4 comma-separated values, got {}", parts.len()));
         }
         
         let parse_component = |s: &str| -> Result<u8, String> {
@@ -54,7 +60,7 @@ impl Rgba {
             red: parse_component(parts[0])?,
             green: parse_component(parts[1])?,
             blue: parse_component(parts[2])?,
-            alpha: parse_component(parts[3])?,
+            alpha: if parts.len() == 4 { parse_component(parts[3])? } else { 255 },
         })
     }
 
