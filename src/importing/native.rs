@@ -4,7 +4,7 @@
 use std::fs;
 use std::path::Path;
 use std::str::FromStr;
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 use crate::common::traits::SkinConfig;
 use crate::fluxis::{self, FluXisSkin};
 use crate::{osu, Store};
@@ -13,7 +13,7 @@ use crate::utils::io::{get_filename, get_parent, get_stem, join_paths_unix, remo
 use crate::utils::string::string_iter_as_str;
 use crate::OsuSkin;
 use crate::io::texture::{TextureStore, Texture};
-use crate::importing::common::{file_matches_target, extension_matches, choose_best_match, SeenFiles, should_load_from_set};
+use crate::importing::common::{SeenFiles, build_texture_store_from_files, choose_best_match, expand_with_at2x, extension_matches, file_matches_target, should_load_from_set};
 
 pub fn import_binaries_from_dir<F>(
     path: &str,
@@ -116,34 +116,35 @@ where
     Ok(())
 }
 
-pub fn import_textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>> {
-    let mut texture_store = TextureStore::new();
-    
-    import_binaries_from_dir(path, relative_texture_paths, |path, bytes| {
-        texture_store.load_from_bytes(path, bytes)?;
+pub fn import_textures_from_dir(
+    path: &str,
+    relative_texture_paths: &[&str],
+) -> Result<TextureStore, Box<dyn std::error::Error>> {
+    let expanded = expand_with_at2x(relative_texture_paths);
+    let expanded_refs: Vec<&str> = expanded.iter().map(|s| s.as_str()).collect();
+
+    let mut files: HashMap<String, Vec<u8>> = HashMap::new();
+
+    import_binaries_from_dir(path, &expanded_refs, |path, bytes| {
+        files.insert(path, bytes.to_vec());
         Ok(())
     })?;
-    
-    Ok(texture_store)
+
+    build_texture_store_from_files(&files, None)
 }
 
-pub fn import_all_textures_from_dir(path: &str, load_only: Option<&HashSet<String>>) -> Result<TextureStore, Box<dyn std::error::Error>> {
-    let mut texture_store = TextureStore::new();
-    
+pub fn import_all_textures_from_dir(
+    path: &str,
+    load_only: Option<&HashSet<String>>,
+) -> Result<TextureStore, Box<dyn std::error::Error>> {
+    let mut files: HashMap<String, Vec<u8>> = HashMap::new();
+
     import_all_binaries_from_dir(path, &["png", "jpg", "jpeg"], |path, bytes| {
-        if let Some(load_set) = load_only {
-            if should_load_from_set(&path, load_set) {
-                texture_store.load_from_bytes(path.clone(), bytes)?;
-            } else {
-                texture_store.insert(Texture::with_unloaded_data(path, bytes.to_vec()));
-            }
-        } else {
-            texture_store.load_from_bytes(path, bytes)?;
-        }
+        files.insert(path, bytes.to_vec());
         Ok(())
     })?;
-    
-    Ok(texture_store)
+
+    build_texture_store_from_files(&files, load_only)
 }
 
 pub fn import_samples_from_dir(path: &str, relative_sample_paths: &[&str]) -> Result<SampleStore, Box<dyn std::error::Error>> {

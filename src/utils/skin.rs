@@ -2,6 +2,9 @@ use std::collections::HashSet;
 
 use crate::{sample::SampleStore, texture::TextureStore, traits::{LaneType, SkinConfig}, Binary, Store};
 
+// TODO: add method for generating mipmaps for textures (for osu)
+// TODO: add ensure_textures to add textures from skin elements in here without manual adding them
+
 pub fn cleanup_stores<T: SkinConfig>(config: &T, textures: Option<&mut TextureStore>, samples: Option<&mut SampleStore>) {
     if samples.is_some() {
         let req_sample_paths: HashSet<_> = config.get_required_sample_paths().iter()

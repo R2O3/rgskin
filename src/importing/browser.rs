@@ -97,29 +97,25 @@ pub fn import_textures_from_files(
     files: &HashMap<String, Vec<u8>>,
     relative_texture_paths: &[&str],
 ) -> Result<TextureStore, JsError> {
-    let mut texture_store = TextureStore::new();
-    
-    import_binaries_from_files(files, relative_texture_paths, |path, bytes| {
-        texture_store.load_from_bytes(path, bytes)
-            .map_err(|e| JsError::new(&e.to_string()))?;
+    let expanded = expand_with_at2x(relative_texture_paths);
+    let expanded_refs: Vec<&str> = expanded.iter().map(|s| s.as_str()).collect();
+
+    let mut filtered: HashMap<String, Vec<u8>> = HashMap::new();
+
+    import_binaries_from_files(files, &expanded_refs, |path, bytes| {
+        filtered.insert(path, bytes.to_vec());
         Ok(())
     })?;
-    
-    Ok(texture_store)
+
+    build_texture_store_from_files(&filtered, None)
+        .map_err(|e| JsError::new(&e.to_string()))
 }
 
 pub fn import_all_textures_from_files(
     files: &HashMap<String, Vec<u8>>,
 ) -> Result<TextureStore, JsError> {
-    let mut texture_store = TextureStore::new();
-    
-    import_all_binaries_from_files(files, &["png", "jpg", "jpeg"], |path, bytes| {
-        texture_store.load_from_bytes(path, bytes)
-            .map_err(|e| JsError::new(&e.to_string()))?;
-        Ok(())
-    })?;
-    
-    Ok(texture_store)
+    build_texture_store_from_files(files, None)
+        .map_err(|e| JsError::new(&e.to_string()))
 }
 
 pub fn import_samples_from_files(

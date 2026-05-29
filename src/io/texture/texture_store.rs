@@ -6,8 +6,8 @@ use js_sys::{Uint8Array, ArrayBuffer};
 #[cfg(target_arch = "wasm32")]
 use js_sys::Array;
 
-use image::ImageError;
-use crate::{impl_store_wasm, io::Store, Binary, BinaryState};
+use image::{DynamicImage, ImageError};
+use crate::{Binary, BinaryState, impl_store_wasm, io::Store, utils::io::normalize};
 use crate::io::texture::Texture;
 
 #[wasm_bindgen]
@@ -16,6 +16,11 @@ pub struct TextureStore {
     #[wasm_bindgen(skip)]
     #[merge(strategy = merge::hashmap::overwrite)]
     textures: HashMap<String, Arc<RwLock<Texture>>>,
+
+    /// indexes are scaled lower in powers of 2 (0 = 1/2, 1 = 1/4, 2 = 1/8, etc.)
+    #[wasm_bindgen(skip)]
+    #[merge(strategy = merge::hashmap::overwrite)]
+    mipmaps: HashMap<String, Vec<DynamicImage>>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -25,6 +30,7 @@ impl TextureStore {
     pub fn new_wasm() -> Self {
         TextureStore {
             textures: HashMap::new(),
+            mipmaps: HashMap::new(),
         }
     }
 
@@ -122,12 +128,31 @@ impl TextureStore {
     pub fn new() -> Self {
         TextureStore {
             textures: HashMap::new(),
+            mipmaps: HashMap::new(),
         }
+    }
+
+    pub fn remove(&mut self, path: &str) -> bool {
+        let normalized = normalize(path);
+        self.mipmaps.remove(&normalized);
+        self.textures.remove(&normalized).is_some()
+    }
+
+    pub fn clear(&mut self) {
+        self.textures.clear();
+        self.mipmaps.clear();
     }
 
     pub fn load_from_bytes(&mut self, path: String, bytes: &[u8]) -> Result<(), ImageError> {
         let texture = Texture::from_bytes(path, bytes)?;
         self.insert(texture);
+        Ok(())
+    }
+
+    pub fn load_with_mipmaps(&mut self, path: String, bytes: &[u8], mips: Vec<DynamicImage>) -> Result<(), ImageError> {
+        let texture = Texture::from_bytes(path.clone(), bytes)?;
+        self.insert(texture);
+        self.set_mipmaps(&path, mips);
         Ok(())
     }
     
@@ -166,6 +191,26 @@ impl TextureStore {
                 None
             }
         }).collect()
+    }
+
+    pub fn set_mipmaps(&mut self, path: &str, mips: Vec<DynamicImage>) {
+        let normalized = normalize(path);
+        self.mipmaps.insert(normalized, mips);
+    }
+
+    pub fn get_mipmap(&self, path: &str, level: usize) -> Option<&DynamicImage> {
+        let normalized = normalize(path);
+        self.mipmaps.get(&normalized)?.get(level)
+    }
+
+    pub fn has_mipmaps(&self, path: &str) -> bool {
+        let normalized = normalize(path);
+        self.mipmaps.contains_key(&normalized)
+    }
+
+    pub fn remove_mipmaps(&mut self, path: &str) {
+        let normalized = normalize(path);
+        self.mipmaps.remove(&normalized);
     }
 }
 

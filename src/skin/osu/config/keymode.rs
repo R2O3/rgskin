@@ -9,7 +9,7 @@ use crate::utils::serde::{
     add_key_value,
     add_key_value_if_not_default,
     parse_bool,
-    parse_key_value_eq,
+    parse_key_value,
     parse_f32_list,
     serialize_bool,
     serialize_bool_vec_if_not_empty,
@@ -319,7 +319,7 @@ impl Keymode {
                 continue;
             }
 
-            let (key_str, value_str) = parse_key_value_eq(line).unwrap_or_default();
+            let (key_str, value_str) = parse_key_value(line).unwrap_or_default();
 
             match key_str {
                 "Keys" => {

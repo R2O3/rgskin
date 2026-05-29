@@ -101,26 +101,32 @@ where
     Ok(())
 }
 
-pub fn import_textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>> {
-    let mut texture_store = TextureStore::new();
-    
-    import_binaries_from_dir(path, relative_texture_paths, |path, bytes| {
-        texture_store.load_from_bytes(path, bytes)?;
+pub fn import_textures_from_dir(
+    path: &str,
+    relative_texture_paths: &[&str],
+) -> Result<TextureStore, Box<dyn std::error::Error>> {
+    let expanded = expand_with_at2x(relative_texture_paths);
+    let expanded_refs: Vec<&str> = expanded.iter().map(|s| s.as_str()).collect();
+
+    let mut files: HashMap<String, Vec<u8>> = HashMap::new();
+
+    import_binaries_from_dir(path, &expanded_refs, |path, bytes| {
+        files.insert(path, bytes.to_vec());
         Ok(())
     })?;
-    
-    Ok(texture_store)
+
+    build_texture_store_from_files(&files, None)
 }
 
 pub fn import_all_textures_from_dir(path: &str) -> Result<TextureStore, Box<dyn std::error::Error>> {
-    let mut texture_store = TextureStore::new();
-    
+    let mut files: HashMap<String, Vec<u8>> = HashMap::new();
+
     import_all_binaries_from_dir(path, &["png", "jpg", "jpeg"], |path, bytes| {
-        texture_store.load_from_bytes(path, bytes)?;
+        files.insert(path, bytes.to_vec());
         Ok(())
     })?;
-    
-    Ok(texture_store)
+
+    build_texture_store_from_files(&files, None)
 }
 
 pub fn import_all_samples_from_dir(path: &str) -> Result<SampleStore, Box<dyn std::error::Error>> {
