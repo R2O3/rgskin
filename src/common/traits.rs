@@ -4,7 +4,7 @@ use core::num;
 use std::{collections::HashSet, rc::Rc, str::FromStr};
 use merge::Merge;
 
-use crate::{utils::skin::get_lane_type, GenericManiaSkin};
+use crate::{GenericManiaSkin, StringPattern, utils::skin::get_lane_type};
 
 #[derive(Debug, PartialEq, Eq)]
 pub enum LaneType {
@@ -22,8 +22,9 @@ pub trait ManiaSkin<'a>: Merge {
     fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>>;
 
     fn get_keymode(&self, keymode: u8) -> Option<&Self::Keymode>;
-    fn get_required_texture_paths(&self) -> HashSet<String>;
-    fn get_required_sample_paths(&self) -> HashSet<String>;
+    
+    fn get_required_texture_paths(&self) -> Vec<StringPattern>;
+    fn get_required_sample_paths(&self) -> Vec<StringPattern> { Vec::new() }
 
     fn merge(&mut self, other: Self) where Self: Sized {
         <Self as Merge>::merge(self, other);
@@ -35,8 +36,8 @@ pub trait ManiaSkin<'a>: Merge {
 // }
 
 pub trait SkinConfig: ToString + FromStr + Merge {
-    fn get_required_texture_paths(&self) -> HashSet<String>;
-    fn get_required_sample_paths(&self) -> HashSet<String> { HashSet::new() } // not all games have config for sounds
+    fn get_required_texture_paths(&self) -> Vec<StringPattern>;
+    fn get_required_sample_paths(&self) -> Vec<StringPattern> { Vec::new() } // not all games have config for sounds
 
     fn merge(&mut self, other: Self) where Self: Sized {
         <Self as Merge>::merge(self, other);

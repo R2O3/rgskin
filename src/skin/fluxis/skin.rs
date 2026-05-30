@@ -2,6 +2,7 @@ use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
+use crate::StringPattern;
 use crate::common::traits::ManiaSkin;
 use crate::common::vector::Vector2;
 use crate::converting::fluxis::{from_generic_mania, to_generic_mania};
@@ -12,6 +13,8 @@ use crate::skin::fluxis::{FluXisLayout, SkinJson};
 use crate::io::texture::TextureStore;
 use crate::traits::SkinConfig;
 use crate::utils::fluxis::FluXisDimensions;
+
+// TODO: use dynamic assets for fluXis
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Merge)]
@@ -58,11 +61,11 @@ impl<'a> ManiaSkin<'a> for FluXisSkin {
         None
     }
 
-    fn get_required_texture_paths(&self) -> std::collections::HashSet<String> {
+    fn get_required_texture_paths(&self) -> Vec<StringPattern>  {
         self.skin_json.get_required_texture_paths()
     }
     
-    fn get_required_sample_paths(&self) -> std::collections::HashSet<String> {
+    fn get_required_sample_paths(&self) -> Vec<StringPattern>  {
         self.skin_json.get_required_sample_paths()
     }
 }

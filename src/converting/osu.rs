@@ -238,9 +238,9 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             stage: Stage::new(
                 Some(stage_background),
                 textures.get_shared(&keymode.stage_right)
-                    .or(textures.get_shared(static_assets::Mania::STAGE_RIGHT)),
+                    .or(textures.get_shared(&static_assets::Mania::STAGE_RIGHT)),
                 textures.get_shared(&keymode.stage_left)
-                    .or(textures.get_shared(static_assets::Mania::STAGE_LEFT)),
+                    .or(textures.get_shared(&static_assets::Mania::STAGE_LEFT)),
             ),
             fallbacks
         });
@@ -249,8 +249,8 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
     let default_keymode_fallback = osu::Keymode::default();
     let default_keymode = skin.skin_ini.get_keymode(4).unwrap_or(skin.skin_ini.keymodes.first().unwrap_or(&default_keymode_fallback));
 
-    let health_bar_fg = textures.get_shared(static_assets::Interface::SCOREBAR_COLOUR).unwrap_or(blank_texture.clone());
-    let health_bar_bg = textures.get_shared(static_assets::Interface::SCOREBAR_BG).unwrap_or(blank_texture.clone());
+    let health_bar_fg = textures.get_shared(&static_assets::Interface::SCOREBAR_COLOUR).unwrap_or(blank_texture.clone());
+    let health_bar_bg = textures.get_shared(&static_assets::Interface::SCOREBAR_BG).unwrap_or(blank_texture.clone());
     rotate_90_deg_ccw(&health_bar_fg)?;
     rotate_90_deg_ccw(&health_bar_bg)?;
 
@@ -258,17 +258,17 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         health_bar: Healthbar::new(Some(health_bar_fg), Some(health_bar_bg)),
         judgement: Judgement::new(
             textures.get_shared(&default_keymode.hit300g)
-                .or(textures.get_shared(static_assets::Mania::HIT300G)),
+                .or(textures.get_shared(&static_assets::Mania::HIT300G)),
             textures.get_shared(&default_keymode.hit300)
-                .or(textures.get_shared(static_assets::Mania::HIT300)),
+                .or(textures.get_shared(&static_assets::Mania::HIT300)),
             textures.get_shared(&default_keymode.hit200)
-                .or(textures.get_shared(static_assets::Mania::HIT200)),
+                .or(textures.get_shared(&static_assets::Mania::HIT200)),
             textures.get_shared(&default_keymode.hit100)
-                .or(textures.get_shared(static_assets::Mania::HIT100)),
+                .or(textures.get_shared(&static_assets::Mania::HIT100)),
             textures.get_shared(&default_keymode.hit50)
-                .or(textures.get_shared(static_assets::Mania::HIT50)),
+                .or(textures.get_shared(&static_assets::Mania::HIT50)),
             textures.get_shared(&default_keymode.hit0)
-                .or(textures.get_shared(static_assets::Mania::HIT0)),
+                .or(textures.get_shared(&static_assets::Mania::HIT0)),
         ),
         layout: HUDLayout {
             combo: (
@@ -308,7 +308,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
     
     let ui = UI {
         cursor: Cursor {
-            texture: textures.get_shared(static_assets::Interface::CURSOR)
+            texture: textures.get_shared(&static_assets::Interface::CURSOR)
             .or_else(|| {
                 let bytes = Resources::cursor("lazer_cursor.png") // osu!stable cursor sucks
                     .expect("Failed to load cursor texture");
@@ -324,18 +324,18 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
     let sounds = Sounds {
         ui: UISounds {
-            menu_back_click: samples.get_shared(static_assets::Samples::MENU_BACK_CLICK).get_path(),
-            ui_click: samples.get_shared(static_assets::Samples::CLICK_SHORT_CONFIRM).get_path(),
-            ui_select: samples.get_shared(static_assets::Samples::MENU_FREEPLAY_CLICK).get_path(),
-            ui_hover: samples.get_shared(static_assets::Samples::CLICK_SHORT).get_path()
+            menu_back_click: samples.get_shared(&static_assets::Samples::MENU_BACK_CLICK).get_path(),
+            ui_click: samples.get_shared(&static_assets::Samples::CLICK_SHORT_CONFIRM).get_path(),
+            ui_select: samples.get_shared(&static_assets::Samples::MENU_FREEPLAY_CLICK).get_path(),
+            ui_hover: samples.get_shared(&static_assets::Samples::CLICK_SHORT).get_path()
         },
         gameplay: GenericGameplaySounds {
-            miss: samples.get_shared(static_assets::Samples::COMBOBREAK).get_path(),
-            fail: samples.get_shared(static_assets::Samples::FAILSOUND).get_path(),
-            restart: samples.get_shared(static_assets::Samples::PAUSE_RETRY_CLICK).get_path()
+            miss: samples.get_shared(&static_assets::Samples::COMBOBREAK).get_path(),
+            fail: samples.get_shared(&static_assets::Samples::FAILSOUND).get_path(),
+            restart: samples.get_shared(&static_assets::Samples::PAUSE_RETRY_CLICK).get_path()
         },
         mania: ManiaGameplaySounds {
-            hit: samples.get_shared(static_assets::Samples::DRUM_HITNORMAL).get_path()
+            hit: samples.get_shared(&static_assets::Samples::DRUM_HITNORMAL).get_path()
         },
     };
     
@@ -473,42 +473,42 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         }
 
         // these wouldn't be present in other skins
-        if !textures.contains(static_assets::Interface::STAR) {
-            textures.copy("blank", static_assets::Interface::STAR);
+        if !textures.contains(&static_assets::Interface::STAR) {
+            textures.copy("blank", &static_assets::Interface::STAR);
         }
 
-        if !textures.contains(static_assets::Interface::STAR2) {
-            textures.copy("blank", static_assets::Interface::STAR2);
+        if !textures.contains(&static_assets::Interface::STAR2) {
+            textures.copy("blank", &static_assets::Interface::STAR2);
         }
 
-        if !textures.contains(static_assets::Interface::SCOREBAR_MARKER) {
-            textures.copy("blank", static_assets::Interface::SCOREBAR_MARKER);
+        if !textures.contains(&static_assets::Interface::SCOREBAR_MARKER) {
+            textures.copy("blank", &static_assets::Interface::SCOREBAR_MARKER);
         }
 
-        if !textures.contains(static_assets::Mania::STAGE_HINT) {
-            textures.copy("blank", static_assets::Mania::STAGE_HINT);
+        if !textures.contains(&static_assets::Mania::STAGE_HINT) {
+            textures.copy("blank", &static_assets::Mania::STAGE_HINT);
         }
 
-        if !textures.contains(static_assets::Mania::WARNINGARROW) {
-            textures.copy("blank", static_assets::Mania::WARNINGARROW);
+        if !textures.contains(&static_assets::Mania::WARNINGARROW) {
+            textures.copy("blank", &static_assets::Mania::WARNINGARROW);
         }
 
-        if !textures.contains(static_assets::Interface::CURSORMIDDLE) {
-            textures.copy("blank", static_assets::Interface::CURSORMIDDLE);
+        if !textures.contains(&static_assets::Interface::CURSORMIDDLE) {
+            textures.copy("blank", &static_assets::Interface::CURSORMIDDLE);
         }
 
-        if !textures.contains(static_assets::Interface::CURSORTRAIL) {
-            textures.copy("blank", static_assets::Interface::CURSORTRAIL);
+        if !textures.contains(&static_assets::Interface::CURSORTRAIL) {
+            textures.copy("blank", &static_assets::Interface::CURSORTRAIL);
         }
 
-        if !textures.contains(static_assets::Interface::CURSOR) {
+        if !textures.contains(&static_assets::Interface::CURSOR) {
             if let Some(cursor_arc) = &skin.ui.cursor.texture {
                 resize_width(cursor_arc, 24, image::imageops::FilterType::Triangle)?;
             }
 
             if let Some(cursor_image) = skin.ui.cursor.texture.clone_data() {
                 textures.copy_from_data(
-                    static_assets::Interface::CURSOR,
+                    &static_assets::Interface::CURSOR,
                     BinaryState::Loaded(cursor_image)
                 );
             }
@@ -517,35 +517,35 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         // Samples
 
         if let Some(s) = &skin.sounds.ui.menu_back_click {
-            samples.copy(s, static_assets::Samples::MENU_BACK_CLICK);
+            samples.copy(s, &static_assets::Samples::MENU_BACK_CLICK);
         }
 
         if let Some(s) = &skin.sounds.ui.ui_click {
-            samples.copy(s, static_assets::Samples::CLICK_SHORT_CONFIRM);
+            samples.copy(s, &static_assets::Samples::CLICK_SHORT_CONFIRM);
         }
 
         if let Some(s) = &skin.sounds.ui.ui_select {
-            samples.copy(s, static_assets::Samples::MENU_FREEPLAY_CLICK);
+            samples.copy(s, &static_assets::Samples::MENU_FREEPLAY_CLICK);
         }
 
         if let Some(s) = &skin.sounds.ui.ui_hover {
-            samples.copy(s, static_assets::Samples::CLICK_SHORT);
+            samples.copy(s, &static_assets::Samples::CLICK_SHORT);
         }
 
         if let Some(s) = &skin.sounds.gameplay.miss {
-            samples.copy(s, static_assets::Samples::COMBOBREAK);
+            samples.copy(s, &static_assets::Samples::COMBOBREAK);
         }
 
         if let Some(s) = &skin.sounds.gameplay.fail {
-            samples.copy(s, static_assets::Samples::FAILSOUND);
+            samples.copy(s, &static_assets::Samples::FAILSOUND);
         }
 
         if let Some(s) = &skin.sounds.gameplay.restart {
-            samples.copy(s, static_assets::Samples::PAUSE_RETRY_CLICK);
+            samples.copy(s, &static_assets::Samples::PAUSE_RETRY_CLICK);
         }
 
         if let Some(s) = &skin.sounds.mania.hit {
-            samples.copy(s, static_assets::Samples::DRUM_HITNORMAL);
+            samples.copy(s, &static_assets::Samples::DRUM_HITNORMAL);
         }
 
         let source_aspect_ratio = resize.source.y as f32 / resize.source.x as f32;

@@ -5,7 +5,9 @@ use wasm_bindgen::prelude::*;
 use std::str::FromStr;
 use crate::ini::from_ini;
 use crate::quaver::config::{General, Keymode, MainMenu, MenuBorder, Results, SongSelect};
-use crate::utils;
+use crate::quaver::{dynamic_assets, static_assets};
+use crate::traits::SkinConfig;
+use crate::{StringPattern, utils};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Default, Merge)]
@@ -89,6 +91,37 @@ impl FromStr for QuaSkinIni {
 
         Ok(QuaSkinIni { general, main_menu, menu_border, song_select, results, keymodes })
     }
+}
+
+impl SkinConfig for QuaSkinIni {
+    fn get_required_texture_paths(&self) -> Vec<StringPattern> {
+        let mut result = Vec::new();
+
+        // a lot of these are not needed as of now but I'm too lazy to figure out which ones to remove so here we are
+
+        result.extend(dynamic_assets::Column::iter_mapped(|t| t));
+        result.extend(dynamic_assets::LaneCover::iter_mapped(|t| t));
+        result.extend(dynamic_assets::Lighting::iter_mapped(|t| t));
+        result.extend(dynamic_assets::Notes::iter_mapped(|t| t));
+        result.extend(dynamic_assets::Receptors::iter_mapped(|t| t));
+
+        result.extend(dynamic_assets::Stage::iter_mapped(|t| t));
+        result.extend(static_assets::Grades::iter_mapped(|t| t));
+        result.extend(static_assets::HealthBar::iter_mapped(|t| t));
+        result.extend(static_assets::HitBubbles::iter_mapped(|t| t));
+        result.extend(static_assets::Judgements::iter_mapped(|t| t));
+        result.extend(static_assets::Numbers::iter_mapped(|t| t));
+        result.extend(static_assets::Scoreboard::iter_mapped(|t| t));
+        result.extend(static_assets::SkipDisplay::iter_mapped(|t| t));
+        result.extend(dynamic_assets::ComboAlerts::iter_mapped(|t| t));
+        result.extend(static_assets::PauseScreen::iter_mapped(|t| t));
+        result.extend(static_assets::BattleRoyale::iter_mapped(|t| t));
+        result.extend(dynamic_assets::Background::iter_mapped(|t| t));
+
+        result
+    }
+
+    // TODO: add samples for quaver
 }
 
 #[cfg(target_arch = "wasm32")]

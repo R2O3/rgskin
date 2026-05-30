@@ -24,46 +24,46 @@ pub(crate) fn extract_keymode_column(s: &str) -> Option<(usize, usize)> {
 define_overrides!(
     strategy = utils::merge::string::overwrite_not_empty;
     HealthOverrides,
-    (foreground, static_assets::Health::FOREGROUND),
-    (background, static_assets::Health::BACKGROUND),
+    (foreground, &static_assets::Health::FOREGROUND),
+    (background, &static_assets::Health::BACKGROUND),
 );
 
 define_overrides!(
     strategy = utils::merge::string::overwrite_not_empty;
     StageOverrides,
-    (border_left, static_assets::Stage::BORDER_LEFT),
-    (border_right, static_assets::Stage::BORDER_RIGHT),
-    (border_right_top, static_assets::Stage::BORDER_RIGHT_TOP),
-    (border_right_bottom, static_assets::Stage::BORDER_RIGHT_BOTTOM),
-    (border_left_top, static_assets::Stage::BORDER_LEFT_TOP),
-    (border_left_bottom, static_assets::Stage::BORDER_LEFT_BOTTOM),
-    (background, static_assets::Stage::BACKGROUND),
-    (background_top, static_assets::Stage::BACKGROUND_TOP),
-    (background_bottom, static_assets::Stage::BACKGROUND_BOTTOM),
-    (hitline, static_assets::Stage::HITLINE),
+    (border_left, &static_assets::Stage::BORDER_LEFT),
+    (border_right, &static_assets::Stage::BORDER_RIGHT),
+    (border_right_top, &static_assets::Stage::BORDER_RIGHT_TOP),
+    (border_right_bottom, &static_assets::Stage::BORDER_RIGHT_BOTTOM),
+    (border_left_top, &static_assets::Stage::BORDER_LEFT_TOP),
+    (border_left_bottom, &static_assets::Stage::BORDER_LEFT_BOTTOM),
+    (background, &static_assets::Stage::BACKGROUND),
+    (background_top, &static_assets::Stage::BACKGROUND_TOP),
+    (background_bottom, &static_assets::Stage::BACKGROUND_BOTTOM),
+    (hitline, &static_assets::Stage::HITLINE),
 );
 
 define_overrides!(
     strategy = utils::merge::string::overwrite_not_empty;
     JudgementOverrides,
-    (miss, static_assets::Judgement::MISS),
-    (okay, static_assets::Judgement::OKAY),
-    (alright, static_assets::Judgement::ALRIGHT),
-    (great, static_assets::Judgement::GREAT),
-    (perfect, static_assets::Judgement::PERFECT),
-    (flawless, static_assets::Judgement::FLAWLESS),
+    (miss, &static_assets::Judgement::MISS),
+    (okay, &static_assets::Judgement::OKAY),
+    (alright, &static_assets::Judgement::ALRIGHT),
+    (great, &static_assets::Judgement::GREAT),
+    (perfect, &static_assets::Judgement::PERFECT),
+    (flawless, &static_assets::Judgement::FLAWLESS),
 );
 
 define_overrides!(
     strategy = utils::merge::string::overwrite_not_empty;
     LightingOverrides,
-    (column_lighting, static_assets::Lighting::COLUMN_LIGHTING),
+    (column_lighting, &static_assets::Lighting::COLUMN_LIGHTING),
 );
 
 define_overrides!(
     strategy = utils::merge::string::overwrite_not_empty;
     GameplayOverrides,
-    (fail_flash, static_assets::Gameplay::FAIL_FLASH),
+    (fail_flash, &static_assets::Gameplay::FAIL_FLASH),
 );
 
 #[derive(Clone, Debug, Default, Merge)]

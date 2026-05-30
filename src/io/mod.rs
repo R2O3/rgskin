@@ -1,6 +1,7 @@
 pub mod texture;
 pub mod sample;
 pub mod node;
+mod string_pattern;
 mod store;
 mod binary;
 mod binary_store;
@@ -10,3 +11,4 @@ pub use store::Store;
 pub use binary::{Binary, BinaryState};
 pub use raw_bytes::RawBytes;
 pub use binary_store::{BinaryStore};
+pub use string_pattern::StringPattern;

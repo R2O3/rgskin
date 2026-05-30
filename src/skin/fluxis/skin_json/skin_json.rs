@@ -4,9 +4,8 @@ use wasm_bindgen::prelude::*;
 
 use indexmap::IndexMap;
 use std::str::FromStr;
-use std::collections::HashSet;
 use crate::{
-    common::traits::{ManiaSkinConfig, SkinConfig}, fluxis::{skin_json::{
+    StringPattern, common::traits::{ManiaSkinConfig, SkinConfig}, fluxis::{skin_json::{
         colors::{JudgementColors, SnapColors},
         info::Info,
         keymode::{Keymode, Keymodes},
@@ -203,14 +202,14 @@ impl FromStr for SkinJson {
 }
 
 impl SkinConfig for SkinJson {
-    fn get_required_texture_paths(&self) -> HashSet<String> {
-        let mut paths = HashSet::new();
+    fn get_required_texture_paths(&self) -> Vec<StringPattern> {
+        let mut paths = Vec::new();
 
         for keymode in &self.keymodes {
             Keymodes::iter(keymode, |vec, _, _, _| {
                 for img in vec.iter() {
                     if !img.is_empty() {
-                        paths.insert(img.clone());
+                        paths.push(img.clone().into());
                     }
                 }
             });
@@ -218,25 +217,26 @@ impl SkinConfig for SkinJson {
 
         for value in self.overrides.raw_overrides.values() {
             if !value.is_empty() {
-                paths.insert(value.clone());
+                paths.push(value.clone().into());
             }
         }
 
         for (_, value) in self.overrides.stage.get_fields() {
             if !value.is_empty() {
-                paths.insert(value.clone());
+                paths.push(value.clone().into());
             }
         }
 
-        paths.insert(static_assets::Other::ICON.to_string());
+        paths.push(static_assets::Other::ICON.into());
+
+        paths.sort_unstable();
+        paths.dedup();
 
         paths
     }
 
-    fn get_required_sample_paths(&self) -> HashSet<String> {
-        let mut result: HashSet<String> = HashSet::new();
-        result.extend(static_assets::Samples::iter_mapped(|s| s.to_string()));
-        result
+    fn get_required_sample_paths(&self) -> Vec<StringPattern> {
+        static_assets::Samples::iter_mapped(|s| s.into()).collect()
     }
 }
 

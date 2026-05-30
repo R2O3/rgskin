@@ -1,10 +1,12 @@
 use crate::def_const_type_enum;
 
-def_const_type_enum! (pub Other => &'static str {
+// TODO: add attributes
+
+def_const_type_enum! (pub Other => StringPattern {
     ICON => "icon",
 });
 
-def_const_type_enum! (pub Judgement => &'static str {
+def_const_type_enum! (pub Judgement => StringPattern {
     MISS => "Judgement/miss",
     OKAY => "Judgement/okay",
     ALRIGHT => "Judgement/alright",
@@ -13,7 +15,7 @@ def_const_type_enum! (pub Judgement => &'static str {
     FLAWLESS => "Judgement/flawless",
 });
 
-def_const_type_enum! (pub Stage => &'static str {
+def_const_type_enum! (pub Stage => StringPattern {
     BACKGROUND => "Stage/background",
     BACKGROUND_TOP => "Stage/background-top",
     BACKGROUND_BOTTOM => "Stage/background-bottom",
@@ -28,24 +30,24 @@ def_const_type_enum! (pub Stage => &'static str {
     HITLINE => "Stage/hitline",
 });
 
-def_const_type_enum! (pub UserInterface => &'static str {
+def_const_type_enum! (pub UserInterface => StringPattern {
     BACKGROUND => "UserInterface/background",
 });
 
-def_const_type_enum! (pub Health => &'static str {
+def_const_type_enum! (pub Health => StringPattern {
     BACKGROUND => "Health/background",
     FOREGROUND => "Health/foreground",
 });
 
-def_const_type_enum! (pub Lighting => &'static str {
+def_const_type_enum! (pub Lighting => StringPattern {
     COLUMN_LIGHTING => "Lighting/column-lighting",
 });
 
-def_const_type_enum! (pub Gameplay => &'static str {
+def_const_type_enum! (pub Gameplay => StringPattern {
     FAIL_FLASH => "Gameplay/fail-flash",
 });
 
-def_const_type_enum! (pub Results => &'static str {
+def_const_type_enum! (pub Results => StringPattern {
     RANK_X => "Results/rank-x",
     RANK_SS => "Results/rank-ss",
     RANK_S => "Results/rank-s",
@@ -56,7 +58,7 @@ def_const_type_enum! (pub Results => &'static str {
     RANK_D => "Results/rank-d",
 });
 
-def_const_type_enum! (pub Samples => &'static str {
+def_const_type_enum! (pub Samples => StringPattern {
     UI_BACK => "Samples/UI/back",
     UI_SELECT => "Samples/UI/select",
     UI_HOVER => "Samples/UI/hover",

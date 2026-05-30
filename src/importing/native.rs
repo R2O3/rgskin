@@ -4,54 +4,32 @@
 use std::fs;
 use std::path::Path;
 use std::str::FromStr;
-use std::collections::{HashMap, HashSet};
+use std::collections::HashMap;
 use crate::common::traits::SkinConfig;
 use crate::fluxis::{self, FluXisSkin};
+use crate::io::StringPattern;
 use crate::{osu, Store};
 use crate::sample::SampleStore;
 use crate::utils::io::{get_filename, get_parent, get_stem, join_paths_unix, remove_extension};
-use crate::utils::string::string_iter_as_str;
 use crate::OsuSkin;
 use crate::io::texture::{TextureStore, Texture};
-use crate::importing::common::{SeenFiles, build_texture_store_from_files, choose_best_match, expand_with_at2x, extension_matches, file_matches_target, should_load_from_set};
+use crate::importing::common::{SeenFiles, build_texture_store_from_files, choose_best_match, extension_matches, file_matches_target, should_load_from_set};
 
 pub fn import_binaries_from_dir<F>(
     path: &str,
-    relative_paths: &[&str],
+    patterns: &[StringPattern],
     mut loader: F,
-) -> Result<(), Box<dyn std::error::Error>> 
+) -> Result<(), Box<dyn std::error::Error>>
 where
     F: FnMut(String, &[u8]) -> Result<(), Box<dyn std::error::Error>>,
 {
-    for &relative_path in relative_paths {
-        let dir_path = join_paths_unix(path, &get_parent(relative_path));
-        let filename = get_filename(relative_path);
-        
-        if let Ok(entries) = fs::read_dir(&dir_path) {
-            let mut matches: Vec<(String, String)> = Vec::new();
-            
-            for entry in entries.flatten() {
-                if let Ok(file_name) = entry.file_name().into_string() {
-                    let file_stem = get_stem(&file_name);
-                    
-                    if file_matches_target(&file_stem, &filename) {
-                        let full_path = join_paths_unix(&dir_path, &file_name);
-                        matches.push((file_name, full_path));
-                    }
-                }
-            }
-            
-            let chosen_file = choose_best_match(&matches, &filename, |name| get_stem(name));
-            
-            if let Some((_, full_path)) = chosen_file {
-                if let Ok(bytes) = fs::read(full_path) {
-                    loader(relative_path.to_string(), &bytes)?;
-                }
-            }
+    import_all_binaries_from_dir(path, &["png", "jpg", "jpeg", "wav", "ogg"], |file_path, bytes| {
+        if patterns.iter().any(|p| p.matches_path(&file_path)) {
+            loader(file_path, bytes)?;
         }
-    }
-    
-    Ok(())
+
+        Ok(())
+    })
 }
 
 pub fn import_all_binaries_from_dir<F>(
@@ -118,14 +96,11 @@ where
 
 pub fn import_textures_from_dir(
     path: &str,
-    relative_texture_paths: &[&str],
+    patterns: &[StringPattern],
 ) -> Result<TextureStore, Box<dyn std::error::Error>> {
-    let expanded = expand_with_at2x(relative_texture_paths);
-    let expanded_refs: Vec<&str> = expanded.iter().map(|s| s.as_str()).collect();
+    let mut files = HashMap::new();
 
-    let mut files: HashMap<String, Vec<u8>> = HashMap::new();
-
-    import_binaries_from_dir(path, &expanded_refs, |path, bytes| {
+    import_binaries_from_dir(path, patterns, |path, bytes| {
         files.insert(path, bytes.to_vec());
         Ok(())
     })?;
@@ -135,7 +110,7 @@ pub fn import_textures_from_dir(
 
 pub fn import_all_textures_from_dir(
     path: &str,
-    load_only: Option<&HashSet<String>>,
+    load_only: Option<&[StringPattern]>,
 ) -> Result<TextureStore, Box<dyn std::error::Error>> {
     let mut files: HashMap<String, Vec<u8>> = HashMap::new();
 
@@ -147,11 +122,12 @@ pub fn import_all_textures_from_dir(
     build_texture_store_from_files(&files, load_only)
 }
 
-pub fn import_samples_from_dir(path: &str, relative_sample_paths: &[&str]) -> Result<SampleStore, Box<dyn std::error::Error>> {
+pub fn import_samples_from_dir(path: &str, relative_sample_paths: &[StringPattern]) -> Result<SampleStore, Box<dyn std::error::Error>> {
     let mut sample_store = SampleStore::new();
     
     import_binaries_from_dir(path, relative_sample_paths, |path, bytes| {
         sample_store.load_from_bytes(path, bytes)?;
+
         Ok(())
     })?;
     
@@ -183,21 +159,15 @@ pub fn import_osu_mania_skin_from_dir(path: &str, import_all: bool) -> Result<Os
     let texture_paths = skin_ini.get_required_texture_paths();
     let sample_paths = skin_ini.get_required_sample_paths();
     
-    let texture_path_refs: Vec<&str> = string_iter_as_str(texture_paths.iter());
-    let sample_path_refs: Vec<&str> = string_iter_as_str(sample_paths.iter());
-    
     let textures;
     let samples;
 
     if import_all {
-        let texture_set: HashSet<String> = texture_paths.iter().cloned().collect();
-        
-        textures = import_all_textures_from_dir(path, Some(&texture_set))?;
-        
+        textures = import_all_textures_from_dir(path, Some(&texture_paths))?;
         samples = import_all_samples_from_dir(path)?;
     } else {
-        textures = import_textures_from_dir(path, &texture_path_refs)?;
-        samples = import_samples_from_dir(path, &sample_path_refs)?;
+        textures = import_textures_from_dir(path, &texture_paths)?;
+        samples = import_samples_from_dir(path, &sample_paths)?;
     }
 
     Ok(OsuSkin::new(skin_ini, Some(textures), Some(samples)))
@@ -210,18 +180,16 @@ pub fn import_fluxis_skin_from_dir(path: &str, import_all: bool) -> Result<FluXi
     let skin_json = fluxis::SkinJson::from_str(&json_content)?;
 
     let sample_paths = skin_json.get_required_sample_paths();
-    let sample_path_refs: Vec<&str> = string_iter_as_str(sample_paths.iter());
     
     let textures;
     let samples;
 
     if import_all {
         textures = import_all_textures_from_dir(path, None)?;
-        
         samples = import_all_samples_from_dir(path)?;
     } else {
         textures = import_all_textures_from_dir(path, None)?;
-        samples = import_samples_from_dir(path, &sample_path_refs)?;
+        samples = import_samples_from_dir(path, &sample_paths)?;
     }
 
     Ok(FluXisSkin::new(skin_json, Some(textures), Some(samples)))

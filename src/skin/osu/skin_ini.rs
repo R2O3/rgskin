@@ -1,15 +1,15 @@
+use std::str::FromStr;
+
 use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-use std::collections::HashSet;
-use std::str::FromStr;
 use crate::common::traits::{ManiaSkinConfig, SkinConfig};
 use crate::osu::static_assets;
 use crate::skin::osu::Keymode;
 use crate::skin::osu::General;
 use crate::ini::from_ini;
-use crate::utils;
+use crate::{StringPattern, utils};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Default, Merge)]
@@ -94,23 +94,24 @@ impl FromStr for OsuSkinIni {
 }
 
 impl SkinConfig for OsuSkinIni {
-    fn get_required_texture_paths(&self) -> HashSet<String> {
-        let mut result = HashSet::new();
+    fn get_required_texture_paths(&self) -> Vec<StringPattern> {
+        let mut result = Vec::new();
 
         for keymode in &self.keymodes {
-            result.extend(keymode.get_texture_paths());
+            result.extend(keymode.get_texture_paths().into_iter().map(|p| p.into()));
         }
 
-        result.extend(static_assets::Mania::iter_mapped(|t| t.to_string()));
-        result.extend(static_assets::Interface::iter_mapped(|t| t.to_string()));
+        result.extend(static_assets::Mania::iter_mapped(|t| t.into()));
+        result.extend(static_assets::Interface::iter_mapped(|t| t.into()));
+
+        result.sort_unstable();
+        result.dedup();
 
         result
     }
 
-    fn get_required_sample_paths(&self) -> HashSet<String> {
-        let mut result: HashSet<String> = HashSet::new();
-        result.extend(static_assets::Samples::iter_mapped(|s| s.to_string()));
-        result
+    fn get_required_sample_paths(&self) -> Vec<StringPattern> {
+        static_assets::Samples::iter_mapped(|s| s.into()).collect()
     }
 }
 

@@ -28,6 +28,7 @@ pub use io::{Binary, BinaryState, Store, texture, sample};
 pub use common::traits;
 
 pub(crate) use resources::Resources;
+pub(crate) use io::StringPattern;
 
 pub mod prelude {
     pub use crate::OsuSkin;
@@ -240,19 +241,17 @@ pub mod export {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod import {
-    use std::collections::HashSet;
+    use crate::{StringPattern, importing::native::{import_all_samples_from_dir, import_all_textures_from_dir, import_samples_from_dir, import_textures_from_dir}, io::texture::TextureStore, sample::SampleStore};
 
-    use crate::{importing::native::{import_all_samples_from_dir, import_all_textures_from_dir, import_textures_from_dir, import_samples_from_dir}, io::texture::TextureStore, sample::SampleStore};
-
-    pub fn textures_from_dir(path: &str, relative_texture_paths: &[&str]) -> Result<TextureStore, Box<dyn std::error::Error>>  {
+    pub fn textures_from_dir(path: &str, relative_texture_paths: &[StringPattern]) -> Result<TextureStore, Box<dyn std::error::Error>>  {
         import_textures_from_dir(path, relative_texture_paths)
     }
 
-    pub fn all_textures_from_dir(path: &str, load_only: Option<&HashSet<String>>) -> Result<TextureStore, Box<dyn std::error::Error>>  {
+    pub fn all_textures_from_dir(path: &str, load_only: Option<&[StringPattern]>) -> Result<TextureStore, Box<dyn std::error::Error>>  {
         import_all_textures_from_dir(path, load_only)
     }
 
-    pub fn samples_from_dir(path: &str, relative_sample_paths: &[&str]) -> Result<SampleStore, Box<dyn std::error::Error>>  {
+    pub fn samples_from_dir(path: &str, relative_sample_paths: &[StringPattern]) -> Result<SampleStore, Box<dyn std::error::Error>>  {
         import_samples_from_dir(path, relative_sample_paths)
     }
 

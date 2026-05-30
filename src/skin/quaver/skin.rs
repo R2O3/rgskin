@@ -5,22 +5,21 @@ use wasm_bindgen::prelude::*;
 use crate::StringPattern;
 use crate::common::traits::ManiaSkin;
 use crate::common::vector::Vector2;
-use crate::converting::osu::{from_generic_mania, to_generic_mania};
-use crate::osu::Keymode;
+use crate::quaver::config::Keymode;
+use crate::quaver::QuaSkinIni;
 use crate::sample::SampleStore;
 use crate::skin::generic::GenericManiaSkin;
-use crate::skin::osu::OsuSkinIni;
-use crate::io::texture::TextureStore;
+use crate::texture::TextureStore;
 use crate::traits::SkinConfig;
-use crate::utils::osu::OsuDimensions;
+use crate::utils::quaver::QuaDimensions;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Merge)]
-pub struct OsuSkin {
+pub struct QuaSkin {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub resolution: Vector2<u32>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    pub skin_ini: OsuSkinIni,
+    pub skin_ini: QuaSkinIni,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub textures: TextureStore,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
@@ -28,49 +27,49 @@ pub struct OsuSkin {
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-impl OsuSkin {
+impl QuaSkin {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(constructor))]
-    pub fn new(skin_ini: OsuSkinIni, textures: Option<TextureStore>, samples: Option<SampleStore>) -> Self {
+    pub fn new(skin_ini: QuaSkinIni, textures: Option<TextureStore>, samples: Option<SampleStore>) -> Self {
         Self { skin_ini,
             textures: textures.unwrap_or(TextureStore::new()),
             samples: samples.unwrap_or(SampleStore::new()),
-            resolution: Vector2::new(OsuDimensions::X.as_u32(), OsuDimensions::Y.as_u32())
+            resolution: Vector2::new(QuaDimensions::X.as_u32(), QuaDimensions::Y.as_u32())
         }
     }
 }
 
-impl<'a> ManiaSkin<'a> for OsuSkin {
-    type Keymode = Keymode;
-    type ToParams = ();
-    type FromReturn = Self;
+// impl<'a> ManiaSkin<'a> for QuaSkin {
+//     type Keymode = Keymode;
+//     type ToParams = ();
+//     type FromReturn = Self;
 
-    fn to_generic_mania(&self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
-        to_generic_mania(self)
-    }
+//     fn to_generic_mania(&self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
+//         to_generic_mania(self)
+//     }
 
-    fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
-        from_generic_mania(skin)
-    }
+//     fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
+//         from_generic_mania(skin)
+//     }
 
-    fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
-        for k in &self.skin_ini.keymodes {
-            if k.keymode == keymode { return Some(k); }
-        }
-        None
-    }
+//     fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
+//         for k in &self.skin_ini.keymodes {
+//             if k.keymode == keymode { return Some(k); }
+//         }
+//         None
+//     }
 
-    fn get_required_texture_paths(&self) -> Vec<StringPattern> {
-        self.skin_ini.get_required_texture_paths()
-    }
+//     fn get_required_texture_paths(&self) -> Vec<StringPattern> {
+//         self.skin_ini.get_required_texture_paths()
+//     }
 
-    fn get_required_sample_paths(&self) -> Vec<StringPattern> {
-        self.skin_ini.get_required_sample_paths()
-    }
-}
+//     fn get_required_sample_paths(&self) -> Vec<StringPattern> {
+//         self.skin_ini.get_required_sample_paths()
+//     }
+// }
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
-impl OsuSkin {
+impl QuaSkin {
     #[wasm_bindgen(js_name = toGenericMania)]
     pub fn to_generic_mania_wasm(&self) -> Result<GenericManiaSkin, JsValue> {
         self.to_generic_mania(())
@@ -78,7 +77,7 @@ impl OsuSkin {
     }
 
     #[wasm_bindgen(js_name = fromGenericMania)]
-    pub fn from_generic_mania_wasm(skin: &GenericManiaSkin) -> Result<OsuSkin, JsValue> {
+    pub fn from_generic_mania_wasm(skin: &GenericManiaSkin) -> Result<QuaSkin, JsValue> {
         Self::from_generic_mania(skin)
             .map_err(|e| JsValue::from_str(&e.to_string()))
     }

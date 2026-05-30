@@ -1,6 +1,8 @@
 use crate::def_const_type_enum;
 
-def_const_type_enum! (pub Mania => &'static str {
+// TODO: add attributes
+
+def_const_type_enum! (pub Mania => StringPattern {
     HIT0 => "mania-hit0",
     HIT50 => "mania-hit50",
     HIT100 => "mania-hit100",
@@ -36,7 +38,7 @@ def_const_type_enum! (pub Mania => &'static str {
     LIGHTINGN => "lightingN",
 });
 
-def_const_type_enum! (pub Interface => &'static str {
+def_const_type_enum! (pub Interface => StringPattern {
     CURSOR => "cursor",
     CURSORMIDDLE => "cursormiddle",
     CURSOR_SMOKE => "cursor-smoke",
@@ -49,7 +51,7 @@ def_const_type_enum! (pub Interface => &'static str {
     SCOREBAR_MARKER => "scorebar-marker"
 });
 
-def_const_type_enum! (pub Samples => &'static str {
+def_const_type_enum! (pub Samples => StringPattern {
     // Main menu
     HEARTBEAT => "heartbeat",
     SEEYA => "seeya",

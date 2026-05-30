@@ -3,6 +3,7 @@
 use std::collections::{HashMap, HashSet};
 
 use crate::{Binary, Store, texture::{Texture, TextureStore}, utils::io::get_stem};
+use crate::io::StringPattern;
 
 pub fn file_matches_target(file_stem: &str, target_filename: &str) -> bool {
     file_stem.to_lowercase() == target_filename.to_lowercase()
@@ -36,66 +37,51 @@ pub fn choose_best_match<'a>(
         .or_else(|| matches.first())
 }
 
-pub fn is_at2x(stem: &str) -> bool {
-    stem.ends_with("@2x")
+pub fn is_at2x(path: &str) -> bool {
+    path.ends_with("@2x")
 }
 
 pub fn strip_at2x(path: &str) -> &str {
     path.strip_suffix("@2x").unwrap_or(path)
 }
 
-pub fn expand_with_at2x<'a>(paths: &[&'a str]) -> Vec<String> {
-    let mut expanded = Vec::with_capacity(paths.len() * 2);
-    for &path in paths {
-        expanded.push(path.to_string());
-        expanded.push(format!("{}@2x", path));
-    }
-    expanded
-}
-
 pub fn pair_at2x_files<'a>(
     files: &'a HashMap<String, Vec<u8>>,
-) -> impl Iterator<Item = TextureEntry<'a>> {
-    // Collect canonical (non-@2x) paths for lookup
-    let base_paths: HashSet<&str> = files
-        .keys()
-        .filter(|p| !is_at2x(&get_stem(p)))
-        .map(|p| p.as_str())
-        .collect();
+) -> Vec<TextureEntry<'a>> {
+    let mut grouped: HashMap<&str, (Option<&'a [u8]>, Option<&'a [u8]>)> = HashMap::new();
 
-    files.iter().filter_map(move |(path, bytes)| {
-        let stem = get_stem(path);
-
-        if is_at2x(&stem) {
-            let canonical = strip_at2x(path);
-            if base_paths.contains(canonical) {
-                None
-            } else {
-                Some(TextureEntry::Plain {
-                    path: canonical.to_string(),
-                    bytes,
-                })
-            }
+    for (path, bytes) in files {
+        let canonical = strip_at2x(path);
+        let entry = grouped.entry(canonical).or_default();
+        
+        if is_at2x(path) {
+            entry.1 = Some(bytes);
         } else {
-            let at2x_path = format!("{}@2x", path);
-            match files.get(&at2x_path) {
-                Some(hires_bytes) => Some(TextureEntry::WithMip {
-                    canonical_path: path.clone(),
-                    hires: hires_bytes,
-                    lores: bytes,
-                }),
-                None => Some(TextureEntry::Plain {
-                    path: path.clone(),
-                    bytes,
-                }),
-            }
+            entry.0 = Some(bytes);
         }
-    })
+    }
+
+    grouped
+        .into_iter()
+        .map(|(canonical, (lores, hires))| match (lores, hires) {
+            (Some(lores), Some(hires)) => TextureEntry::WithMip {
+                canonical_path: canonical.to_string(),
+                hires,
+                lores,
+            },
+            // If only one resolution exists (whether it's @2x or normal), load it as plain
+            (Some(bytes), None) | (None, Some(bytes)) => TextureEntry::Plain {
+                path: canonical.to_string(),
+                bytes,
+            },
+            (None, None) => unreachable!(),
+        })
+        .collect()
 }
 
 pub fn build_texture_store_from_files(
     files: &HashMap<String, Vec<u8>>,
-    load_only: Option<&HashSet<String>>,
+    load_only: Option<&[StringPattern]>,
 ) -> Result<TextureStore, Box<dyn std::error::Error>> {
     let mut store = TextureStore::new();
 
@@ -123,8 +109,6 @@ pub fn build_texture_store_from_files(
             }
         }
     }
-
-    println!("textures: {:?}", store.paths().collect::<Vec<_>>());
 
     Ok(store)
 }
@@ -164,7 +148,6 @@ impl SeenFiles {
     }
 }
 
-pub fn should_load_from_set(path: &str, load_only: &HashSet<String>) -> bool {
-    let path_lower = path.to_lowercase();
-    load_only.iter().any(|s| s.to_lowercase() == path_lower)
+pub fn should_load_from_set(path: &str, load_only: &[StringPattern]) -> bool {
+    load_only.iter().any(|p| p.matches_path(path))
 }

@@ -2,6 +2,7 @@ pub mod serde;
 pub mod io;
 pub mod string;
 pub mod osu;
+pub mod quaver;
 pub mod fluxis;
 pub mod math;
 pub mod skin;

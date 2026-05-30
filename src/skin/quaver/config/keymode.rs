@@ -10,6 +10,9 @@ fn parse_bool(value: &str) -> Result<bool, std::str::ParseBoolError> {
     value.trim().to_lowercase().parse()
 }
 
+// TODO: implement KeymodeInvariant
+// TODO: add support for quaver fallback (sharedK)
+
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum DefaultSkin {

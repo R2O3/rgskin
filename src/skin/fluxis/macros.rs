@@ -12,11 +12,11 @@ macro_rules! define_overrides {
         }
 
         impl $struct_name {
-            pub fn serialize(&self) -> Vec<(&'static str, &str)> {
+            pub fn serialize(&self) -> Vec<($crate::StringPattern, &str)> {
                 let mut entries = Vec::new();
                 $(
                     if !self.$field.is_empty() {
-                        entries.push(($key, self.$field.as_str()));
+                        entries.push(((*$key).clone(), self.$field.as_str()));
                     }
                 )*
                 entries
@@ -24,7 +24,7 @@ macro_rules! define_overrides {
 
             pub fn set_field(&mut self, key: &str, value: String) -> bool {
                 $(
-                    if key == $key {
+                    if key == $key.raw() {
                         self.$field = value;
                         return true;
                     }
@@ -32,9 +32,9 @@ macro_rules! define_overrides {
                 false
             }
 
-            pub fn get_fields(&self) -> Vec<(&'static str, &String)> {
+            pub fn get_fields(&self) -> Vec<($crate::StringPattern, &String)> {
                 vec![
-                    $(($key, &self.$field),)*
+                    $(((*$key).clone(), &self.$field),)*
                 ]
             }
         }

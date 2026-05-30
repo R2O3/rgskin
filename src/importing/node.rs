@@ -1,50 +1,33 @@
 #![allow(unused)]
 #![cfg(feature = "node")]
 
+use std::collections::HashMap;
+use std::str::FromStr;
+
 #[cfg(all(target_arch = "wasm32", feature = "node"))]
 use crate::io::node;
 use crate::common::traits::SkinConfig;
 use crate::io::texture::TextureStore;
 use crate::sample::SampleStore;
-use crate::utils::io::{get_filename, get_parent, get_stem, remove_extension};
-use crate::importing::common::{file_matches_target, extension_matches, choose_best_match, SeenFiles};
-use std::str::FromStr;
+use crate::utils::io::remove_extension;
+use crate::importing::common::{extension_matches, build_texture_store_from_files, SeenFiles};
+use crate::io::PathPattern;
 
 pub fn import_binaries_from_dir<F>(
     path: &str,
-    relative_paths: &[&str],
+    patterns: &[PathPattern],
     mut loader: F,
 ) -> Result<(), Box<dyn std::error::Error>> 
 where
     F: FnMut(String, &[u8]) -> Result<(), Box<dyn std::error::Error>>,
 {
-    for &relative_path in relative_paths {
-        let dir_path = node::join_path(path, &get_parent(relative_path));
-        let filename = get_filename(relative_path);
-        
-        if let Ok(entries) = node::read_dir(&dir_path) {
-            let mut matches: Vec<(String, String)> = Vec::new();
-            
-            for entry in entries {
-                let file_stem = get_stem(&entry);
-                
-                if file_matches_target(&file_stem, &filename) {
-                    let full_path = node::join_path(&dir_path, &entry);
-                    matches.push((entry, full_path));
-                }
-            }
-            
-            let chosen_file = choose_best_match(&matches, &filename, |name| get_stem(name));
-            
-            if let Some((_, full_path)) = chosen_file {
-                if let Ok(bytes) = node::read_file_bytes(full_path) {
-                    loader(relative_path.to_string(), &bytes)?;
-                }
-            }
+    import_all_binaries_from_dir(path, &["png", "jpg", "jpeg", "wav", "ogg"], |file_path, bytes| {
+        if patterns.iter().any(|p| p.matches_path(&file_path)) {
+            loader(file_path, bytes)?;
         }
-    }
-    
-    Ok(())
+
+        Ok(())
+    })
 }
 
 pub fn import_all_binaries_from_dir<F>(
@@ -103,14 +86,11 @@ where
 
 pub fn import_textures_from_dir(
     path: &str,
-    relative_texture_paths: &[&str],
+    patterns: &[PathPattern],
 ) -> Result<TextureStore, Box<dyn std::error::Error>> {
-    let expanded = expand_with_at2x(relative_texture_paths);
-    let expanded_refs: Vec<&str> = expanded.iter().map(|s| s.as_str()).collect();
-
     let mut files: HashMap<String, Vec<u8>> = HashMap::new();
 
-    import_binaries_from_dir(path, &expanded_refs, |path, bytes| {
+    import_binaries_from_dir(path, patterns, |path, bytes| {
         files.insert(path, bytes.to_vec());
         Ok(())
     })?;
@@ -118,7 +98,10 @@ pub fn import_textures_from_dir(
     build_texture_store_from_files(&files, None)
 }
 
-pub fn import_all_textures_from_dir(path: &str) -> Result<TextureStore, Box<dyn std::error::Error>> {
+pub fn import_all_textures_from_dir(
+    path: &str,
+    load_only: Option<&[PathPattern]>,
+) -> Result<TextureStore, Box<dyn std::error::Error>> {
     let mut files: HashMap<String, Vec<u8>> = HashMap::new();
 
     import_all_binaries_from_dir(path, &["png", "jpg", "jpeg"], |path, bytes| {
@@ -126,7 +109,21 @@ pub fn import_all_textures_from_dir(path: &str) -> Result<TextureStore, Box<dyn 
         Ok(())
     })?;
 
-    build_texture_store_from_files(&files, None)
+    build_texture_store_from_files(&files, load_only)
+}
+
+pub fn import_samples_from_dir(
+    path: &str, 
+    relative_sample_paths: &[PathPattern]
+) -> Result<SampleStore, Box<dyn std::error::Error>> {
+    let mut sample_store = SampleStore::new();
+    
+    import_binaries_from_dir(path, relative_sample_paths, |path, bytes| {
+        sample_store.load_from_bytes(path, bytes)?;
+        Ok(())
+    })?;
+    
+    Ok(sample_store)
 }
 
 pub fn import_all_samples_from_dir(path: &str) -> Result<SampleStore, Box<dyn std::error::Error>> {
@@ -140,22 +137,11 @@ pub fn import_all_samples_from_dir(path: &str) -> Result<SampleStore, Box<dyn st
     Ok(sample_store)
 }
 
-pub fn import_samples_from_dir(path: &str, relative_sample_paths: &[&str]) -> Result<SampleStore, Box<dyn std::error::Error>> {
-    let mut sample_store = SampleStore::new();
-    
-    import_binaries_from_dir(path, relative_sample_paths, |path, bytes| {
-        sample_store.load_from_bytes(path, bytes)?;
-        Ok(())
-    })?;
-    
-    Ok(sample_store)
-}
-
 pub fn read_str_from_path(path: &str) -> String {
     node::read_file_string(path).unwrap_or_default()
 }
 
-pub fn import_osu_mania_skin_from_dir(path: &str) -> Result<crate::OsuSkin, Box<dyn std::error::Error>> {
+pub fn import_osu_mania_skin_from_dir(path: &str, import_all: bool) -> Result<crate::OsuSkin, Box<dyn std::error::Error>> {
     let ini_path = node::join_path(path, "skin.ini");
     let ini_content = node::read_file_string(&ini_path)?;
 
@@ -164,44 +150,38 @@ pub fn import_osu_mania_skin_from_dir(path: &str) -> Result<crate::OsuSkin, Box<
     let texture_paths = skin_ini.get_required_texture_paths();
     let sample_paths = skin_ini.get_required_sample_paths();
     
-    let texture_path_refs: Vec<&str> = texture_paths.iter().map(|s| s.as_str()).collect();
-    let sample_path_refs: Vec<&str> = sample_paths.iter().map(|s| s.as_str()).collect();
-    
-    let mut textures = TextureStore::new();
-    import_binaries_from_dir(path, &texture_path_refs, |path, bytes| {
-        textures.load_from_bytes(path, bytes)?;
-        Ok(())
-    })?;
-    
-    let mut samples = SampleStore::new();
-    import_binaries_from_dir(path, &sample_path_refs, |path, bytes| {
-        samples.load_from_bytes(path, bytes)?;
-        Ok(())
-    })?;
+    let textures;
+    let samples;
+
+    if import_all {
+        textures = import_all_textures_from_dir(path, Some(&texture_paths))?;
+        samples = import_all_samples_from_dir(path)?;
+    } else {
+        textures = import_textures_from_dir(path, &texture_paths)?;
+        samples = import_samples_from_dir(path, &sample_paths)?;
+    }
 
     Ok(crate::OsuSkin::new(skin_ini, Some(textures), Some(samples)))
 }
 
-pub fn import_fluxis_skin_from_dir(path: &str) -> Result<crate::fluxis::FluXisSkin, Box<dyn std::error::Error>> {
+pub fn import_fluxis_skin_from_dir(path: &str, import_all: bool) -> Result<crate::fluxis::FluXisSkin, Box<dyn std::error::Error>> {
     let json_path = node::join_path(path, "skin.json");
     let json_content = node::read_file_string(&json_path)?;
 
     let skin_json = crate::fluxis::SkinJson::from_str(&json_content)?;
     
     let sample_paths = skin_json.get_required_sample_paths();
-    let sample_path_refs: Vec<&str> = sample_paths.iter().map(|s| s.as_str()).collect();
     
-    let mut textures = TextureStore::new();
-    import_all_binaries_from_dir(path, &["png", "jpg", "jpeg"], |path, bytes| {
-        textures.load_from_bytes(path, bytes)?;
-        Ok(())
-    })?;
-    
-    let mut samples = SampleStore::new();
-    import_binaries_from_dir(path, &sample_path_refs, |path, bytes| {
-        samples.load_from_bytes(path, bytes)?;
-        Ok(())
-    })?;
+    let textures;
+    let samples;
+
+    if import_all {
+        textures = import_all_textures_from_dir(path, None)?;
+        samples = import_all_samples_from_dir(path)?;
+    } else {
+        textures = import_all_textures_from_dir(path, None)?;
+        samples = import_samples_from_dir(path, &sample_paths)?;
+    }
 
     Ok(crate::fluxis::FluXisSkin::new(skin_json, Some(textures), Some(samples)))
 }

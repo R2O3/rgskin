@@ -254,11 +254,11 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             },
             stage: Stage::new(
                 textures.get_shared(&skin.skin_json.overrides.stage.background)
-                    .or(textures.get_shared(static_assets::Stage::BACKGROUND)),
+                    .or(textures.get_shared(&static_assets::Stage::BACKGROUND)),
                 textures.get_shared(&skin.skin_json.overrides.stage.border_right)
-                    .or(textures.get_shared(static_assets::Stage::BORDER_RIGHT)),
+                    .or(textures.get_shared(&static_assets::Stage::BORDER_RIGHT)),
                 textures.get_shared(&skin.skin_json.overrides.stage.border_left)
-                    .or(textures.get_shared(static_assets::Stage::BORDER_LEFT)),
+                    .or(textures.get_shared(&static_assets::Stage::BORDER_LEFT)),
             ),
             fallbacks
         });
@@ -275,23 +275,23 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
     let gameplay = Gameplay {
         health_bar: Healthbar::new(
             textures.get_shared(&skin.skin_json.overrides.health.foreground)
-                .or(textures.get_shared(static_assets::Health::FOREGROUND)),
+                .or(textures.get_shared(&static_assets::Health::FOREGROUND)),
             textures.get_shared(&skin.skin_json.overrides.health.background)
-                .or(textures.get_shared(static_assets::Health::BACKGROUND))
+                .or(textures.get_shared(&static_assets::Health::BACKGROUND))
         ),
         judgement: elements::Judgement::new(
             textures.get_shared(&skin.skin_json.overrides.judgement.flawless)
-                .or(textures.get_shared(static_assets::Judgement::FLAWLESS)),
+                .or(textures.get_shared(&static_assets::Judgement::FLAWLESS)),
             textures.get_shared(&skin.skin_json.overrides.judgement.perfect)
-                .or(textures.get_shared(static_assets::Judgement::PERFECT)),
+                .or(textures.get_shared(&static_assets::Judgement::PERFECT)),
             textures.get_shared(&skin.skin_json.overrides.judgement.great)
-                .or(textures.get_shared(static_assets::Judgement::GREAT)),
+                .or(textures.get_shared(&static_assets::Judgement::GREAT)),
             textures.get_shared(&skin.skin_json.overrides.judgement.alright)
-                .or(textures.get_shared(static_assets::Judgement::ALRIGHT)),
+                .or(textures.get_shared(&static_assets::Judgement::ALRIGHT)),
             textures.get_shared(&skin.skin_json.overrides.judgement.okay)
-                .or(textures.get_shared(static_assets::Judgement::OKAY)),
+                .or(textures.get_shared(&static_assets::Judgement::OKAY)),
             textures.get_shared(&skin.skin_json.overrides.judgement.miss)
-                .or(textures.get_shared(static_assets::Judgement::MISS)),
+                .or(textures.get_shared(&static_assets::Judgement::MISS)),
         ),
         layout: HUDLayout {
             combo: (
@@ -364,18 +364,18 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
 
     let sounds = Sounds {
         ui: UISounds {
-            menu_back_click: samples.get_shared(static_assets::Samples::UI_BACK).get_path(),
-            ui_click: samples.get_shared(static_assets::Samples::UI_CLICK).get_path(),
-            ui_select: samples.get_shared(static_assets::Samples::UI_SELECT).get_path(),
-            ui_hover: samples.get_shared(static_assets::Samples::UI_HOVER).get_path()
+            menu_back_click: samples.get_shared(&static_assets::Samples::UI_BACK).get_path(),
+            ui_click: samples.get_shared(&static_assets::Samples::UI_CLICK).get_path(),
+            ui_select: samples.get_shared(&static_assets::Samples::UI_SELECT).get_path(),
+            ui_hover: samples.get_shared(&static_assets::Samples::UI_HOVER).get_path()
         },
         gameplay: GenericGameplaySounds {
-            miss: samples.get_shared(static_assets::Samples::GAMEPLAY_MISS).get_path(),
-            fail: samples.get_shared(static_assets::Samples::GAMEPLAY_FAIL).get_path(),
-            restart: samples.get_shared(static_assets::Samples::GAMEPLAY_RESTART).get_path()
+            miss: samples.get_shared(&static_assets::Samples::GAMEPLAY_MISS).get_path(),
+            fail: samples.get_shared(&static_assets::Samples::GAMEPLAY_FAIL).get_path(),
+            restart: samples.get_shared(&static_assets::Samples::GAMEPLAY_RESTART).get_path()
         },
         mania: ManiaGameplaySounds {
-            hit: samples.get_shared(static_assets::Samples::GAMEPLAY_HIT).get_path()
+            hit: samples.get_shared(&static_assets::Samples::GAMEPLAY_HIT).get_path()
         },
     };
 
@@ -542,27 +542,27 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     };
 
     if let Some(flawless_arc) = &skin.gameplay.judgement.flawless {
-        textures.copy(&flawless_arc.get_path(), static_assets::Judgement::FLAWLESS);
+        textures.copy(&flawless_arc.get_path(), &static_assets::Judgement::FLAWLESS);
     }
 
     if let Some(perfect_arc) = &skin.gameplay.judgement.perfect {
-        textures.copy(&perfect_arc.get_path(), static_assets::Judgement::PERFECT);
+        textures.copy(&perfect_arc.get_path(), &static_assets::Judgement::PERFECT);
     }
 
     if let Some(great_arc) = &skin.gameplay.judgement.great {
-        textures.copy(&great_arc.get_path(), static_assets::Judgement::GREAT);
+        textures.copy(&great_arc.get_path(), &static_assets::Judgement::GREAT);
     }
 
     if let Some(good_arc) = &skin.gameplay.judgement.good {
-        textures.copy(&good_arc.get_path(), static_assets::Judgement::ALRIGHT);
+        textures.copy(&good_arc.get_path(), &static_assets::Judgement::ALRIGHT);
     }
 
     if let Some(bad_arc) = &skin.gameplay.judgement.bad {
-        textures.copy(&bad_arc.get_path(), static_assets::Judgement::OKAY);
+        textures.copy(&bad_arc.get_path(), &static_assets::Judgement::OKAY);
     }
 
     if let Some(miss_arc) = &skin.gameplay.judgement.miss {
-        textures.copy(&miss_arc.get_path(), static_assets::Judgement::MISS);
+        textures.copy(&miss_arc.get_path(), &static_assets::Judgement::MISS);
     }
     
     let default_keymode = skin.get_keymode(4).unwrap_or(skin.keymodes.first().unwrap());
@@ -591,35 +591,35 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     skin_json.sync_overrides_from_keymodes();
 
     if let Some(s) = &skin.sounds.ui.menu_back_click {
-        samples.copy(s, static_assets::Samples::UI_BACK);
+        samples.copy(s, &static_assets::Samples::UI_BACK);
     }
     
     if let Some(s) = &skin.sounds.ui.ui_click {
-        samples.copy(s, static_assets::Samples::UI_CLICK);
+        samples.copy(s, &static_assets::Samples::UI_CLICK);
     }
     
     if let Some(s) = &skin.sounds.ui.ui_select {
-        samples.copy(s, static_assets::Samples::UI_SELECT);
+        samples.copy(s, &static_assets::Samples::UI_SELECT);
     }
     
     if let Some(s) = &skin.sounds.ui.ui_hover {
-        samples.copy(s, static_assets::Samples::UI_HOVER);
+        samples.copy(s, &static_assets::Samples::UI_HOVER);
     }
     
     if let Some(s) = &skin.sounds.gameplay.miss {
-        samples.copy(s, static_assets::Samples::GAMEPLAY_MISS);
+        samples.copy(s, &static_assets::Samples::GAMEPLAY_MISS);
     }
     
     if let Some(s) = &skin.sounds.gameplay.fail {
-        samples.copy(s, static_assets::Samples::GAMEPLAY_FAIL);
+        samples.copy(s, &static_assets::Samples::GAMEPLAY_FAIL);
     }
     
     if let Some(s) = &skin.sounds.gameplay.restart {
-        samples.copy(s, static_assets::Samples::GAMEPLAY_RESTART);
+        samples.copy(s, &static_assets::Samples::GAMEPLAY_RESTART);
     }
     
     if let Some(s) = &skin.sounds.mania.hit {
-        samples.copy(s, static_assets::Samples::GAMEPLAY_HIT);
+        samples.copy(s, &static_assets::Samples::GAMEPLAY_HIT);
     }
 
     if let Some(preview) = generate_fluxis_preview(&skin_json, &textures, 512, 512).ok() {

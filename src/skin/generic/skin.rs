@@ -11,7 +11,7 @@ use crate::generic::UI;
 use crate::io::texture::TextureStore;
 use crate::sample::SampleStore;
 use crate::skin::generic::{Keymode, Metadata};
-use crate::{texture, utils, BinaryArcExt, Store};
+use crate::{BinaryArcExt, Store, StringPattern, texture, utils};
 use crate::extensions::TextureArcExt;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -57,19 +57,20 @@ impl<'a> ManiaSkin<'a> for GenericManiaSkin {
         None
     }
 
-    fn get_required_texture_paths(&self) -> HashSet<String> {
+    fn get_required_texture_paths(&self) -> Vec<StringPattern> {
         self.textures.iter()
-        .filter(|t| t.1.is_loaded())
-        .map(|t| t.0.to_string())
-        .collect()
+            .filter(|(_, texture)| texture.is_loaded())
+            .map(|(path, _)| StringPattern::from(path.to_owned()))
+            .collect()
     }
     
-    fn get_required_sample_paths(&self) -> HashSet<String> {
+    fn get_required_sample_paths(&self) -> Vec<StringPattern> {
         self.samples.iter()
-        .map(|t| t.0.to_string())
-        .collect()
+            .map(|(path, _)| StringPattern::from(path.to_owned()))
+            .collect()
     }
 }
+
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]
