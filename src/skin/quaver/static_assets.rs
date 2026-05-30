@@ -154,3 +154,232 @@ def_const_type_enum!(pub BattleRoyale => StringPattern {
         AssetAttribute::Alignment(Anchor::Centre)
     ],
 });
+
+def_const_type_enum!(pub Cursor => StringPattern {
+    MAIN_CURSOR => "Cursor/main-cursor" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::Centre)
+    ],
+});
+
+def_const_type_enum!(pub MainMenu => StringPattern {
+    MENU_BACKGROUND => "MainMenu/menu-background" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::Centre)
+    ],
+    LOGO_BACKGROUND => "MainMenu/logo-background" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    NAVIGATION_BUTTON => "MainMenu/navigation-button" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreLeft)
+    ],
+    NAVIGATION_BUTTON_SELECTED => "MainMenu/navigation-button-selected" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreLeft)
+    ],
+    NAVIGATION_BUTTON_HOVERED => "MainMenu/navigation-button-hovered" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreLeft)
+    ],
+    TIP_PANEL => "MainMenu/tip-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomRight)
+    ],
+    NEWS_PANEL => "MainMenu/news-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomRight)
+    ],
+    JUKEBOX_OVERLAY => "MainMenu/jukebox-overlay" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    NOTE_VISUALIZER => "MainMenu/note-visualizer" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+});
+
+def_const_type_enum!(pub MenuBorder => StringPattern {
+    MENU_BORDER_BACKGROUND => "MenuBorder/menu-border-background" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopCentre)
+    ],
+    MENU_BORDER_BACKGROUND_FOOTER => "MenuBorder/menu-border-background-footer" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+});
+
+def_const_type_enum!(pub SongSelect => StringPattern {
+    MAPSET_DESELECTED => "SongSelect/mapset-deselected" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    MAPSET_SELECTED => "SongSelect/mapset-selected" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    MAPSET_HOVERED => "SongSelect/mapset-hovered" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    STATUS_RANKED => "SongSelect/status-ranked" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    STATUS_UNRANKED => "SongSelect/status-unranked" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    STATUS_NOTSUBMITTED => "SongSelect/status-notsubmitted" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    STATUS_OSU => "SongSelect/status-osu" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    STATUS_SM => "SongSelect/status-sm" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    STATUS_VARIOUS => "SongSelect/status-various" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    GAME_MODE_4K => "SongSelect/game-mode-4k" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    GAME_MODE_7K => "SongSelect/game-mode-7k" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    GAME_MODE_4K7K => "SongSelect/game-mode-4k7k" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreRight)
+    ],
+    LEADERBOARD_PANEL => "SongSelect/leaderboard-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreLeft)
+    ],
+    PERSONALBEST_PANEL => "SongSelect/personalbest-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::CentreLeft)
+    ],
+    SELECT_FILTER_PANEL_LEFT => "SongSelect/select-filter-panel-left" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    SELECT_FILTER_PANEL_RIGHT => "SongSelect/select-filter-panel-right" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+});
+
+def_const_type_enum!(pub Results => StringPattern {
+    AVATAR_BORDER => "Results/avatar-border" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    AVATAR_MASK => "Results/avatar-mask" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    TAB_SELECTOR_BACKGROUND => "Results/tab-selector-background" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopCentre)
+    ],
+    SCORE_CONTAINER_PANEL => "Results/score-container-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopCentre)
+    ],
+    LABEL_ACCURACY => "Results/label-accuracy" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    LABEL_MAX_COMBO => "Results/label-max-combo" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    LABEL_PERFORMANCE_RATING => "Results/label-performance-rating" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    LABEL_RANKED_ACCURACY => "Results/label-ranked-accuracy" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    LABEL_TOTAL_SCORE => "Results/label-total-score" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    LABEL_BLUE_TEAM => "Results/label-blue-team" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    LABEL_RED_TEAM => "Results/label-red-team" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    LABEL_SCORE => "Results/label-score" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    BACKGROUND => "Results/background" [
+        AssetAttribute::Texture,
+    ],
+    BACKGROUND_FILTER => "Results/background-filter" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopCentre)
+    ],
+    GRAPH_CONTAINER_PANEL => "Results/graph-container-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::Centre)
+    ],
+    MULTIPLAYER_FFA_PANEL => "Results/multiplayer-ffa-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+    MULTIPLAYER_TEAM_PANEL => "Results/multiplayer-team-panel" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::BottomCentre)
+    ],
+});
+
+def_const_type_enum!(pub ResultsGrades => StringPattern {
+    LARGE_X => "Grades/grade-large-x" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    LARGE_SS => "Grades/grade-large-ss" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    LARGE_S => "Grades/grade-large-s" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    LARGE_A => "Grades/grade-large-a" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    LARGE_B => "Grades/grade-large-b" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    LARGE_C => "Grades/grade-large-c" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    LARGE_D => "Grades/grade-large-d" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    LARGE_F => "Grades/grade-large-f" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+});
