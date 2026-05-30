@@ -23,7 +23,7 @@ pub struct QuaSkinIni {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub results: Results,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-    #[merge(strategy = utils::merge::any::overwrite)] // TODO: implement keymode invariant support to quaver
+    #[merge(strategy = utils::merge::skin::overwrite_keymode)]
     pub keymodes: Vec<Keymode>,
 }
 

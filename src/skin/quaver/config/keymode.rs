@@ -1,7 +1,10 @@
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
+use crate::StringPattern;
 use crate::common::color::Rgba;
+use crate::quaver::dynamic_assets;
+use crate::traits::{KeymodeInvariant, LaneFallback};
 use crate::utils::serde::{
     add_key_value, add_key_value_if_not_default, parse_key_value_eq, serialize_bool,
 };
@@ -10,7 +13,6 @@ fn parse_bool(value: &str) -> Result<bool, std::str::ParseBoolError> {
     value.trim().to_lowercase().parse()
 }
 
-// TODO: implement KeymodeInvariant
 // TODO: add support for quaver fallback (sharedK)
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -836,5 +838,73 @@ impl Keymode {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = toStr))]
     pub fn wasm_to_str(&self) -> String {
         self.to_str()
+    }
+}
+
+impl KeymodeInvariant for Keymode {
+    fn get_keymode(&self) -> u8 { self.keymode }
+
+    fn get_receptors(&self) -> Vec<String> {
+        self.saturate_per_lane(&dynamic_assets::Receptors::UP)
+    }
+    fn get_receptors_down(&self) -> Vec<String> {
+        self.saturate_per_lane(&dynamic_assets::Receptors::DOWN)
+    }
+    fn get_normal_notes(&self) -> Vec<String> {
+        self.saturate_per_lane(&dynamic_assets::Notes::HIT_OBJECT)
+    }
+    fn get_long_note_heads(&self) -> Vec<String> {
+        self.saturate_per_lane(&dynamic_assets::Notes::HOLD_HIT_OBJECT)
+    }
+    fn get_long_note_bodies(&self) -> Vec<String> {
+        self.saturate_per_lane(&dynamic_assets::Notes::HOLD_BODY)
+    }
+    fn get_long_note_tails(&self) -> Vec<String> {
+        self.saturate_per_lane(&dynamic_assets::Notes::HOLD_END)
+    }
+
+    fn primary_fallback(&self, lane: usize) -> LaneFallback {
+        self.fallback_for_lane(lane)
+    }
+    fn secondary_fallback(&self, lane: usize) -> LaneFallback {
+        self.fallback_for_lane(lane)
+    }
+    fn middle_fallback(&self, lane: usize) -> LaneFallback {
+        self.fallback_for_lane(lane)
+    }
+}
+
+impl Keymode {
+    fn saturate_per_lane(&self, pattern: &StringPattern) -> Vec<String> {
+        let pattern_str = pattern.raw();
+        let keys_str = self.keymode.to_string();
+        
+        (1..=self.keymode as usize)
+            .map(|lane| {
+                pattern_str
+                    .replace("{keys}", &keys_str)
+                    .replace("{note}", &lane.to_string())
+            })
+            .collect()
+    }
+
+    fn fallback_for_lane(&self, lane: usize) -> LaneFallback {
+        let keys_str = self.keymode.to_string();
+        let lane_str = lane.to_string();
+        
+        let saturate = |pattern: &StringPattern| -> String {
+            pattern.raw()
+                .replace("{keys}", &keys_str)
+                .replace("{note}", &lane_str)
+        };
+
+        LaneFallback {
+            receptor: saturate(&dynamic_assets::Receptors::UP),
+            receptor_down: saturate(&dynamic_assets::Receptors::DOWN),
+            normal_note: saturate(&dynamic_assets::Notes::HIT_OBJECT),
+            long_note_head: saturate(&dynamic_assets::Notes::HOLD_HIT_OBJECT),
+            long_note_body: saturate(&dynamic_assets::Notes::HOLD_BODY),
+            long_note_tail: saturate(&dynamic_assets::Notes::HOLD_END),
+        }
     }
 }
