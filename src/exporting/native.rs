@@ -85,6 +85,18 @@ pub fn export_osu_ini(skin_ini: &osu::OsuSkinIni, path: &str) -> io::Result<()> 
     Ok(())
 }
 
+pub fn export_quaver_ini(skin_ini: &crate::quaver::QuaSkinIni, path: &str) -> io::Result<()> {
+    if let Some(parent) = Path::new(path).parent() {
+        fs::create_dir_all(parent)?;
+    }
+    
+    let ini_content = skin_ini.to_string();
+    
+    fs::write(path, ini_content)?;
+    
+    Ok(())
+}
+
 pub fn export_fluxis_skin_json(skin_json: &fluxis::SkinJson, path: &str) -> io::Result<()> {
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)?;
@@ -117,6 +129,21 @@ pub fn export_osu_skin(skin: &OsuSkin, path: &str) -> io::Result<()> {
     
     let ini_path = skin_path.join("skin.ini");
     export_osu_ini(skin_ini, ini_path.to_str().unwrap())?;
+    
+    export_textures(&skin.textures, skin_path.to_str().unwrap())?;
+    export_samples(&skin.samples, skin_path.to_str().unwrap())?;
+    
+    Ok(())
+}
+
+pub fn export_quaver_skin(skin: &crate::quaver::QuaSkin, path: &str) -> io::Result<()> {
+    let skin_ini = &skin.skin_ini;
+
+    let skin_path = Path::new(path).join(&skin_ini.general.name);
+    fs::create_dir_all(&skin_path)?;
+    
+    let ini_path = skin_path.join("skin.ini");
+    export_quaver_ini(skin_ini, ini_path.to_str().unwrap())?;
     
     export_textures(&skin.textures, skin_path.to_str().unwrap())?;
     export_samples(&skin.samples, skin_path.to_str().unwrap())?;

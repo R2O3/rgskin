@@ -4,6 +4,7 @@ use crate::{sample::SampleStore, texture::TextureStore, traits::{LaneType, SkinC
 
 // TODO: add method for generating mipmaps for textures (for osu)
 // TODO: add ensure_textures to add textures from skin elements in here without manual adding them
+// TODO: use StringPattern for cleanup_stores
 
 pub fn cleanup_stores<T: SkinConfig>(config: &T, textures: Option<&mut TextureStore>, samples: Option<&mut SampleStore>) {
     if samples.is_some() {

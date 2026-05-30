@@ -18,3 +18,18 @@ pub fn osu_to_fluxis_test() -> Result<(), Box<dyn std::error::Error>> {
     
     Ok(())
 }
+
+#[test]
+pub fn quaver_to_fluxis_test() -> Result<(), Box<dyn std::error::Error>> {
+    benchmark_closure(||
+    {
+        let quaver_skin = import::quaver::skin_from_dir("./tests/skins/FumoCirc", false)?;
+        let generic_skin = quaver_skin.to_generic_mania(())?;
+        let fluxis_from_generic = FluXisSkin::from_generic_mania(&generic_skin)?;
+        export::fluxis::skin_to_dir(&fluxis_from_generic.0, SKIN_PATH)?;
+        export::fluxis::layout_to_dir(&fluxis_from_generic.1, &join_paths_unix(SKIN_PATH, "layout.json"))?;
+        Ok(())
+    }, "Quaver to fluXis", "to finish converting", "\x1b[0;32m")?;
+    
+    Ok(())
+}

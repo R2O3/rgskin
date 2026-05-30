@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::*;
 use crate::StringPattern;
 use crate::common::traits::ManiaSkin;
 use crate::common::vector::Vector2;
+use crate::converting::quaver::{from_generic_mania, to_generic_mania};
 use crate::quaver::config::Keymode;
 use crate::quaver::QuaSkinIni;
 use crate::sample::SampleStore;
@@ -38,34 +39,35 @@ impl QuaSkin {
     }
 }
 
-// impl<'a> ManiaSkin<'a> for QuaSkin {
-//     type Keymode = Keymode;
-//     type ToParams = ();
-//     type FromReturn = Self;
+impl<'a> ManiaSkin<'a> for QuaSkin {
+    type Keymode = Keymode;
+    type ToParams = ();
+    type FromReturn = Self;
 
-//     fn to_generic_mania(&self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
-//         to_generic_mania(self)
-//     }
+    fn to_generic_mania(&self, _params: Self::ToParams) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
+        to_generic_mania(self)
+    }
 
-//     fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
-//         from_generic_mania(skin)
-//     }
+    fn from_generic_mania(skin: &GenericManiaSkin) -> Result<Self::FromReturn, Box<dyn std::error::Error>> {
+        from_generic_mania(skin)
+    }
 
-//     fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
-//         for k in &self.skin_ini.keymodes {
-//             if k.keymode == keymode { return Some(k); }
-//         }
-//         None
-//     }
+    fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
+        for k in &self.skin_ini.keymodes {
+            if k.keymode == keymode { return Some(k); }
+        }
 
-//     fn get_required_texture_paths(&self) -> Vec<StringPattern> {
-//         self.skin_ini.get_required_texture_paths()
-//     }
+        None
+    }
 
-//     fn get_required_sample_paths(&self) -> Vec<StringPattern> {
-//         self.skin_ini.get_required_sample_paths()
-//     }
-// }
+    fn get_required_texture_paths(&self) -> Vec<StringPattern> {
+        self.skin_ini.get_required_texture_paths()
+    }
+
+    fn get_required_sample_paths(&self) -> Vec<StringPattern> {
+        self.skin_ini.get_required_sample_paths()
+    }
+}
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]

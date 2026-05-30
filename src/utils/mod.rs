@@ -7,4 +7,5 @@ pub mod fluxis;
 pub mod math;
 pub mod skin;
 pub mod merge;
+pub mod wasm;
 pub(crate) mod macros;
