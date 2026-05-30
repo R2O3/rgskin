@@ -74,6 +74,11 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                         let offset = receptor_processor.process_once(&texture, |arc| {
                             arc.with_image(|img| dist_from_bottom(img, 0.1)) as i32
                         });
+                        receptor_processor.process_once_void(&texture, |arc| {
+                            arc.data_mut(|img| {
+                                *img = trim_image_vertical(img.clone(), 0.2);
+                            });
+                        });
                         max_additional_offset = max_additional_offset.max(offset);
                         ReceptorUp::new(Some(texture))
                     } else {
@@ -97,6 +102,11 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |tex| {
                             tex.with_image(|img| dist_from_bottom(img, 0.1)) as i32
+                        });
+                        receptor_processor.process_once_void(&texture, |arc| {
+                            arc.data_mut(|img| {
+                                *img = trim_image_vertical(img.clone(), 0.2);
+                            });
                         });
                         max_additional_offset = max_additional_offset.max(offset);
                         ReceptorDown::new(Some(texture))
@@ -502,8 +512,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             })
             .collect();
 
-        let hit_pos = (keymode.layout.hit_position * FluXisDimensions::Y.as_f32()) + (keymode.layout.receptor_offset as f32 - (keymode.layout.hit_position * resize.source.y as f32));
-        
         fluxis_keymodes.push(skin_json::Keymode {
             keymode: key_count,
             receptor_images,
@@ -513,7 +521,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             long_note_body_images,
             long_note_tail_images,
             receptors_first: !keymode.layout.receptor_above_notes,
-            hit_position: ((hit_pos + (keymode.layout.receptor_offset as f32 - hit_pos)) as i32)
+            hit_position: keymode.layout.receptor_offset // TODO: properly caclulate this
                 .clamp(0, FluXisDimensions::Y.as_i32()),
             receptor_offset: keymode.layout.receptor_offset,
             column_width: resize.to_target_x::<u32>(keymode.layout.column_widths

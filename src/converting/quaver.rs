@@ -1,5 +1,6 @@
 use std::sync::{Arc, RwLock};
 
+use crate::utils::quaver::QuaDimensions;
 use crate::{BinaryArcExt, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
 use crate::common::color::Rgba;
@@ -12,7 +13,7 @@ use crate::generic::elements::{
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::sound::{GenericGameplaySounds, ManiaGameplaySounds, Sounds, UISounds};
 use crate::generic::{Gameplay, UI};
-use crate::image_proc::proc::dist_from_bottom;
+use crate::image_proc::proc::{dist_from_bottom, trim_image_vertical};
 use crate::io::texture::{Texture, TextureProcessor};
 use crate::io::Store;
 use crate::skin::generic::{GenericManiaSkin, Keymode, Metadata};
@@ -61,6 +62,11 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                     let offset = receptor_processor.process_once(&texture, |arc| {
                         arc.with_image(|img| dist_from_bottom(img, 0.1)).try_into().unwrap_or(0)
                     });
+                    receptor_processor.process_once_void(&texture, |arc| {
+                        arc.data_mut(|img| {
+                            *img = trim_image_vertical(img.clone(), 0.2);
+                        });
+                    });
                     max_receptor_offset = max_receptor_offset.max(offset);
                     ReceptorUp::new(Some(texture))
                 } else {
@@ -77,6 +83,11 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 if let Some(texture) = textures.get_shared(tex_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
                         arc.with_image(|img| dist_from_bottom(img, 0.1)).try_into().unwrap_or(0)
+                    });
+                    receptor_processor.process_once_void(&texture, |arc| {
+                        arc.data_mut(|img| {
+                            *img = trim_image_vertical(img.clone(), 0.2);
+                        });
                     });
                     max_receptor_offset = max_receptor_offset.max(offset);
                     ReceptorDown::new(Some(texture))
@@ -223,12 +234,21 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
 
     for keymode in &skin.keymodes {
         let mut qua_km = quaver::Keymode::default();
+
+        let min_receptor_height = keymode.receptor_up.iter()
+            .filter_map(|r| r.texture.as_ref())
+            .chain(keymode.receptor_down.iter().filter_map(|r| r.texture.as_ref()))
+            .filter_map(|tex| textures.get_shared(&tex.get_path()))
+            .map(|arc| arc.with_image(|img| img.height()))
+            .map(|h| h as i32)
+            .min()
+            .unwrap_or(0) as f32;
         
         qua_km.keymode = keymode.keymode;
         qua_km.receptors_over_hit_objects = keymode.layout.receptor_above_notes;
-        qua_km.column_size = (keymode.layout.column_widths.get(0).copied().unwrap_or(0.0) * 1366.0) as i32;
+        qua_km.column_size = (keymode.layout.column_widths.get(0).copied().unwrap_or(0.0) * QuaDimensions::X.as_f32()) as i32;
         qua_km.receptor_pos_offset_y = keymode.layout.receptor_offset;
-        qua_km.hit_pos_offset_y = (keymode.layout.hit_position * 768.0) as i32 + qua_km.receptor_pos_offset_y; // todo: fix this shit
+        qua_km.hit_pos_offset_y = (min_receptor_height - (keymode.layout.hit_position * QuaDimensions::Y.as_f32()) * 2.0).abs() as i32;
 
         let q_receptors = qua_km.get_receptors();
         let q_receptors_down = qua_km.get_receptors_down();
