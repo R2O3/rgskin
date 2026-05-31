@@ -22,28 +22,59 @@ macro_rules! def_const_type_enum {
 
         impl $name {
             $(pub const $variant: $crate::StringPattern = $crate::StringPattern::new($val);)+
+        }
 
-            pub const VARIANTS: &'static [$crate::StringPattern] = &[$(Self::$variant),+];
+        impl $crate::ConstTypeEnum for $name {  // re-exported at crate root
+            type Attribute = $crate::common::skin::AssetAttribute;
 
-            pub fn iter_mapped<U, F>(f: F) -> impl Iterator<Item = U>
-            where
-                F: Fn($crate::StringPattern) -> U,
-            {
-                Self::VARIANTS.iter().cloned().map(f)
-            }
+            const VARIANTS: &'static [$crate::StringPattern] = &[$(Self::$variant),+];
 
-            pub fn expand_all<'a>(params: &'a [(&'a str, &'a str)]) -> impl Iterator<Item = String> + 'a {
-                Self::VARIANTS.iter().map(move |p| p.expand(params))
-            }
-
-            pub fn attributes(pattern: &$crate::StringPattern) -> &'static [crate::common::skin::AssetAttribute] {
+            fn attributes(
+                pattern: &$crate::StringPattern,
+            ) -> &'static [Self::Attribute] {
                 match pattern.raw() {
-                    $(
-                        $val => &[ $($( $attr ),*)? ],
-                    )+
+                    $($val => &[ $($( $attr ),*)? ],)+
                     _ => &[],
                 }
             }
         }
     };
+}
+
+pub trait ConstTypeEnum {
+    type Attribute: 'static;
+
+    const VARIANTS: &'static [crate::StringPattern];
+
+    fn attributes(pattern: &crate::StringPattern) -> &'static [Self::Attribute];
+
+    fn has_attribute(pattern: &crate::StringPattern, attr: &Self::Attribute) -> bool
+    where
+        Self::Attribute: PartialEq,
+    {
+        Self::attributes(pattern).contains(attr)
+    }
+
+    fn find_attribute<F>(
+        pattern: &crate::StringPattern,
+        pred: F,
+    ) -> Option<&'static Self::Attribute>
+    where
+        F: Fn(&Self::Attribute) -> bool,
+    {
+        Self::attributes(pattern).iter().find(|a| pred(a))
+    }
+
+    fn iter_mapped<U, F>(f: F) -> impl Iterator<Item = U>
+    where
+        F: Fn(crate::StringPattern) -> U,
+    {
+        Self::VARIANTS.iter().cloned().map(f)
+    }
+
+    fn expand_all<'a>(
+        params: &'a [(&'a str, &'a str)],
+    ) -> impl Iterator<Item = String> + 'a {
+        Self::VARIANTS.iter().map(move |p| p.expand(params))
+    }
 }

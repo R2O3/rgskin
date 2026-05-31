@@ -1,7 +1,9 @@
-use std::sync::Arc;
+use std::sync::{Arc, RwLock};
 
+use crate::common::skin::AssetAttribute;
+use crate::quaver::static_assets;
 use crate::utils::quaver::QuaDimensions;
-use crate::{BinaryArcExt, quaver};
+use crate::{Binary, BinaryArcExt, ConstTypeEnum, Resources, StringPattern, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
 use crate::common::color::Rgba;
 use crate::common::vector::Vector3;
@@ -182,22 +184,35 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
     let ui = UI {
         cursor: Cursor {
-            texture: textures.get_shared("cursor").or_else(|| Some(blank_texture.clone())),
+            texture: textures.get_shared(&static_assets::Cursor::MAIN_CURSOR)
+            .or_else(|| {
+                let bytes = Resources::cursor("qua_cursor.png") // osu!stable cursor sucks
+                    .expect("Failed to load cursor texture");
+                let tex = Texture::from_bytes(
+                    static_assets::Cursor::MAIN_CURSOR.to_string(),
+                    &bytes
+                ).ok()?;
+                Some(Arc::new(RwLock::new(tex)))
+            }),
             centered: skin.skin_ini.general.center_cursor,
         }
     };
 
+    fn get_anchor<T: ConstTypeEnum<Attribute = AssetAttribute>>(pattern: StringPattern) -> Anchor {
+        T::find_attribute(&pattern, |a| a.as_anchor().is_some())
+            .and_then(AssetAttribute::as_anchor)
+            .unwrap_or(Anchor::TopLeft)
+    }
 
-    // TODO: use static_assets for alignments
     let gameplay = Gameplay {
         health_bar: Healthbar::new(None, None),
         judgement: Judgement::new(None, None, None, None, None, None),
         layout: HUDLayout {
-            combo: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: Anchor::TopLeft, origin: Origin::TopLeft }),
+            combo: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: get_anchor::<static_assets::Numbers>(static_assets::Numbers::COMBO), origin: Origin::TopLeft }),
             rating: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: Anchor::TopLeft, origin: Origin::TopLeft }),
-            accuracy: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: Anchor::TopLeft, origin: Origin::TopLeft }),
+            accuracy: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: Anchor::TopRight, origin: Origin::TopLeft }),
             score: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: Anchor::TopLeft, origin: Origin::TopLeft }),
-            judgement: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: Anchor::TopLeft, origin: Origin::TopLeft }),
+            judgement: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: get_anchor::<static_assets::Judgements>(static_assets::Judgements::MARV), origin: Origin::TopLeft }),
         },
     };
 
@@ -234,15 +249,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
 
     for keymode in &skin.keymodes {
         let mut qua_km = quaver::Keymode::default();
-
-        let min_receptor_height = keymode.receptor_up.iter()
-            .filter_map(|r| r.texture.as_ref())
-            .chain(keymode.receptor_down.iter().filter_map(|r| r.texture.as_ref()))
-            .filter_map(|tex| textures.get_shared(&tex.get_path()))
-            .map(|arc| arc.with_image(|img| img.height()))
-            .map(|h| h as i32)
-            .min()
-            .unwrap_or(0) as f32;
         
         qua_km.keymode = keymode.keymode;
         qua_km.receptors_over_hit_objects = keymode.layout.receptor_above_notes;

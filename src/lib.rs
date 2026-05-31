@@ -30,6 +30,7 @@ pub use common::traits;
 
 pub(crate) use resources::Resources;
 pub(crate) use io::StringPattern;
+pub(crate) use common::macros::ConstTypeEnum;
 
 pub mod prelude {
     pub use crate::GenericManiaSkin;
