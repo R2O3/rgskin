@@ -2,7 +2,7 @@ use std::sync::{Arc, RwLock};
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
-use crate::extensions::TextureArcExt;
+use crate::extensions::{TextureArcExt, VecExtensions};
 use crate::generic::{sound::*, UI};
 use crate::image_proc::{generate_stage_background, to_osu_column, to_osu_column_draw};
 use crate::osu::static_assets;
@@ -38,7 +38,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
     for keymode in &skin.skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
-        let average_column_width = keymode.column_width.iter().sum::<f32>() / keymode.column_width.len() as f32;
+        let average_column_width = keymode.column_width.average().unwrap_or(0.0);
         let mut max_receptor_offset = 0;
 
         let fallbacks = keymode.get_fallbacks();
@@ -209,7 +209,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         };
 
         let stage_texture = Texture::with_data("stage_bg".to_string(),
-            generate_stage_background(keymode.colours.clone(), (layout.average_column_width() as f32 * OsuDimensions::X.as_f32()) as u32)
+            generate_stage_background(keymode.colours.clone(), (layout.column_widths.average().unwrap_or(0.0) as f32 * OsuDimensions::X.as_f32()) as u32)
         );
         let stage_background = textures.insert(stage_texture);
 
@@ -378,7 +378,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
     let mut tail_processor = TextureProcessor::<()>::new();
 
     for keymode in &skin.keymodes {
-        let average_column_width = keymode.layout.average_column_width();
+        let average_column_width = keymode.layout.column_widths.average().unwrap_or(0.0);
         let receptor_offset = keymode.layout.receptor_offset;
 
         let receptor_images: Vec<String> = keymode.receptor_up
@@ -550,7 +550,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
 
         let source_aspect_ratio = resize.source.y as f32 / resize.source.x as f32;
         let playfield_pos = (OsuDimensions::Y.as_f32() / source_aspect_ratio) * keymode.layout.x_offset;
-        let column_width = resize.to_target_x::<f32>(keymode.layout.average_column_width());
+        let column_width = resize.to_target_x::<f32>(keymode.layout.column_widths.average().unwrap_or(0.0));
         let playfield_width = column_width * keymode.keymode as f32;
 
         let osu_keymode = osu::Keymode {

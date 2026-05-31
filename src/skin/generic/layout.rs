@@ -1,5 +1,6 @@
 use crate::common::alignment::*;
 use crate::common::vector::*;
+use crate::extensions::VecExtensions;
 
 #[derive(Clone)]
 pub struct KeymodeLayout {
@@ -20,14 +21,4 @@ pub struct HUDLayout {
     pub accuracy: (Vector3<f32>, Alignment),
     pub score: (Vector3<f32>, Alignment),
     pub judgement: (Vector3<f32>, Alignment),
-}
-
-impl KeymodeLayout {
-    pub fn average_column_width(&self) -> f32 {
-        self.column_widths.iter().sum::<f32>() / (self.column_widths.len() as f32)
-    }
-
-    pub fn average_column_spacing(&self) -> f32 {
-        self.column_spacing.iter().sum::<f32>() / (self.column_spacing.len() as f32)
-    }
 }

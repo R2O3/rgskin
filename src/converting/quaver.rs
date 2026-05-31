@@ -5,7 +5,7 @@ use crate::{BinaryArcExt, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
 use crate::common::color::Rgba;
 use crate::common::vector::Vector3;
-use crate::extensions::TextureArcExt;
+use crate::extensions::{TextureArcExt, VecExtensions};
 use crate::generic::elements::{
     ColumnLighting, Cursor, Healthbar, HitLighting, Judgement, JudgementLine, LongNoteBody,
     LongNoteHead, LongNoteTail, NormalNote, ReceptorDown, ReceptorUp, Stage,
@@ -246,9 +246,9 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
         
         qua_km.keymode = keymode.keymode;
         qua_km.receptors_over_hit_objects = keymode.layout.receptor_above_notes;
-        qua_km.column_size = (keymode.layout.column_widths.get(0).copied().unwrap_or(0.0) * QuaDimensions::X.as_f32()) as i32;
+        qua_km.column_size = (keymode.layout.column_widths.average().unwrap_or(0.0) * QuaDimensions::X.as_f32()).round() as i32;
         qua_km.receptor_pos_offset_y = keymode.layout.receptor_offset;
-        qua_km.hit_pos_offset_y = (min_receptor_height - (keymode.layout.hit_position * QuaDimensions::Y.as_f32()) * 2.0).abs() as i32;
+        qua_km.hit_pos_offset_y = (qua_km.column_size as f32 - (keymode.layout.hit_position * QuaDimensions::Y.as_f32())).abs() as i32;
 
         let q_receptors = qua_km.get_receptors();
         let q_receptors_down = qua_km.get_receptors_down();
