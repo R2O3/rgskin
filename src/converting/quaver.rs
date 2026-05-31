@@ -1,4 +1,4 @@
-use std::sync::{Arc, RwLock};
+use std::sync::Arc;
 
 use crate::utils::quaver::QuaDimensions;
 use crate::{BinaryArcExt, quaver};
@@ -283,7 +283,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
 
     skin_ini.keymodes = qua_keymodes;
 
-    // cleanup_stores(&skin_ini, Some(&mut textures), Some(&mut samples));
+    cleanup_stores(&skin_ini, Some(&mut textures), Some(&mut samples));
 
     Ok(QuaSkin::new(
         skin_ini,

@@ -4,25 +4,20 @@ use crate::{sample::SampleStore, texture::TextureStore, traits::{LaneType, SkinC
 
 // TODO: add method for generating mipmaps for textures (for osu)
 // TODO: add ensure_textures to add textures from skin elements in here without manual adding them
-// TODO: use StringPattern for cleanup_stores
 
 pub fn cleanup_stores<T: SkinConfig>(config: &T, textures: Option<&mut TextureStore>, samples: Option<&mut SampleStore>) {
-    if samples.is_some() {
-        let req_sample_paths: HashSet<_> = config.get_required_sample_paths().iter()
-        .map(|p| p.to_lowercase())
-        .collect();
+    if let Some(samples) = samples {
+        let sample_paths = config.get_required_sample_paths();
+        let req_sample_paths: HashSet<_> = sample_paths.iter().collect();
 
-        samples.unwrap()
-        .retain(|t| req_sample_paths.contains(&t.get_path().to_lowercase()));
+        samples.retain(|t| req_sample_paths.iter().any(|p| p.matches_path(&t.path)));
     }
 
-    if textures.is_some() {
-        let req_texture_paths: HashSet<_> = config.get_required_texture_paths().iter()
-        .map(|p| p.to_lowercase())
-        .collect();
+    if let Some(textures) = textures {
+        let texture_paths = config.get_required_texture_paths(); // owned, kept alive
+        let req_texture_paths: HashSet<_> = texture_paths.iter().collect();
 
-        textures.unwrap()
-        .retain(|t| req_texture_paths.contains(&t.get_path().to_lowercase()));
+        textures.retain(|t| req_texture_paths.iter().any(|p| p.matches_path(&t.get_path())));
     }
 }
 
