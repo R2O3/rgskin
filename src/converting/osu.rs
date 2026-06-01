@@ -319,6 +319,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 Some(Arc::new(RwLock::new(tex)))
             }),
             centered: skin.skin_ini.general.cursor_centre.clone(),
+            rotate: skin.skin_ini.general.cursor_rotate.clone()
         }
     };
 
@@ -373,7 +374,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         author: skin.metadata.creator.clone(),
         version: skin.metadata.version.clone(),
         cursor_centre: skin.ui.cursor.centered,
-        cursor_rotate: false, // hell no
+        cursor_rotate: skin.ui.cursor.rotate,
         cursor_expand: true, // TODO: change this when adding quaver later
         ..Default::default()
     };

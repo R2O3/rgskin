@@ -199,6 +199,7 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 Some(Arc::new(RwLock::new(tex)))
             }),
             centered: skin.skin_ini.general.center_cursor,
+            rotate: false
         }
     };
 

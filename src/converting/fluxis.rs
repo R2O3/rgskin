@@ -369,6 +369,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 ).expect("Failed to load cursor texture")
             ))),
             centered: false,
+            rotate: false
         }
     };
 

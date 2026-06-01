@@ -69,10 +69,10 @@ macro_rules! skin_element {
                 Self {
                     $primary: $primary.map(|t| Arc::new(RwLock::new(t))),
                     $($extra: $extra.map(|t| Arc::new(RwLock::new(t))),)*
-                    $( $attr)*
+                    $($attr,)*
                 }
             }
-            
+
             pub fn from_path(
                 $primary: Option<String>
                 $(, $extra: Option<String>)*
@@ -81,7 +81,7 @@ macro_rules! skin_element {
                 Self {
                     $primary: $primary.map(|p| Arc::new(RwLock::new(Texture::new(p)))),
                     $($extra: $extra.map(|p| Arc::new(RwLock::new(Texture::new(p)))),)*
-                    $( $attr)*
+                    $($attr,)*
                 }
             }
             
@@ -150,4 +150,4 @@ skin_element!(ColumnLighting);
 skin_element!(JudgementLine; texture; color: Rgba);
 skin_element!(Judgement; flawless, perfect, great, good, bad, miss);
 skin_element!(Stage; background, border_right, border_left);
-skin_element!(Cursor; texture; centered: bool);
+skin_element!(Cursor; texture; centered: bool, rotate: bool);
