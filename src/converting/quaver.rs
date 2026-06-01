@@ -156,9 +156,9 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             receptor_above_notes: keymode.receptors_over_hit_objects,
             show_judgement_line: false,
             x_offset: 0.5,
-            hit_position: 1.0 - (keymode.hit_pos_offset_y as f32 / 768.0),
+            hit_position: 1.0 - (keymode.hit_pos_offset_y as f32 / QuaDimensions::Y.as_f32()),
             receptor_offset: (keymode.receptor_pos_offset_y + max_receptor_offset as i32),
-            column_widths: vec![keymode.column_size as f32 / 1366.0; key_count],
+            column_widths: vec![keymode.column_size as f32 / QuaDimensions::X.as_f32(); key_count],
             column_spacing: vec![0.0; key_count],
         };
 

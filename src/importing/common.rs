@@ -69,7 +69,6 @@ pub fn pair_at2x_files<'a>(
                 hires,
                 lores,
             },
-            // If only one resolution exists (whether it's @2x or normal), load it as plain
             (Some(bytes), None) | (None, Some(bytes)) => TextureEntry::Plain {
                 path: canonical.to_string(),
                 bytes,

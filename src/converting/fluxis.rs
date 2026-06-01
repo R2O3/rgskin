@@ -5,7 +5,7 @@ use image::{GenericImageView, ImageBuffer};
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
-use crate::extensions::TextureArcExt;
+use crate::extensions::{TextureArcExt, VecExtensions};
 use crate::fluxis::static_assets;
 use crate::generic::{sound::*, Gameplay, Keymode, Metadata, UI};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
@@ -528,9 +528,9 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             hit_position: keymode.layout.receptor_offset // TODO: properly caclulate this
                 .clamp(0, FluXisDimensions::Y.as_i32()),
             receptor_offset: keymode.layout.receptor_offset,
-            column_width: resize.to_target_x::<u32>(keymode.layout.column_widths
-                .get(0).copied()
-                .unwrap_or(0.0)),
+            column_width: (keymode.layout.column_widths
+                .average()
+                .unwrap_or(0.0) * FluXisDimensions::X.as_f32()) as u32,
             tint_notes: false,
             tint_lns: false,
             tint_receptors: false,

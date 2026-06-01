@@ -393,8 +393,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
                         receptor_processor.process_once_void(texture_arc, |arc_texture| {
                             if let Err(e) = to_osu_column(
                                 arc_texture,
-                                resize.from_target_x::<u32>(average_column_width),
-                                receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
+                                (average_column_width * OsuDimensions::X.as_f32()) as u32,
+                                receptor_offset.clamp(0, OsuDimensions::Y.as_i32()) as u32
                             ) {
                                 eprintln!("Failed to process receptor up texture: {}", e);
                             }
@@ -413,8 +413,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
                         receptor_processor.process_once_void(texture_arc, |arc_texture| {
                             if let Err(e) = to_osu_column(
                                 arc_texture,
-                                resize.from_target_x::<u32>(average_column_width),
-                                receptor_offset.clamp(0, OsuDimensions::X.as_i32()) as u32
+                                (average_column_width * OsuDimensions::X.as_f32()) as u32,
+                                receptor_offset.clamp(0, OsuDimensions::Y.as_i32()) as u32
                             ) {
                                 eprintln!("Failed to process receptor down texture: {}", e);
                             }
@@ -562,11 +562,11 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         let osu_keymode = osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
-            hit_position: ((1.0 - keymode.layout.hit_position) * resize.target.y as f32) as u32,
+            hit_position: ((1.0 - keymode.layout.hit_position) * OsuDimensions::Y.as_f32()) as u32,
             column_start: (playfield_pos - playfield_width / 2.0),
             column_width: keymode.layout.column_widths
                 .iter()
-                .map(|cw| (resize.to_target_x::<f32>(*cw)))
+                .map(|cw| *cw * OsuDimensions::X.as_f32())
                 .collect(),
             column_spacing: keymode.layout.column_spacing.clone(),
             column_line_width: vec![0.0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
