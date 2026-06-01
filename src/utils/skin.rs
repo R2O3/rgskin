@@ -1,9 +1,8 @@
-use std::collections::HashSet;
+use std::{collections::HashSet, sync::{Arc, RwLock}, marker::PhantomData};
 
-use crate::{sample::SampleStore, texture::TextureStore, traits::{LaneType, SkinConfig}, Binary, Store};
+use crate::{Binary, Store, StringPattern, sample::SampleStore, texture::TextureStore, traits::{LaneType, SkinConfig}};
 
 // TODO: add method for generating mipmaps for textures (for osu)
-// TODO: add ensure_textures to add textures from skin elements in here without manual adding them
 
 pub fn cleanup_stores<T: SkinConfig>(config: &T, textures: Option<&mut TextureStore>, samples: Option<&mut SampleStore>) {
     if let Some(samples) = samples {
@@ -45,6 +44,34 @@ pub fn get_lane_type(keymode: u8, idx: usize) -> LaneType {
             LaneType::Primary
         } else {
             LaneType::Secondary
+        }
+    }
+}
+
+
+
+
+pub struct StoreRelocator<'a, T: 'static, S: Store<T>> {
+    store: &'a mut S,
+    _phantom: PhantomData<T>,
+}
+
+impl<'a, T: 'static, S: Store<T>> StoreRelocator<'a, T, S> {
+    pub fn new(store: &'a mut S) -> Self {
+        StoreRelocator { store, _phantom: PhantomData }
+    }
+
+    pub fn reloc_arc_lock<U: Binary>(&mut self, item: &Option<Arc<RwLock<U>>>, target_path: StringPattern) {
+        if let Some(texture_arc) = item {
+            let guard = texture_arc.read().unwrap();
+            let path = guard.get_path();
+            self.store.copy(path, &target_path);
+        }
+    }
+
+    pub fn reloc_str(&mut self, item: &Option<String>, target_path: StringPattern) {
+        if let Some(item_path) = item {
+            self.store.copy(item_path, &target_path);
         }
     }
 }

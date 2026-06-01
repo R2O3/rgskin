@@ -883,7 +883,7 @@ impl Keymode {
             .map(|lane| {
                 pattern_str
                     .replace("{keys}", &keys_str)
-                    .replace("{note}", &lane.to_string())
+                    .replace("{lane}", &lane.to_string())
             })
             .collect()
     }
@@ -895,7 +895,7 @@ impl Keymode {
         let saturate = |pattern: &StringPattern| -> String {
             pattern.raw()
                 .replace("{keys}", &keys_str)
-                .replace("{note}", &lane_str)
+                .replace("{lane}", &lane_str)
         };
 
         LaneFallback {

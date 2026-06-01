@@ -32,20 +32,20 @@ def_const_type_enum!(pub Lighting => StringPattern {
 });
 
 def_const_type_enum!(pub Notes => StringPattern {
-    HIT_OBJECT => "{keys}k/HitObjects/note-hitobject-{note}" [
+    HIT_OBJECT => "{keys}k/HitObjects/note-hitobject-{lane}" [
         AssetAttribute::Texture, 
         AssetAttribute::Alignment(Anchor::TopLeft)
     ],
-    HOLD_HIT_OBJECT => "{keys}k/HitObjects/note-holdhitobject-{note}" [
+    HOLD_HIT_OBJECT => "{keys}k/HitObjects/note-holdhitobject-{lane}" [
         AssetAttribute::Texture, 
         AssetAttribute::Alignment(Anchor::TopLeft)
     ],
-    HOLD_BODY => "{keys}k/HitObjects/note-holdbody-{note}" [
+    HOLD_BODY => "{keys}k/HitObjects/note-holdbody-{lane}" [
         AssetAttribute::Texture, 
         AssetAttribute::Animatable(AnimationSpriteType::SpriteSheet), 
         AssetAttribute::Alignment(Anchor::TopLeft)
     ],
-    HOLD_END => "{keys}k/HitObjects/note-holdend-{note}" [
+    HOLD_END => "{keys}k/HitObjects/note-holdend-{lane}" [
         AssetAttribute::Texture, 
         AssetAttribute::Alignment(Anchor::TopLeft)
     ],
@@ -60,11 +60,11 @@ def_const_type_enum!(pub Notes => StringPattern {
 });
 
 def_const_type_enum!(pub Receptors => StringPattern {
-    UP => "{keys}k/Receptors/receptor-up-{note}" [
+    UP => "{keys}k/Receptors/receptor-up-{lane}" [
         AssetAttribute::Texture, 
         AssetAttribute::Alignment(Anchor::TopLeft)
     ],
-    DOWN => "{keys}k/Receptors/receptor-down-{note}" [
+    DOWN => "{keys}k/Receptors/receptor-down-{lane}" [
         AssetAttribute::Texture, 
         AssetAttribute::Alignment(Anchor::TopLeft)
     ],

@@ -20,6 +20,9 @@ exclude = [
     "package.json"
 ]
 
+[workspace]
+members = ["rgskin_derive"]
+
 [lib]
 crate-type = ["cdylib", "rlib"]
 doctest = false # TODO: re add doctest when we have better docs
@@ -30,6 +33,7 @@ node = []
 browser = []
 
 [dependencies]
+rgskin_derive = { path = "rgskin_derive" }
 include_dir = "0.7.4"
 num-traits = "0.2.19"
 paste = "1.0.15"

@@ -28,7 +28,7 @@ use crate::skin::fluxis::{
 use crate::traits::{KeymodeInvariant, ManiaSkin};
 use crate::utils::fluxis::FluXisDimensions;
 use crate::utils::math::Resizer;
-use crate::utils::skin::cleanup_stores;
+use crate::utils::skin::{StoreRelocator, cleanup_stores};
 use crate::{Binary, BinaryArcExt, BinaryArcExtOption, GenericManiaSkin, Resources};
 
 pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -389,7 +389,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
         },
     };
 
-    Ok(GenericManiaSkin {
+    let mut generic_skin = GenericManiaSkin {
         resolution: skin.resolution,
         sounds,
         metadata,
@@ -398,7 +398,11 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
         keymodes,
         textures,
         samples
-    })
+    };
+
+    generic_skin.ensure_textures();
+
+    Ok(generic_skin)
 }
 
 pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXisLayout), Box<dyn std::error::Error>> {
@@ -549,29 +553,15 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         snap_colors: SnapColors::default(),
     };
 
-    if let Some(flawless_arc) = &skin.gameplay.judgement.flawless {
-        textures.copy(&flawless_arc.get_path(), &static_assets::Judgement::FLAWLESS);
-    }
+    let mut tr = StoreRelocator::new(&mut textures);
+    let mut sr = StoreRelocator::new(&mut samples);
 
-    if let Some(perfect_arc) = &skin.gameplay.judgement.perfect {
-        textures.copy(&perfect_arc.get_path(), &static_assets::Judgement::PERFECT);
-    }
-
-    if let Some(great_arc) = &skin.gameplay.judgement.great {
-        textures.copy(&great_arc.get_path(), &static_assets::Judgement::GREAT);
-    }
-
-    if let Some(good_arc) = &skin.gameplay.judgement.good {
-        textures.copy(&good_arc.get_path(), &static_assets::Judgement::ALRIGHT);
-    }
-
-    if let Some(bad_arc) = &skin.gameplay.judgement.bad {
-        textures.copy(&bad_arc.get_path(), &static_assets::Judgement::OKAY);
-    }
-
-    if let Some(miss_arc) = &skin.gameplay.judgement.miss {
-        textures.copy(&miss_arc.get_path(), &static_assets::Judgement::MISS);
-    }
+    tr.reloc_arc_lock(&skin.gameplay.judgement.flawless, static_assets::Judgement::FLAWLESS);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.perfect, static_assets::Judgement::PERFECT);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.great, static_assets::Judgement::GREAT);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.good, static_assets::Judgement::ALRIGHT);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.bad, static_assets::Judgement::OKAY);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.miss, static_assets::Judgement::MISS);
     
     let default_keymode = skin.get_keymode(4).unwrap_or(skin.keymodes.first().unwrap());
 
@@ -598,37 +588,15 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
 
     skin_json.sync_overrides_from_keymodes();
 
-    if let Some(s) = &skin.sounds.ui.menu_back_click {
-        samples.copy(s, &static_assets::Samples::UI_BACK);
-    }
-    
-    if let Some(s) = &skin.sounds.ui.ui_click {
-        samples.copy(s, &static_assets::Samples::UI_CLICK);
-    }
-    
-    if let Some(s) = &skin.sounds.ui.ui_select {
-        samples.copy(s, &static_assets::Samples::UI_SELECT);
-    }
-    
-    if let Some(s) = &skin.sounds.ui.ui_hover {
-        samples.copy(s, &static_assets::Samples::UI_HOVER);
-    }
-    
-    if let Some(s) = &skin.sounds.gameplay.miss {
-        samples.copy(s, &static_assets::Samples::GAMEPLAY_MISS);
-    }
-    
-    if let Some(s) = &skin.sounds.gameplay.fail {
-        samples.copy(s, &static_assets::Samples::GAMEPLAY_FAIL);
-    }
-    
-    if let Some(s) = &skin.sounds.gameplay.restart {
-        samples.copy(s, &static_assets::Samples::GAMEPLAY_RESTART);
-    }
-    
-    if let Some(s) = &skin.sounds.mania.hit {
-        samples.copy(s, &static_assets::Samples::GAMEPLAY_HIT);
-    }
+
+    sr.reloc_str(&skin.sounds.ui.menu_back_click, static_assets::Samples::UI_BACK);
+    sr.reloc_str(&skin.sounds.ui.ui_click, static_assets::Samples::UI_CLICK);
+    sr.reloc_str(&skin.sounds.ui.ui_select, static_assets::Samples::UI_SELECT);
+    sr.reloc_str(&skin.sounds.ui.ui_hover, static_assets::Samples::UI_HOVER);
+    sr.reloc_str(&skin.sounds.gameplay.miss, static_assets::Samples::GAMEPLAY_MISS);
+    sr.reloc_str(&skin.sounds.gameplay.fail, static_assets::Samples::GAMEPLAY_FAIL);
+    sr.reloc_str(&skin.sounds.gameplay.restart, static_assets::Samples::GAMEPLAY_RESTART);
+    sr.reloc_str( &skin.sounds.mania.hit , static_assets::Samples::GAMEPLAY_HIT);
 
     if let Some(preview) = generate_fluxis_preview(&skin_json, &textures, 512, 512).ok() {
         textures.insert(Texture::with_data("icon".to_string(), preview));

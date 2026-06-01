@@ -1,11 +1,9 @@
 use merge::Merge;
+use rgskin_derive::merge_for_all;
+use crate::generic::elements::Cursor;
 
-use crate::{derive_merge_for_all, generic::elements::Cursor};
-
-derive_merge_for_all! {
-    strategy = crate::utils::merge::any::overwrite;
-    #[derive(Clone, Merge)]
-    pub struct UI {
-        pub cursor: Cursor,
-    }
+#[merge_for_all(strategy = crate::utils::merge::any::overwrite)]
+#[derive(Clone, Merge)]
+pub struct UI {
+    pub cursor: Cursor,
 }

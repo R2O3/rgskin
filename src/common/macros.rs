@@ -41,6 +41,7 @@ macro_rules! def_const_type_enum {
     };
 }
 
+#[allow(unused)]
 pub trait ConstTypeEnum {
     type Attribute: 'static;
 

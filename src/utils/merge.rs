@@ -1,3 +1,7 @@
+pub fn skip<T>(_left: &mut T, _right: T) {
+    // I don't think merge crate has a skip "strategy"
+}
+
 pub mod any {
     pub fn overwrite<T>(left: &mut T, right: T) {
         *left = right;

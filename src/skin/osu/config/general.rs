@@ -2,53 +2,52 @@ use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-use crate::{derive_merge_for_all, utils::serde::{
+use crate::{utils::serde::{
     add_key_value, parse_bool, parse_key_value_eq, parse_u16_list, serialize_bool, serialize_u16_slice
 }};
+use rgskin_derive::merge_for_all;
 
-derive_merge_for_all! {
-    strategy = crate::utils::merge::any::overwrite;
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-    #[derive(Clone, Debug, Merge)]
-    pub struct General {
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        #[merge(skip)]
-        pub name: String,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        #[merge(skip)]
-        pub author: String,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        #[merge(skip)]
-        pub version: String,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub animation_framerate: i16,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub allow_slider_ball_tint: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub combo_burst_random: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub cursor_centre: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub cursor_expand: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub cursor_rotate: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub cursor_trail_rotate: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub custom_combo_burst_sounds: Vec<u16>,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub hit_circle_overlay_above_number: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub layered_hit_sounds: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub slider_ball_flip: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub spinner_fade_playfield: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub spinner_frequency_modulate: bool,
-        #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
-        pub spinner_no_blink: bool,
-    }
+#[merge_for_all(strategy = crate::utils::merge::any::overwrite)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[derive(Clone, Debug, Merge)]
+pub struct General {
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[merge(skip)]
+    pub name: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[merge(skip)]
+    pub author: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[merge(skip)]
+    pub version: String,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub animation_framerate: i16,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub allow_slider_ball_tint: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub combo_burst_random: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub cursor_centre: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub cursor_expand: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub cursor_rotate: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub cursor_trail_rotate: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub custom_combo_burst_sounds: Vec<u16>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub hit_circle_overlay_above_number: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub layered_hit_sounds: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub slider_ball_flip: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub spinner_fade_playfield: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub spinner_frequency_modulate: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    pub spinner_no_blink: bool,
 }
 
 impl Default for General {

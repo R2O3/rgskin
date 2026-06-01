@@ -77,6 +77,12 @@ pub trait Store<T: 'static>: Debug {
         self.map_mut().insert(path, arc.clone());
         arc
     }
+
+    fn insert_shared(&mut self, arc: Arc<RwLock<T>>) -> Arc<RwLock<T>> {
+        let path = normalize(Self::get_item_path(&*arc.read().unwrap()));
+        self.map_mut().insert(path, arc.clone());
+        arc
+    }
     
     fn get(&self, path: &str) -> Option<std::sync::RwLockReadGuard<'_, T>> {
         let normalized = normalize(path);

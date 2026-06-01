@@ -1,15 +1,12 @@
 use merge::Merge;
+use rgskin_derive::merge_for_all;
 
-use crate::derive_merge_for_all;
-
-derive_merge_for_all! {
-    strategy = crate::utils::merge::any::overwrite;
-    #[derive(Clone, Merge)]
-    pub struct Metadata {
-        pub name: String,
-        pub creator: String,
-        pub version: String,
-    }
+#[merge_for_all(strategy = crate::utils::merge::skip)]
+#[derive(Clone, Merge)]
+pub struct Metadata {
+    pub name: String,
+    pub creator: String,
+    pub version: String,
 }
 
 impl Default for Metadata {

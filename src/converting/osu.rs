@@ -338,8 +338,8 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             hit: samples.get_shared(&static_assets::Samples::DRUM_HITNORMAL).get_path()
         },
     };
-    
-    Ok(GenericManiaSkin {
+
+    let mut generic_skin = GenericManiaSkin {
         resolution: skin.resolution,
         sounds,
         metadata,
@@ -348,7 +348,11 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         keymodes,
         textures,
         samples
-    })
+    };
+
+    generic_skin.ensure_textures();
+    
+    Ok(generic_skin)
 }
 
 pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn std::error::Error>> {
@@ -471,6 +475,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
                 textures.insert(texture.take_texture());
             }
         }
+
+        // todo: use new store relocator
 
         // these wouldn't be present in other skins
         if !textures.contains(&static_assets::Interface::STAR) {

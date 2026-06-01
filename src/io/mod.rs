@@ -1,6 +1,7 @@
 pub mod texture;
 pub mod sample;
 pub mod node;
+pub mod traits;
 mod string_pattern;
 mod store;
 mod binary;

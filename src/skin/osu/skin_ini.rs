@@ -9,7 +9,7 @@ use crate::osu::static_assets;
 use crate::skin::osu::Keymode;
 use crate::skin::osu::General;
 use crate::ini::from_ini;
-use crate::{StringPattern, utils};
+use crate::{ConstTypeEnum, StringPattern, utils};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Default, Merge)]

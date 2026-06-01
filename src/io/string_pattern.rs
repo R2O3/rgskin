@@ -51,6 +51,12 @@ impl From<String> for StringPattern {
     }
 }
 
+impl From<&String> for StringPattern {
+    fn from(s: &String) -> Self {
+        Self(Cow::Owned(s.clone()))
+    }
+}
+
 impl From<StringPattern> for String {
     fn from(p: StringPattern) -> Self { p.0.to_string() }
 }

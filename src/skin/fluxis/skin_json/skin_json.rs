@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 use indexmap::IndexMap;
 use std::str::FromStr;
 use crate::{
-    StringPattern, common::traits::{ManiaSkinConfig, SkinConfig}, fluxis::{skin_json::{
+    ConstTypeEnum, StringPattern, common::traits::{ManiaSkinConfig, SkinConfig}, fluxis::{skin_json::{
         colors::{JudgementColors, SnapColors},
         info::Info,
         keymode::{Keymode, Keymodes},

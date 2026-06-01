@@ -1,7 +1,7 @@
 use std::sync::{Arc, RwLock};
 
 use crate::common::skin::AssetAttribute;
-use crate::quaver::static_assets;
+use crate::quaver::{dynamic_assets, static_assets};
 use crate::utils::quaver::QuaDimensions;
 use crate::{Binary, BinaryArcExt, ConstTypeEnum, Resources, StringPattern, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
@@ -22,7 +22,7 @@ use crate::skin::generic::{GenericManiaSkin, Keymode, Metadata};
 use crate::skin::quaver::skin::QuaSkin;
 use crate::skin::quaver::QuaSkinIni;
 use crate::traits::KeymodeInvariant;
-use crate::utils::skin::cleanup_stores;
+use crate::utils::skin::{StoreRelocator, cleanup_stores};
 
 pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
@@ -177,7 +177,11 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             },
             column_lighting: ColumnLighting { texture: Some(Arc::clone(&blank_texture)) },
             judgement_line: JudgementLine { texture: Some(Arc::clone(&blank_texture)), color: Rgba::default() },
-            stage: Stage::new(None, None, None),
+            stage: Stage::new(
+                textures.get_shared(&keymode.get_generic(dynamic_assets::Stage::BG_MASK, 0)),
+                 textures.get_shared(&keymode.get_generic(dynamic_assets::Stage::RIGHT_BORDER, 0)),
+                 textures.get_shared(&keymode.get_generic(dynamic_assets::Stage::LEFT_BORDER, 0))
+                ),
             fallbacks,
         });
     }
@@ -222,7 +226,7 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         mania: ManiaGameplaySounds { hit: None },
     };
 
-    Ok(GenericManiaSkin {
+    let mut generic_skin = GenericManiaSkin {
         resolution: skin.resolution,
         sounds,
         metadata,
@@ -231,7 +235,11 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         keymodes,
         textures,
         samples,
-    })
+    };
+
+    generic_skin.ensure_textures();
+
+    Ok(generic_skin)
 }
 
 pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn std::error::Error>> {
@@ -263,27 +271,33 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
         let q_ln_bodies = qua_km.get_long_note_bodies();
         let q_ln_tails = qua_km.get_long_note_tails();
 
+        let mut tr = StoreRelocator::new(&mut textures);
+
         for i in 0..(keymode.keymode as usize) {
             if let Some(r) = keymode.receptor_up.get(i) {
-                if let Some(tex) = &r.texture { textures.copy(&tex.get_path(), &q_receptors[i]); }
+                tr.reloc_arc_lock(&r.texture, StringPattern::from(&q_receptors[i]));
             }
             if let Some(r) = keymode.receptor_down.get(i) {
-                if let Some(tex) = &r.texture { textures.copy(&tex.get_path(), &q_receptors_down[i]); }
+                tr.reloc_arc_lock(&r.texture, StringPattern::from(&q_receptors_down[i]));
             }
             if let Some(n) = keymode.normal_note.get(i) {
-                if let Some(tex) = &n.texture { textures.copy(&tex.get_path(), &q_normal_notes[i]); }
+                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_normal_notes[i]));
             }
             if let Some(n) = keymode.long_note_head.get(i) {
-                if let Some(tex) = &n.texture { textures.copy(&tex.get_path(), &q_ln_heads[i]); }
+                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_heads[i]));
             }
             if let Some(n) = keymode.long_note_body.get(i) {
-                if let Some(tex) = &n.texture { textures.copy(&tex.get_path(), &q_ln_bodies[i]); }
+                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_bodies[i]));
             }
             if let Some(n) = keymode.long_note_tail.get(i) {
-                if let Some(tex) = &n.texture { textures.copy(&tex.get_path(), &q_ln_tails[i]); }
+                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_tails[i]));
             }
         }
-        
+
+        tr.reloc_arc_lock(&keymode.stage.background, dynamic_assets::Stage::BG_MASK);
+        tr.reloc_arc_lock(&keymode.stage.border_right, dynamic_assets::Stage::RIGHT_BORDER);
+        tr.reloc_arc_lock(&keymode.stage.border_left, dynamic_assets::Stage::LEFT_BORDER);
+
         qua_keymodes.push(qua_km);
     }
 

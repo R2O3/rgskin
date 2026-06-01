@@ -50,8 +50,15 @@ pub trait ManiaSkinConfig: SkinConfig {
     fn get_keymode(&self, keymode: u8) -> Option<&Self::Keymode>;
 }
 
-pub trait KeymodeInvariant {
+pub trait KeymodeInvariant: Sized {
     fn get_keymode(&self) -> u8;
+    
+    /// get any asset from a pattern if it has {keys} and {lane} placeholders, replacing them with the keymode and lane number respectively
+    fn get_generic(&self, pattern: StringPattern, _lane: usize) -> String {
+        pattern
+                    .replace("{keys}", &self.get_keymode().to_string())
+                    .replace("{lane}", &_lane.to_string())
+    }
 
     fn get_receptors(&self) -> Vec<String>;
     fn get_receptors_down(&self) -> Vec<String>;

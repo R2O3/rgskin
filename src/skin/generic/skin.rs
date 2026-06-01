@@ -1,4 +1,5 @@
 use merge::Merge;
+use rgskin_derive::GetAllTextures;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -9,13 +10,14 @@ use crate::generic::gameplay::Gameplay;
 use crate::generic::sound::Sounds;
 use crate::generic::UI;
 use crate::io::texture::TextureStore;
+use crate::io::traits::GetAllTextures;
 use crate::sample::SampleStore;
 use crate::skin::generic::{Keymode, Metadata};
-use crate::{BinaryArcExt, Store, StringPattern, texture, utils};
+use crate::{Binary, BinaryArcExt, Store, StringPattern, texture, utils};
 use crate::extensions::TextureArcExt;
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-#[derive(Clone, Merge)]
+#[derive(Clone, Merge, GetAllTextures)]
 pub struct GenericManiaSkin {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub resolution: Vector2<u32>,
@@ -71,6 +73,15 @@ impl<'a> ManiaSkin<'a> for GenericManiaSkin {
     }
 }
 
+impl GenericManiaSkin {
+    pub fn ensure_textures(&mut self) {
+        let all_textures = self.get_all_textures();
+        
+        for texture_arc in all_textures {
+            self.textures.insert_shared(texture_arc);
+        }
+    }
+}
 
 #[cfg(target_arch = "wasm32")]
 #[wasm_bindgen]

@@ -7,7 +7,7 @@ use crate::ini::from_ini;
 use crate::quaver::config::{General, Keymode, MainMenu, MenuBorder, Results, SongSelect};
 use crate::quaver::{dynamic_assets, static_assets};
 use crate::traits::SkinConfig;
-use crate::{StringPattern, utils};
+use crate::{ConstTypeEnum, StringPattern, utils};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, Default, Merge)]
