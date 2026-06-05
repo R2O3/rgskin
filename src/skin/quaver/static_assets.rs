@@ -383,3 +383,20 @@ def_const_type_enum!(pub ResultsGrades => StringPattern {
         AssetAttribute::Alignment(Anchor::TopLeft)
     ],
 });
+
+def_const_type_enum!(pub Sfx => StringPattern {
+    CLICK => "SFX/sound-click" [AssetAttribute::Sample],
+    BACK => "SFX/sound-back" [AssetAttribute::Sample],
+    HOVER => "SFX/sound-hover" [AssetAttribute::Sample],
+    APPLAUSE => "SFX/sound-applause" [AssetAttribute::Sample],
+    MENU_KEYCLICK => "SFX/sound-menu-keyclick-{number}" [AssetAttribute::Sample],
+    SELECT => "SFX/sound-select" [AssetAttribute::Sample],
+    HIT => "SFX/sound-hit" [AssetAttribute::Sample],
+    HIT_CLAP => "SFX/sound-hitclap" [AssetAttribute::Sample],
+    HIT_WHISTLE => "SFX/sound-hitwhistle" [AssetAttribute::Sample],
+    HIT_FINISH => "SFX/sound-hitfinish" [AssetAttribute::Sample],
+    COMBO_BREAK => "SFX/sound-combobreak" [AssetAttribute::Sample],
+    FAILURE => "SFX/sound-failure" [AssetAttribute::Sample],
+    RETRY => "SFX/sound-retry" [AssetAttribute::Sample],
+    COMBO_ALERT => "SFX/sound-combo-alert-{number}" [AssetAttribute::Sample], // normally this would be in dynamic_assets
+});

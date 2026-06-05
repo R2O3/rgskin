@@ -5,7 +5,7 @@ use image::GenericImageView;
 use crate::common::skin::AssetAttribute;
 use crate::quaver::{dynamic_assets, static_assets};
 use crate::utils::quaver::QuaDimensions;
-use crate::{Binary, BinaryArcExt, ConstTypeEnum, Resources, StringPattern, quaver};
+use crate::{Binary, BinaryArcExt, BinaryArcExtOption, ConstTypeEnum, Resources, StringPattern, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
 use crate::common::color::Rgba;
 use crate::common::vector::Vector3;
@@ -232,9 +232,20 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
     };
 
     let sounds = Sounds {
-        ui: UISounds { menu_back_click: None, ui_click: None, ui_select: None, ui_hover: None },
-        gameplay: GenericGameplaySounds { miss: None, fail: None, restart: None },
-        mania: ManiaGameplaySounds { hit: None },
+        ui: UISounds {
+            menu_back_click: samples.get_shared(&static_assets::Sfx::BACK).get_path(),
+            ui_click: samples.get_shared(&static_assets::Sfx::CLICK).get_path(),
+            ui_select: samples.get_shared(&static_assets::Sfx::SELECT).get_path(),
+            ui_hover: samples.get_shared(&static_assets::Sfx::HOVER).get_path(),
+        },
+        gameplay: GenericGameplaySounds {
+            miss: samples.get_shared(&static_assets::Sfx::COMBO_BREAK).get_path(),
+            fail: samples.get_shared(&static_assets::Sfx::FAILURE).get_path(),
+            restart: samples.get_shared(&static_assets::Sfx::RETRY).get_path(),
+        },
+        mania: ManiaGameplaySounds {
+            hit: samples.get_shared(&static_assets::Sfx::HIT).get_path(),
+        },
     };
 
     let mut generic_skin = GenericManiaSkin {
@@ -266,6 +277,10 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
 
     let mut qua_keymodes = Vec::new();
 
+    let mut tr = StoreRelocator::new(&mut textures);
+    let mut sr = StoreRelocator::new(&mut samples);
+
+
     for keymode in &skin.keymodes {
         let mut qua_km = quaver::Keymode::default();
         
@@ -283,7 +298,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
         let q_ln_tails = qua_km.get_long_note_tails();
 
         let mut body_processor = TextureProcessor::<()>::new();
-        let mut tr = StoreRelocator::new(&mut textures);
 
         for i in 0..(keymode.keymode as usize) {
             if let Some(r) = keymode.receptor_up.get(i) {
@@ -329,6 +343,15 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
 
         qua_keymodes.push(qua_km);
     }
+
+    sr.reloc_str(&skin.sounds.ui.menu_back_click, static_assets::Sfx::BACK);
+    sr.reloc_str(&skin.sounds.ui.ui_click, static_assets::Sfx::CLICK);
+    sr.reloc_str(&skin.sounds.ui.ui_select, static_assets::Sfx::SELECT);
+    sr.reloc_str(&skin.sounds.ui.ui_hover, static_assets::Sfx::HOVER);
+    sr.reloc_str(&skin.sounds.gameplay.miss, static_assets::Sfx::COMBO_BREAK);
+    sr.reloc_str(&skin.sounds.gameplay.fail, static_assets::Sfx::FAILURE);
+    sr.reloc_str(&skin.sounds.gameplay.restart, static_assets::Sfx::RETRY);
+    sr.reloc_str(&skin.sounds.mania.hit, static_assets::Sfx::HIT);
 
     skin_ini.keymodes = qua_keymodes;
 
