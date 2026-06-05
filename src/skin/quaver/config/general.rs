@@ -5,7 +5,7 @@ use wasm_bindgen::prelude::*;
 use crate::utils;
 use crate::utils::serde::{add_key_value, parse_bool, parse_key_value_eq, serialize_bool};
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = QuaGeneral))]
 #[derive(Clone, Debug, Merge)]
 pub struct General {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
@@ -75,7 +75,7 @@ impl General {
     }
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_class = QuaGeneral))]
 impl General {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = fromStr))]
     pub fn wasm_from_str(content: &str) -> Result<General, String> {

@@ -214,7 +214,7 @@ impl HitBubblesRecordedJudgements {
     }
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = QuaKeymode))]
 #[derive(Clone, Debug)]
 pub struct Keymode {
     pub keymode: u8,
@@ -827,7 +827,7 @@ impl Keymode {
     }
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
+#[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_class = QuaKeymode))]
 impl Keymode {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = fromStr))]
     pub fn wasm_from_str(content: &str) -> Result<Keymode, String> {

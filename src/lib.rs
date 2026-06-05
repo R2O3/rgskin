@@ -291,7 +291,7 @@ pub mod import {
         #[wasm_bindgen(js_name = osuSkinFromDir)]
         pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::osu::OsuSkin, JsError> { map_err!(import_osu_mania_skin_from_dir(path, import_all.unwrap_or(false))) }
 
-        #[wasm_bindgen(js_name = iniStrFromDir)]
+        #[wasm_bindgen(js_name = osuIniStrFromDir)]
         pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
     }
 
@@ -300,7 +300,7 @@ pub mod import {
         #[wasm_bindgen(js_name = quaverSkinFromDir)]
         pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::quaver::QuaSkin, JsError> { map_err!(import_quaver_skin_from_dir(path, import_all.unwrap_or(false))) }
 
-        #[wasm_bindgen(js_name = iniStrFromDir)]
+        #[wasm_bindgen(js_name = quaverIniStrFromDir)]
         pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
     }
 
@@ -309,7 +309,7 @@ pub mod import {
         #[wasm_bindgen(js_name = fluXisSkinFromDir)]
         pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::fluxis::FluXisSkin, JsError> { map_err!(import_fluxis_skin_from_dir(path, import_all.unwrap_or(false))) }
 
-        #[wasm_bindgen(js_name = jsonStrFromDir)]
+        #[wasm_bindgen(js_name = fluxisJsonStrFromDir)]
         pub fn json_str_from_dir(path: &str) -> String { read_str_from_path(path) }
     }
 }
