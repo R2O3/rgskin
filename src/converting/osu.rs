@@ -555,16 +555,18 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             samples.copy(s, &static_assets::Samples::DRUM_HITNORMAL);
         }
 
-        let source_aspect_ratio = resize.source.y as f32 / resize.source.x as f32;
-        let playfield_pos = (OsuDimensions::Y.as_f32() / source_aspect_ratio) * keymode.layout.x_offset;
-        let column_width = resize.to_target_x::<f32>(keymode.layout.column_widths.average().unwrap_or(0.0));
-        let playfield_width = column_width * keymode.keymode as f32;
+        // we'll assume that the size of the screen is 16:9 since that's most common
+        // osu!mania playfield positions depends on your screen ratio
+        let reference_size = Vector2::new(1920f32, 1080f32);
+        let aspect_ratio = reference_size.x / reference_size.y;
+        let stage_width = (keymode.layout.column_widths.iter().sum::<f32>() + (keymode.layout.column_spacing.iter().sum::<f32>())) * OsuDimensions::X.as_f32() * OsuDimensions::ColumnScaleFromGeneric.as_f32();
+        let playfield_pos = (OsuDimensions::Y.as_f32() * aspect_ratio - stage_width.round()) * keymode.layout.x_offset;
 
         let osu_keymode = osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
             hit_position: ((1.0 - keymode.layout.hit_position) * OsuDimensions::Y.as_f32()) as u32,
-            column_start: (playfield_pos - playfield_width / 2.0),
+            column_start: playfield_pos,
             column_width: keymode.layout.column_widths
                 .iter()
                 .map(|cw| *cw * OsuDimensions::X.as_f32())

@@ -7,6 +7,7 @@ numeric_enum! {
         ReceptorWidth = 48.0,
         ReceptorHeight = 108.0,
         ReceptorScale = 1.6,
-        ReceptorScale2x = 3.2
+        ReceptorScale2x = 3.2,
+        ColumnScaleFromGeneric = 0.7143
     }
 }
