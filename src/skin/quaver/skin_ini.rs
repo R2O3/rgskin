@@ -121,7 +121,9 @@ impl SkinConfig for QuaSkinIni {
         result
     }
 
-    // TODO: add samples for quaver
+    fn get_required_sample_paths(&self) -> Vec<StringPattern> {
+        static_assets::Sfx::VARIANTS.iter().cloned().map(|t| t).collect()
+    }
 }
 
 #[cfg(target_arch = "wasm32")]
