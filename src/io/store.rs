@@ -1,9 +1,10 @@
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map};
 use std::fmt::Debug;
 use std::sync::{Arc, RwLock};
 use wasm_bindgen::prelude::*;
 use js_sys::Array;
 
+use crate::Binary;
 use crate::utils::io::normalize;
 
 #[macro_export]
@@ -50,7 +51,7 @@ macro_rules! impl_store_wasm {
             #[wasm_bindgen(js_name = makeUniqueCopy)]
             pub fn make_unique_copy_wasm(&mut self, original_path: &str, new_base_path: &str) -> Option<String> {
                 <Self as Store<$item_type>>::wasm_make_unique_copy(self, original_path, new_base_path)
-            }
+            }         
 
             #[wasm_bindgen(js_name = extend)]
             pub fn extend_wasm(&mut self, other: &$store_type) {
@@ -60,10 +61,10 @@ macro_rules! impl_store_wasm {
     };
 }
 
-pub trait Store<T: 'static>: Debug {
+pub trait Store<T: Binary>: Debug {
     type Data;
 
-    fn create_item(path: String, data: Self::Data) -> T;
+    fn create_item(path: String, data: Self::Data, hash: Option<u64>) -> T;
     fn get_item_path(item: &T) -> &str;
     fn set_item_path(item: &mut T, path: String);
     fn clone_item_data(item: &T) -> Self::Data;
@@ -121,7 +122,10 @@ pub trait Store<T: 'static>: Debug {
         self.map_mut().clear();
     }
 
-    fn keys(&self) -> impl Iterator<Item = &str> + '_ {
+    fn keys<'a>(&'a self) -> impl Iterator<Item = &'a str> + 'a
+    where
+        T: 'a,
+    {
         self.map().keys().map(|s| s.as_str())
     }
 
@@ -139,7 +143,10 @@ pub trait Store<T: 'static>: Debug {
         self.map_mut().iter_mut().map(|(k, v)| (k.as_str(), v))
     }
 
-    fn paths(&self) -> impl Iterator<Item = &str> {
+    fn paths<'a>(&'a self) -> impl Iterator<Item = &'a str>
+    where
+        T: 'a,
+    {
         self.keys()
     }
 
@@ -180,20 +187,21 @@ pub trait Store<T: 'static>: Debug {
         if self.contains(&normalized_new) {
             return None;
         }
-        
+
         let original_ref = self.get_shared(original_path)?;
         let original = original_ref.read().unwrap();
         let data = Self::clone_item_data(&*original);
+        let hash = original.get_hash();       // read before drop
         drop(original);
-        
-        let new_item = Self::create_item(new_path.to_string(), data);
+
+        let new_item = Self::create_item(new_path.to_string(), data, hash);
         self.insert(new_item);
         Some(normalized_new)
     }
 
     fn copy_from_data(&mut self, path: &str, data: Self::Data) -> String {
         let normalized = normalize(path);
-        let item = Self::create_item(path.to_string(), data);
+        let item = Self::create_item(path.to_string(), data, None);
         self.insert(item);
         normalized
     }
@@ -202,15 +210,70 @@ pub trait Store<T: 'static>: Debug {
         let original_ref = self.get_shared(original_path)?;
         let original = original_ref.read().unwrap();
         let data = Self::clone_item_data(&*original);
+        let hash = original.get_hash();       // same pattern as copy
         drop(original);
-        
-        let new_item = Self::create_item(new_base_path.to_string(), data);
+
+        let new_item = Self::create_item(new_base_path.to_string(), data, hash);
         Some(self.make_unique(new_base_path, new_item))
     }
 
     fn make_unique_from_data(&mut self, path: &str, data: Self::Data) -> String {
-        let item = Self::create_item(path.to_string(), data);
+        let item = Self::create_item(path.to_string(), data, None);
         self.make_unique(path, item)
+    }
+
+    fn dedupe(&mut self, path: &str) -> HashMap<String, String> {
+        let normalized = normalize(path);
+
+        let (target_hash, target_arc) = {
+            let arc = match self.map().get(&normalized) {
+                Some(a) => Arc::clone(a),
+                None => return HashMap::new(),
+            };
+            let hash = match arc.read().unwrap().get_hash() {
+                Some(h) => h,
+                None => return HashMap::new(),
+            };
+            (hash, arc)
+        };
+
+        let mut culled = HashMap::new();
+        for (key, arc) in self.map_mut().iter_mut() {
+            if *key == normalized {
+                continue;
+            }
+            if arc.read().unwrap().get_hash() == Some(target_hash) {
+                *arc = Arc::clone(&target_arc);
+                culled.insert(key.clone(), normalized.clone());
+            }
+        }
+        culled
+    }
+
+    fn dedupe_all(&mut self) -> HashMap<String, String> {
+        let mut canonical: HashMap<u64, (Arc<RwLock<T>>, String)> = HashMap::new();
+        let mut replacements: Vec<(String, Arc<RwLock<T>>, String)> = Vec::new();
+
+        for (path, arc) in self.map().iter() {
+            if let Some(hash) = arc.read().unwrap().get_hash() {
+                match canonical.entry(hash) {
+                    hash_map::Entry::Vacant(e) => {
+                        e.insert((Arc::clone(arc), path.to_string()));
+                    }
+                    hash_map::Entry::Occupied(e) => {
+                        let (canonical_arc, canonical_path) = e.get();
+                        replacements.push((path.to_string(), Arc::clone(canonical_arc), canonical_path.clone()));
+                    }
+                }
+            }
+        }
+
+        let mut culled = HashMap::new();
+        for (path, arc, canonical_path) in replacements {
+            self.map_mut().insert(path.clone(), arc);
+            culled.insert(path, canonical_path);
+        }
+        culled
     }
 
     fn with_item<F, R>(&self, path: &str, f: F) -> Option<R>

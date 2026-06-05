@@ -8,6 +8,8 @@ pub struct RawBytes {
     pub path: String,
     #[wasm_bindgen(skip)]
     pub data: BinaryState<Vec<u8>>,
+    #[wasm_bindgen(skip)]
+    pub hash: Option<u64>,
 }
 
 #[wasm_bindgen]
@@ -15,7 +17,8 @@ impl RawBytes {
     #[wasm_bindgen(constructor)]
     pub fn new(path: String) -> Self {
         RawBytes { 
-            path, 
+            path,
+            hash: None,
             data: BinaryState::Empty 
         }
     }
@@ -23,7 +26,8 @@ impl RawBytes {
     #[wasm_bindgen(js_name = fromBytes)]
     pub fn from_bytes_direct(path: String, bytes: Vec<u8>) -> Self {
         RawBytes { 
-            path, 
+            path,
+            hash: None,
             data: BinaryState::Loaded(bytes)
         }
     }
@@ -31,6 +35,12 @@ impl RawBytes {
     #[wasm_bindgen(js_name = getData)]
     pub fn get_data_wasm(&self) -> Option<Uint8Array> {
         self.get_data().map(|bytes| Uint8Array::from(bytes.as_slice()))
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    #[wasm_bindgen(js_name = getHash)]
+    pub fn get_hash_wasm(&self) -> Option<u64> {
+        self.hash
     }
 }
 
@@ -49,9 +59,13 @@ impl Binary for RawBytes {
     fn get_path(&self) -> &str {
         &self.path
     }
+
+    fn get_hash(&self) -> Option<u64> {
+        self.hash
+    }
     
     fn new_with_state(path: String, state: BinaryState<Self::LoadedData>) -> Self {
-        RawBytes { path, data: state }
+        RawBytes { path, data: state, hash: None }
     }
     
     fn decode_bytes(bytes: &[u8]) -> Result<Self::LoadedData, Self::Error> {
@@ -71,14 +85,16 @@ impl RawBytes {
     pub fn with_data(path: String, data: Vec<u8>) -> Self {
         RawBytes { 
             path, 
-            data: BinaryState::Loaded(data) 
+            data: BinaryState::Loaded(data),
+            hash: None
         }
     }
     
     pub fn with_unloaded_data(path: String, bytes: Vec<u8>) -> Self {
         RawBytes { 
             path, 
-            data: BinaryState::Unloaded(bytes) 
+            data: BinaryState::Unloaded(bytes),
+            hash: None
         }
     }
 }

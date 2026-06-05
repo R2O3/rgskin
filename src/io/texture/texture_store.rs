@@ -96,10 +96,11 @@ impl_store_wasm!(TextureStore, Texture);
 impl Store<Texture> for TextureStore {
     type Data = BinaryState<image::DynamicImage>;
     
-    fn create_item(path: String, data: Self::Data) -> Texture {
+    fn create_item(path: String, data: Self::Data, _hash: Option<u64>) -> Texture {
         Texture {
             path,
             data,
+            hash: _hash,
         }
     }
     

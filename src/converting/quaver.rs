@@ -1,5 +1,7 @@
 use std::sync::{Arc, RwLock};
 
+use image::GenericImageView;
+
 use crate::common::skin::AssetAttribute;
 use crate::quaver::{dynamic_assets, static_assets};
 use crate::utils::quaver::QuaDimensions;
@@ -40,6 +42,14 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
     let mut receptor_processor = TextureProcessor::<i32>::new();
 
+    let culled = textures.dedupe_all();
+
+    let remap = |paths: Vec<String>| -> Vec<String> {
+        paths.into_iter()
+            .map(|p| culled.get(&p).cloned().unwrap_or(p))
+            .collect()
+    };
+
     for keymode in &skin.skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
         let mut max_receptor_offset = 0;
@@ -48,12 +58,12 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .map(|lane| keymode.primary_fallback(lane))
             .collect();
 
-        let receptors = keymode.get_receptors();
-        let receptors_down = keymode.get_receptors_down();
-        let normal_notes = keymode.get_normal_notes();
-        let long_note_heads = keymode.get_long_note_heads();
-        let long_note_bodies = keymode.get_long_note_bodies();
-        let long_note_tails = keymode.get_long_note_tails();
+        let receptors = remap(keymode.get_receptors());
+        let receptors_down = remap(keymode.get_receptors_down());
+        let normal_notes = remap(keymode.get_normal_notes());
+        let long_note_heads = remap(keymode.get_long_note_heads());
+        let long_note_bodies = remap(keymode.get_long_note_bodies());
+        let long_note_tails = remap(keymode.get_long_note_tails());
 
         let receptor_up_elements: Vec<ReceptorUp> = receptors
             .iter()
@@ -272,6 +282,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
         let q_ln_bodies = qua_km.get_long_note_bodies();
         let q_ln_tails = qua_km.get_long_note_tails();
 
+        let mut body_processor = TextureProcessor::<()>::new();
         let mut tr = StoreRelocator::new(&mut textures);
 
         for i in 0..(keymode.keymode as usize) {
@@ -288,6 +299,23 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
                 tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_heads[i]));
             }
             if let Some(n) = keymode.long_note_body.get(i) {
+                if let Some(texture_arc) = &n.texture
+                {
+                        body_processor.process_once_void(texture_arc, |arc_texture| {
+                            arc_texture.data_mut(|img| {
+                                let (width, height) = img.dimensions();
+                                let max_res = QuaDimensions::MaxResolution.as_u32();
+                                
+                                if width > max_res || height > max_res {
+                                    *img = img.resize_exact(
+                                        width.min(max_res),
+                                        height.min(max_res),
+                                        image::imageops::FilterType::Lanczos3
+                                    );
+                                }
+                            });
+                        });
+                }
                 tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_bodies[i]));
             }
             if let Some(n) = keymode.long_note_tail.get(i) {
@@ -295,9 +323,9 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
             }
         }
 
-        tr.reloc_arc_lock(&keymode.stage.background, dynamic_assets::Stage::BG_MASK);
-        tr.reloc_arc_lock(&keymode.stage.border_right, dynamic_assets::Stage::RIGHT_BORDER);
-        tr.reloc_arc_lock(&keymode.stage.border_left, dynamic_assets::Stage::LEFT_BORDER);
+        tr.reloc_arc_lock(&keymode.stage.background, qua_km.get_generic(dynamic_assets::Stage::BG_MASK, 0));
+        tr.reloc_arc_lock(&keymode.stage.border_right, qua_km.get_generic(dynamic_assets::Stage::RIGHT_BORDER, 0));
+        tr.reloc_arc_lock(&keymode.stage.border_left, qua_km.get_generic(dynamic_assets::Stage::LEFT_BORDER, 0));
 
         qua_keymodes.push(qua_km);
     }

@@ -18,7 +18,7 @@ pub fn export_binaries<T, S, F>(
 ) -> io::Result<()>
 where
     S: Store<T>,
-    T: 'static,
+    T: Binary + 'static,
     F: FnMut(&T, &str) -> io::Result<()>,
 {
     fs::create_dir_all(path)?;

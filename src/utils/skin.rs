@@ -51,12 +51,12 @@ pub fn get_lane_type(keymode: u8, idx: usize) -> LaneType {
 
 
 
-pub struct StoreRelocator<'a, T: 'static, S: Store<T>> {
+pub struct StoreRelocator<'a, T: Binary + 'static, S: Store<T>> {
     store: &'a mut S,
     _phantom: PhantomData<T>,
 }
 
-impl<'a, T: 'static, S: Store<T>> StoreRelocator<'a, T, S> {
+impl<'a, T: Binary + 'static, S: Store<T>> StoreRelocator<'a, T, S> {
     pub fn new(store: &'a mut S) -> Self {
         StoreRelocator { store, _phantom: PhantomData }
     }

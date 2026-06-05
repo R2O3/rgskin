@@ -95,10 +95,11 @@ impl_store_wasm!(BinaryStore, RawBytes);
 impl Store<RawBytes> for BinaryStore {
     type Data = BinaryState<Vec<u8>>;
     
-    fn create_item(path: String, data: Self::Data) -> RawBytes {
+    fn create_item(path: String, data: Self::Data, _hash: Option<u64>) -> RawBytes {
         RawBytes {
             path,
             data,
+            hash: _hash,
         }
     }
     

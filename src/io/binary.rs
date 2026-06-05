@@ -143,10 +143,11 @@ macro_rules! impl_binary_wasm {
 pub trait Binary: Sized + Debug {
     type Error;
     type LoadedData;
-    
+
     fn state(&self) -> &BinaryState<Self::LoadedData>;
     fn state_mut(&mut self) -> &mut BinaryState<Self::LoadedData>;
     fn get_path(&self) -> &str;
+    fn get_hash(&self) -> Option<u64>;
     fn new_with_state(path: String, state: BinaryState<Self::LoadedData>) -> Self;
     
     fn decode_bytes(bytes: &[u8]) -> Result<Self::LoadedData, Self::Error>;
