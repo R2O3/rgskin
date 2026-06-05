@@ -30,7 +30,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
     let metadata = Metadata {
         name: skin.skin_ini.general.name.clone(),
         creator: skin.skin_ini.general.author.clone(),
-        version: skin.skin_ini.general.version.clone(),
+        version: "latest".to_string(),
     };
 
     let mut receptor_processor = TextureProcessor::<i32>::new();
@@ -372,7 +372,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
     let general = General {
         name: skin.metadata.name.clone(),
         author: skin.metadata.creator.clone(),
-        version: skin.metadata.version.clone(),
+        version: "latest".to_string(),
         cursor_centre: skin.ui.cursor.centered,
         cursor_rotate: skin.ui.cursor.rotate,
         cursor_expand: true, // TODO: change this when adding quaver later
