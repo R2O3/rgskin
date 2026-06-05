@@ -2,6 +2,7 @@
 
 use std::collections::HashMap;
 use wasm_bindgen::JsError;
+use crate::quaver;
 use crate::sample::SampleStore;
 use crate::utils::io::change_extension;
 use crate::Binary;
@@ -16,7 +17,7 @@ pub fn export_binaries<T, S, F>(
 ) -> Result<HashMap<String, Vec<u8>>, JsError>
 where
     S: Store<T>,
-    T: 'static,
+    T: Binary + 'static,
     F: FnMut(&T) -> Result<Option<(String, Vec<u8>)>, JsError>,
 {
     let mut files = HashMap::new();
@@ -74,6 +75,10 @@ pub fn export_osu_ini(skin_ini: &osu::OsuSkinIni) -> String {
     skin_ini.to_string()
 }
 
+pub fn export_quaver_ini(skin_ini: &quaver::QuaSkinIni) -> String {
+    skin_ini.to_string()
+}
+
 pub fn export_fluxis_skin_json(skin_json: &fluxis::SkinJson) -> String {
     skin_json.to_string()
 }
@@ -87,6 +92,21 @@ pub fn export_osu_skin(skin: &OsuSkin) -> Result<HashMap<String, Vec<u8>>, JsErr
     let mut files = HashMap::new();
     
     let ini_content = export_osu_ini(&skin.skin_ini);
+    files.insert("skin.ini".to_string(), ini_content.into_bytes());
+    
+    let texture_files = export_textures(&skin.textures)?;
+    files.extend(texture_files);
+    
+    let sample_files = export_samples(&skin.samples)?;
+    files.extend(sample_files);
+    
+    Ok(files)
+}
+
+pub fn export_quaver_skin(skin: &crate::quaver::QuaSkin) -> Result<HashMap<String, Vec<u8>>, JsError> {
+    let mut files = HashMap::new();
+    
+    let ini_content = export_quaver_ini(&skin.skin_ini);
     files.insert("skin.ini".to_string(), ini_content.into_bytes());
     
     let texture_files = export_textures(&skin.textures)?;

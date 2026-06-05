@@ -160,7 +160,6 @@ impl HitBubblesType {
     }
 }
 
-#[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum HitBubblesRecordedJudgements {
     Marv,
@@ -291,7 +290,7 @@ pub struct Keymode {
     pub hit_bubble_scale: f32,
     pub hit_bubble_border_padding: f32,
     pub hit_bubble_padding: f32,
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub hit_bubbles_recorded_judgements: HitBubblesRecordedJudgements,
 
     // combo

@@ -105,11 +105,11 @@ impl GenericManiaSkin {
 
     #[wasm_bindgen(js_name = getRequiredTexturePaths)]
     pub fn get_required_texture_paths_wasm(&self) -> Vec<String> {
-        self.get_required_texture_paths().into_iter().collect()
+        self.get_required_texture_paths().into_iter().map(|p| p.to_string()).collect()
     }
 
     #[wasm_bindgen(js_name = getRequiredSamplePaths)]
     pub fn get_required_sample_paths_wasm(&self) -> Vec<String> {
-        self.get_required_sample_paths().into_iter().collect()
+        self.get_required_sample_paths().into_iter().map(|p| p.to_string()).collect()
     }
 }

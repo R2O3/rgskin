@@ -18,7 +18,7 @@ pub fn export_binaries<T, S, F>(
 ) -> io::Result<()>
 where
     S: Store<T>,
-    T: 'static,
+    T: Binary + 'static,
     F: FnMut(&T, &str) -> io::Result<()>,
 {
     node::create_dir_all(path)
@@ -111,6 +111,25 @@ pub fn export_osu_ini(skin_ini: &osu::OsuSkinIni, path: &str) -> io::Result<()> 
     Ok(())
 }
 
+pub fn export_quaver_ini(skin_ini: &crate::quaver::QuaSkinIni, path: &str) -> io::Result<()> {
+    if let Some(slash_pos) = path.rfind('/') {
+        let parent = &path[..slash_pos];
+        node::create_dir_all(parent)
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+    } else if let Some(slash_pos) = path.rfind('\\') {
+        let parent = &path[..slash_pos];
+        node::create_dir_all(parent)
+            .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+    }
+    
+    let ini_content = skin_ini.to_string();
+    
+    node::write_file(path, ini_content.as_bytes())
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+    
+    Ok(())
+}
+
 pub fn export_fluxis_skin_json(skin_json: &fluxis::SkinJson, path: &str) -> io::Result<()> {
     if let Some(slash_pos) = path.rfind('/') {
         let parent = &path[..slash_pos];
@@ -158,6 +177,22 @@ pub fn export_osu_skin(skin: &OsuSkin, path: &str) -> io::Result<()> {
     
     let ini_path = node::join_path(&skin_path, "skin.ini");
     export_osu_ini(skin_ini, &ini_path)?;
+    
+    export_textures(&skin.textures, &skin_path)?;
+    export_samples(&skin.samples, &skin_path)?;
+    
+    Ok(())
+}
+
+pub fn export_quaver_skin(skin: &crate::quaver::QuaSkin, path: &str) -> io::Result<()> {
+    let skin_ini = &skin.skin_ini;
+    let skin_path = node::join_path(path, &skin_ini.general.name);
+    
+    node::create_dir_all(&skin_path)
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+    
+    let ini_path = node::join_path(&skin_path, "skin.ini");
+    export_quaver_ini(skin_ini, &ini_path)?;
     
     export_textures(&skin.textures, &skin_path)?;
     export_samples(&skin.samples, &skin_path)?;

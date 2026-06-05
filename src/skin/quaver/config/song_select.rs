@@ -53,7 +53,7 @@ pub struct SongSelect {
     pub mapset_panel_creator_color: Rgba,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub mapset_panel_by_color: Rgba,
-    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub mapset_panel_banner_size: Vector2<u32>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     #[merge(strategy = utils::merge::any::overwrite)]   

@@ -1,3 +1,5 @@
+#![cfg(not(target_arch = "wasm32"))]
+
 mod test_dependencies;
 use test_dependencies::*;
 use rgskin::{image_proc::{generate_stage_background, to_osu_column_draw}, utils::io::join_paths_unix, Binary, Store};

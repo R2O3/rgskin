@@ -98,7 +98,7 @@ pub mod export {
         #[wasm_bindgen(js_name = osuSkinToFiles)]
         pub fn skin_to_files(skin: &crate::osu::OsuSkin) -> Result<Map, JsError> { Ok(hash_to_js(export_osu_skin(skin)?)) }
 
-        #[wasm_bindgen(js_name = iniToString)]
+        #[wasm_bindgen(js_name = osuIniToString)]
         pub fn ini_to_string(skin_ini: &crate::osu::OsuSkinIni) -> String { export_osu_ini(skin_ini) }
     }
 
@@ -107,7 +107,7 @@ pub mod export {
         #[wasm_bindgen(js_name = quaverSkinToFiles)]
         pub fn skin_to_files(skin: &crate::quaver::QuaSkin) -> Result<Map, JsError> { Ok(hash_to_js(export_quaver_skin(skin)?)) }
 
-        #[wasm_bindgen(js_name = iniToString)]
+        #[wasm_bindgen(js_name = quaverIniToString)]
         pub fn ini_to_string(skin_ini: &crate::quaver::QuaSkinIni) -> String { export_quaver_ini(skin_ini) }
     }
 
@@ -116,10 +116,10 @@ pub mod export {
         #[wasm_bindgen(js_name = fluXisSkinToFiles)]
         pub fn skin_to_files(skin: &crate::fluxis::FluXisSkin) -> Result<Map, JsError> { Ok(hash_to_js(export_fluxis_skin(skin)?)) }
 
-        #[wasm_bindgen(js_name = layoutToString)]
+        #[wasm_bindgen(js_name = fluxisLayoutToString)]
         pub fn layout_to_string(layout_json: &crate::fluxis::FluXisLayout) -> Result<String, JsError> { export_fluxis_layout_json(layout_json) }
 
-        #[wasm_bindgen(js_name = jsonToString)]
+        #[wasm_bindgen(js_name = fluxisJsonToString)]
         pub fn json_to_string(skin_json: &crate::fluxis::SkinJson) -> String { export_fluxis_skin_json(skin_json) }
     }
 }
@@ -127,7 +127,7 @@ pub mod export {
 #[cfg(all(target_arch = "wasm32", feature = "node"))]
 pub mod export {
     use wasm_bindgen::prelude::*;
-    use crate::{exporting::node::*, io::texture::TextureStore, sample::SampleStore, utils::wasm::*};
+    use crate::{exporting::node::*, io::texture::TextureStore, sample::SampleStore};
 
     macro_rules! map_err { ($e:expr) => { $e.map_err(|e| JsError::new(&e.to_string())) } }
 
@@ -142,21 +142,30 @@ pub mod export {
         #[wasm_bindgen(js_name = osuSkinToDir)]
         pub fn skin_to_dir(skin: &crate::osu::OsuSkin, path: &str) -> Result<(), JsError> { map_err!(export_osu_skin(skin, path)) }
 
-        #[wasm_bindgen(js_name = iniToDir)]
+        #[wasm_bindgen(js_name = osuIniToDir)]
         pub fn ini_to_dir(skin_ini: &crate::osu::OsuSkinIni, path: &str) -> Result<(), JsError> { map_err!(export_osu_ini(skin_ini, path)) }
     }
 
-    pub mod fluxis {
+    pub mod quaver {
+        use super::*;
+        #[wasm_bindgen(js_name = quaverSkinToDir)]
+        pub fn skin_to_dir(skin: &crate::quaver::QuaSkin, path: &str) -> Result<(), JsError> { map_err!(export_quaver_skin(skin, path)) }
+
+        #[wasm_bindgen(js_name = quaverIniToDir)]
+        pub fn ini_to_dir(skin_ini: &crate::quaver::QuaSkinIni, path: &str) -> Result<(), JsError> { map_err!(export_quaver_ini(skin_ini, path)) }
+     }
+
+     pub mod fluxis {
         use super::*;
         #[wasm_bindgen(js_name = fluXisSkinToDir)]
         pub fn skin_to_dir(skin: &crate::fluxis::FluXisSkin, path: &str) -> Result<(), JsError> { map_err!(export_fluxis_skin(skin, path)) }
 
-        #[wasm_bindgen(js_name = layoutToDir)]
+        #[wasm_bindgen(js_name = fluxisLayoutToDir)]
         pub fn layout_to_dir(layout_json: &crate::fluxis::FluXisLayout, path: &str) -> Result<(), JsError> { map_err!(export_fluxis_layout_json(layout_json, path)) }
 
-        #[wasm_bindgen(js_name = jsonToDir)]
+        #[wasm_bindgen(js_name = fluxisJsonToDir)]
         pub fn json_to_dir(skin_json: &crate::fluxis::SkinJson, path: &str) -> Result<(), JsError> { map_err!(export_fluxis_skin_json(skin_json, path)) }
-    }
+     }
 }
 
 #[cfg(not(target_arch = "wasm32"))]
@@ -248,26 +257,27 @@ pub mod import {
 pub mod import {
     use wasm_bindgen::prelude::*;
     use js_sys::Array;
-    use crate::{importing::node::*, io::texture::TextureStore, sample::SampleStore, utils::wasm::*};
+    use crate::{StringPattern, importing::node::*, io::texture::TextureStore, sample::SampleStore, utils::wasm::*};
 
     macro_rules! map_err { ($e:expr) => { $e.map_err(|e| JsError::new(&e.to_string())) } }
 
     #[wasm_bindgen(js_name = texturesFromDir)]
     pub fn textures_from_dir(path: &str, relative_texture_paths: Array) -> Result<TextureStore, JsError> {
         let paths = arr_to_strs(relative_texture_paths)?;
-        let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
+        let path_refs: Vec<StringPattern> = paths.iter().map(StringPattern::from).collect();
         map_err!(import_textures_from_dir(path, &path_refs))
     }
 
     #[wasm_bindgen(js_name = allTexturesFromDir)]
-    pub fn all_textures_from_dir(path: &str) -> Result<TextureStore, JsError> {
-        map_err!(import_all_textures_from_dir(path))
+    pub fn all_textures_from_dir(path: &str, load_only: Option<Vec<String>>) -> Result<TextureStore, JsError> {
+        let load_patterns: Option<Vec<StringPattern>> = load_only.map(|v| v.into_iter().map(StringPattern::from).collect());
+        map_err!(import_all_textures_from_dir(path, load_patterns.as_ref().map(|v| &v[..])))
     }
 
     #[wasm_bindgen(js_name = samplesFromDir)]
     pub fn samples_from_dir(path: &str, relative_sample_paths: Array) -> Result<SampleStore, JsError> {
         let paths = arr_to_strs(relative_sample_paths)?;
-        let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
+        let path_refs: Vec<StringPattern> = paths.iter().map(StringPattern::from).collect();
         map_err!(import_samples_from_dir(path, &path_refs))
     }
 
@@ -279,7 +289,7 @@ pub mod import {
     pub mod osu {
         use super::*;
         #[wasm_bindgen(js_name = osuSkinFromDir)]
-        pub fn skin_from_dir(path: &str) -> Result<crate::osu::OsuSkin, JsError> { map_err!(import_osu_mania_skin_from_dir(path)) }
+        pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::osu::OsuSkin, JsError> { map_err!(import_osu_mania_skin_from_dir(path, import_all.unwrap_or(false))) }
 
         #[wasm_bindgen(js_name = iniStrFromDir)]
         pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
@@ -288,7 +298,7 @@ pub mod import {
     pub mod quaver {
         use super::*;
         #[wasm_bindgen(js_name = quaverSkinFromDir)]
-        pub fn skin_from_dir(path: &str) -> Result<crate::quaver::QuaSkin, JsError> { map_err!(import_quaver_skin_from_dir(path)) }
+        pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::quaver::QuaSkin, JsError> { map_err!(import_quaver_skin_from_dir(path, import_all.unwrap_or(false))) }
 
         #[wasm_bindgen(js_name = iniStrFromDir)]
         pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
@@ -297,7 +307,7 @@ pub mod import {
     pub mod fluxis {
         use super::*;
         #[wasm_bindgen(js_name = fluXisSkinFromDir)]
-        pub fn skin_from_dir(path: &str) -> Result<crate::fluxis::FluXisSkin, JsError> { map_err!(import_fluxis_skin_from_dir(path)) }
+        pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::fluxis::FluXisSkin, JsError> { map_err!(import_fluxis_skin_from_dir(path, import_all.unwrap_or(false))) }
 
         #[wasm_bindgen(js_name = jsonStrFromDir)]
         pub fn json_str_from_dir(path: &str) -> String { read_str_from_path(path) }

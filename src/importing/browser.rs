@@ -7,12 +7,12 @@ use crate::common::traits::SkinConfig;
 use crate::fluxis::{self, FluXisSkin};
 use crate::{osu, quaver};
 use crate::sample::SampleStore;
-use crate::utils::io::{get_filename, get_parent, get_stem, remove_extension, normalize};
+use crate::utils::io::{get_filename, remove_extension, normalize};
 use crate::utils::string::string_iter_as_str;
 use crate::OsuSkin;
 use crate::io::texture::TextureStore;
 use crate::importing::common::{extension_matches, SeenFiles, build_texture_store_from_files};
-use crate::io::PathPattern;
+use crate::io::StringPattern;
  
 pub fn import_binaries_from_files<F>(
     files: &HashMap<String, Vec<u8>>,
@@ -23,11 +23,15 @@ where
     F: FnMut(String, &[u8]) -> Result<(), JsError>,
 {
     let mut seen = SeenFiles::new();
+    let patterns: Vec<StringPattern> = patterns
+        .iter()
+        .map(|p| StringPattern::from(p.to_string()))
+        .collect();
     for (file_path, bytes) in files {
-        let normalized      = normalize(file_path);
+        let normalized = normalize(file_path);
         let path_without_ext = remove_extension(&normalized);
         if seen.try_insert(&path_without_ext)
-            && patterns.iter().any(|&p| PathPattern::new(p).matches_path(&path_without_ext))
+            && patterns.iter().any(|p| p.matches_path(&path_without_ext))
         {
             loader(path_without_ext.to_string(), bytes)?;
         }
@@ -124,8 +128,10 @@ macro_rules! impl_skin_importer {
                 .map_err(|e| JsError::new(&e.to_string()))?;
             let texture_paths = config.get_required_texture_paths();
             let sample_paths  = config.get_required_sample_paths();
-            let texture_path_refs: Vec<&str> = string_iter_as_str(texture_paths.iter());
-            let sample_path_refs:  Vec<&str> = string_iter_as_str(sample_paths.iter());
+            let texture_path_strings: Vec<String> = texture_paths.iter().map(|p| p.to_string()).collect();
+            let sample_path_strings: Vec<String> = sample_paths.iter().map(|p| p.to_string()).collect();
+            let texture_path_refs: Vec<&str> = string_iter_as_str(texture_path_strings.iter());
+            let sample_path_refs:  Vec<&str> = string_iter_as_str(sample_path_strings.iter());
             let textures = import_textures_from_files(files, &texture_path_refs)?;
             let samples  = import_samples_from_files(files, &sample_path_refs)?;
             Ok(<$skin_type>::new(config, Some(textures), Some(samples)))
@@ -146,7 +152,8 @@ macro_rules! impl_skin_importer {
             let config = <$config_type>::from_str(&config_content)
                 .map_err(|e| JsError::new(&e.to_string()))?;
             let sample_paths = config.get_required_sample_paths();
-            let sample_path_refs: Vec<&str> = string_iter_as_str(sample_paths.iter());
+            let sample_path_strings: Vec<String> = sample_paths.iter().map(|p| p.to_string()).collect();
+            let sample_path_refs: Vec<&str> = string_iter_as_str(sample_path_strings.iter());
             let textures = import_all_textures_from_files(files)?;
             let samples  = import_samples_from_files(files, &sample_path_refs)?;
             Ok(<$skin_type>::new(config, Some(textures), Some(samples)))
