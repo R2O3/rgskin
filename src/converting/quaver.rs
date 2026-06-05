@@ -173,8 +173,6 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             })
             .collect();
 
-
-            println!("keymode {}, column size: {}, hit pos offset: {}, max receptor offset: {}", key_count, keymode.column_size, keymode.hit_pos_offset_y, max_receptor_offset);
         let layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: keymode.receptors_over_hit_objects,
