@@ -526,8 +526,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             long_note_body_images,
             long_note_tail_images,
             receptors_first: !keymode.layout.receptor_above_notes,
-            hit_position: keymode.layout.receptor_offset // TODO: properly caclulate this
-                .clamp(0, FluXisDimensions::Y.as_i32()),
+            hit_position: ((keymode.layout.hit_position * FluXisDimensions::Y.as_f32()).round() as i32)
+                .clamp(-FluXisDimensions::Y.as_i32(), FluXisDimensions::Y.as_i32()),
             receptor_offset: keymode.layout.receptor_offset,
             column_width: (keymode.layout.column_widths
                 .average()

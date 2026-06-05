@@ -65,20 +65,27 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         let long_note_bodies = remap(keymode.get_long_note_bodies());
         let long_note_tails = remap(keymode.get_long_note_tails());
 
+        // TODO: In the future we'd probably want to trim based on "receptor down" since we only check for transparency with a tolererance
+        // and if the down texture has a glow for example it will throw off the trimming and we'd end up with unmatching receptors
         let receptor_up_elements: Vec<ReceptorUp> = receptors
             .iter()
             .zip(fallbacks.iter().map(|f| &f.receptor))
             .map(|(path, fallback_path)| {
                 let tex_path = if textures.contains(path) { path } else { fallback_path };
+                
                 if let Some(texture) = textures.get_shared(tex_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
-                        arc.with_image(|img| dist_from_bottom(img, 0.1)).try_into().unwrap_or(0)
-                    });
-                    receptor_processor.process_once_void(&texture, |arc| {
+                        let off = arc.with_image(|img| {
+                            dist_from_bottom(img, 0.1)
+                        }).try_into().unwrap_or(0);
+
                         arc.data_mut(|img| {
                             *img = trim_image_vertical(img.clone(), 0.2);
                         });
+
+                        off
                     });
+
                     max_receptor_offset = max_receptor_offset.max(offset);
                     ReceptorUp::new(Some(texture))
                 } else {
@@ -92,15 +99,20 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .zip(fallbacks.iter().map(|f| &f.receptor_down))
             .map(|(path, fallback_path)| {
                 let tex_path = if textures.contains(path) { path } else { fallback_path };
+                
                 if let Some(texture) = textures.get_shared(tex_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
-                        arc.with_image(|img| dist_from_bottom(img, 0.1)).try_into().unwrap_or(0)
-                    });
-                    receptor_processor.process_once_void(&texture, |arc| {
+                        let off = arc.with_image(|img| {
+                            dist_from_bottom(img, 0.1)
+                        }).try_into().unwrap_or(0);
+
                         arc.data_mut(|img| {
                             *img = trim_image_vertical(img.clone(), 0.2);
                         });
+
+                        off
                     });
+
                     max_receptor_offset = max_receptor_offset.max(offset);
                     ReceptorDown::new(Some(texture))
                 } else {
@@ -161,12 +173,14 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             })
             .collect();
 
+
+            println!("keymode {}, column size: {}, hit pos offset: {}, max receptor offset: {}", key_count, keymode.column_size, keymode.hit_pos_offset_y, max_receptor_offset);
         let layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: keymode.receptors_over_hit_objects,
             show_judgement_line: false,
             x_offset: 0.5,
-            hit_position: 1.0 - (keymode.hit_pos_offset_y as f32 / QuaDimensions::Y.as_f32()),
+            hit_position: -((keymode.column_size as f32 - keymode.hit_pos_offset_y as f32).abs() - max_receptor_offset as f32) / QuaDimensions::Y.as_f32(),
             receptor_offset: (keymode.receptor_pos_offset_y + max_receptor_offset as i32),
             column_widths: vec![keymode.column_size as f32 / QuaDimensions::X.as_f32(); key_count],
             column_spacing: vec![0.0; key_count],
