@@ -540,6 +540,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             lighting_n: keymode.hit_lighting.normal.get_path().unwrap_or_default(),
             lighting_l: keymode.hit_lighting.hold.get_path().unwrap_or_default(),
             stage_light: keymode.column_lighting.texture.get_path().unwrap_or_default(),
+            stage_right: keymode.stage.border_right.get_path().unwrap_or_default(),
+            stage_left: keymode.stage.border_left.get_path().unwrap_or_default(),
             judgement_line: keymode.layout.show_judgement_line,
             hit0: skin.gameplay.judgement.miss.get_path().unwrap_or_default(),
             hit50: skin.gameplay.judgement.bad.get_path().unwrap_or_default(),
