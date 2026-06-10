@@ -81,8 +81,10 @@ impl FromStr for QuaSkinIni {
                 "Results" => results = Results::from_str(content)?,
                 s if s.to_lowercase().ends_with('k') && s.len() > 1 => {
                     let mut km = Keymode::from_str(content)?;
-                    km.keymode = section.trim_end_matches('K').parse().unwrap_or(4);
-                    keymodes.push(km);
+                    if let Ok(n) = section.to_lowercase().trim_end_matches('k').parse::<u8>() {
+                        km.keymode = n;
+                        keymodes.push(km);
+                    }
                 }
                 _ => {}
             }

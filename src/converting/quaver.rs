@@ -3,6 +3,7 @@ use std::sync::{Arc, RwLock};
 use image::GenericImageView;
 
 use crate::common::skin::AssetAttribute;
+use crate::common::traits::LaneFallback;
 use crate::quaver::{dynamic_assets, static_assets};
 use crate::utils::quaver::QuaDimensions;
 use crate::{Binary, BinaryArcExt, BinaryArcExtOption, ConstTypeEnum, Resources, StringPattern, quaver};
@@ -54,9 +55,24 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         let key_count = keymode.keymode as usize;
         let mut max_receptor_offset = 0;
 
-        let fallbacks: Vec<_> = (1..=key_count)
-            .map(|lane| keymode.primary_fallback(lane))
-            .collect();
+        let build_fallbacks = |fallback_vec: &[u8], asset: StringPattern| -> Vec<Option<String>> {
+            fallback_vec.iter()
+                .map(|lane| {
+                    if *lane == 0 {
+                        None
+                    } else {
+                        Some(keymode.get_shared(asset.clone(), *lane as usize).to_string())
+                    }
+                })
+                .collect()
+        };
+
+        let receptor_up_fallbacks = build_fallbacks(&keymode.receptor_fallbacks, dynamic_assets::Receptors::UP);
+        let receptor_down_fallbacks = build_fallbacks(&keymode.receptor_fallbacks, dynamic_assets::Receptors::DOWN);
+        let normal_notes_fallbacks = build_fallbacks(&keymode.hitobject_fallbacks, dynamic_assets::Notes::HIT_OBJECT);
+        let long_note_heads_fallbacks = build_fallbacks(&keymode.holdbody_fallbacks, dynamic_assets::Notes::HOLD_HIT_OBJECT);
+        let long_note_bodies_fallbacks = build_fallbacks(&keymode.holdbody_fallbacks, dynamic_assets::Notes::HOLD_BODY);
+        let long_note_tails_fallbacks = build_fallbacks(&keymode.holdend_fallbacks, dynamic_assets::Notes::HOLD_END);
 
         let receptors = remap(keymode.get_receptors());
         let receptors_down = remap(keymode.get_receptors_down());
@@ -65,13 +81,18 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         let long_note_bodies = remap(keymode.get_long_note_bodies());
         let long_note_tails = remap(keymode.get_long_note_tails());
 
+        let resolve_tex_path = |path, fallback_path: Option<_>| match fallback_path {
+            Some(fallback) if !textures.contains(path) && keymode.use_fallback => fallback,
+            _ => path,
+        };
+
         // TODO: In the future we'd probably want to trim based on "receptor down" since we only check for transparency with a tolererance
         // and if the down texture has a glow for example it will throw off the trimming and we'd end up with unmatching receptors
         let receptor_up_elements: Vec<ReceptorUp> = receptors
             .iter()
-            .zip(fallbacks.iter().map(|f| &f.receptor))
+            .zip(receptor_up_fallbacks.iter())
             .map(|(path, fallback_path)| {
-                let tex_path = if textures.contains(path) { path } else { fallback_path };
+                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
                 
                 if let Some(texture) = textures.get_shared(tex_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
@@ -96,9 +117,9 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let receptor_down_elements: Vec<ReceptorDown> = receptors_down
             .iter()
-            .zip(fallbacks.iter().map(|f| &f.receptor_down))
+            .zip(receptor_down_fallbacks.iter())
             .map(|(path, fallback_path)| {
-                let tex_path = if textures.contains(path) { path } else { fallback_path };
+                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
                 
                 if let Some(texture) = textures.get_shared(tex_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
@@ -123,9 +144,10 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let normal_note_elements: Vec<NormalNote> = normal_notes
             .iter()
-            .zip(fallbacks.iter().map(|f| &f.normal_note))
+            .zip(normal_notes_fallbacks.iter())
             .map(|(path, fallback_path)| {
-                let tex_path = if textures.contains(path) { path } else { fallback_path };
+                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
+
                 if let Some(texture) = textures.get_shared(tex_path) {
                     NormalNote::new(Some(texture))
                 } else {
@@ -136,9 +158,10 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let long_note_head_elements: Vec<LongNoteHead> = long_note_heads
             .iter()
-            .zip(fallbacks.iter().map(|f| &f.long_note_head))
+            .zip(long_note_heads_fallbacks.iter())
             .map(|(path, fallback_path)| {
-                let tex_path = if textures.contains(path) { path } else { fallback_path };
+                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
+
                 if let Some(texture) = textures.get_shared(tex_path) {
                     LongNoteHead::new(Some(texture))
                 } else {
@@ -149,9 +172,10 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let long_note_body_elements: Vec<LongNoteBody> = long_note_bodies
             .iter()
-            .zip(fallbacks.iter().map(|f| &f.long_note_body))
+            .zip(long_note_bodies_fallbacks.iter())
             .map(|(path, fallback_path)| {
-                let tex_path = if textures.contains(path) { path } else { fallback_path };
+                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
+
                 if let Some(texture) = textures.get_shared(tex_path) {
                     LongNoteBody::new(Some(texture))
                 } else {
@@ -162,9 +186,10 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let long_note_tail_elements: Vec<LongNoteTail> = long_note_tails
             .iter()
-            .zip(fallbacks.iter().map(|f| &f.long_note_tail))
+            .zip(long_note_tails_fallbacks.iter())
             .map(|(path, fallback_path)| {
-                let tex_path = if textures.contains(path) { path } else { fallback_path };
+                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
+
                 if let Some(texture) = textures.get_shared(tex_path) {
                     LongNoteTail::new(Some(texture))
                 } else {
@@ -183,6 +208,17 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             column_widths: vec![keymode.column_size as f32 / QuaDimensions::X.as_f32(); key_count],
             column_spacing: vec![0.0; key_count],
         };
+
+        let fallbacks: Vec<LaneFallback> = (0..key_count)
+            .map(|i| LaneFallback {
+                receptor: receptor_up_fallbacks[i].clone().unwrap_or_default(),
+                receptor_down: receptor_down_fallbacks[i].clone().unwrap_or_default(),
+                normal_note: normal_notes_fallbacks[i].clone().unwrap_or_default(),
+                long_note_head: long_note_heads_fallbacks[i].clone().unwrap_or_default(),
+                long_note_body: long_note_bodies_fallbacks[i].clone().unwrap_or_default(),
+                long_note_tail: long_note_tails_fallbacks[i].clone().unwrap_or_default(),
+            })
+            .collect();
 
         keymodes.push(Keymode {
             keymode: key_count as u8,

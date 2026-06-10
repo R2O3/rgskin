@@ -23,7 +23,7 @@ pub fn osu_to_fluxis_test() -> Result<(), Box<dyn std::error::Error>> {
 pub fn quaver_to_fluxis_test() -> Result<(), Box<dyn std::error::Error>> {
     benchmark_closure(||
     {
-        let quaver_skin = import::quaver::skin_from_dir("./tests/skins/RemuDiamond", false)?;
+        let quaver_skin = import::quaver::skin_from_dir("./tests/skins/MinimalDiamonds", false)?;
         let generic_skin = quaver_skin.to_generic_mania(())?;
         let fluxis_from_generic = FluXisSkin::from_generic_mania(&generic_skin)?;
         export::fluxis::skin_to_dir(&fluxis_from_generic.0, SKIN_PATH)?;

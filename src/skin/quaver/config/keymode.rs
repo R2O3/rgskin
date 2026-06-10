@@ -13,6 +13,10 @@ fn parse_bool(value: &str) -> Result<bool, std::str::ParseBoolError> {
     value.trim().to_lowercase().parse()
 }
 
+fn parse_list<T: std::str::FromStr>(value: &str) -> Vec<T> {
+    value.split(',').filter_map(|s| s.trim().parse::<T>().ok()).collect()
+}
+
 // TODO: add support for quaver fallback (sharedK)
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
@@ -367,6 +371,14 @@ pub struct Keymode {
     pub mini_song_bar_display_pos_y: i32,
     pub mini_song_bar_display_width_factor: i32,
     pub mini_song_bar_display_height: i32,
+
+    pub use_fallback: bool,
+    pub hitobject_fallbacks: Vec<u8>,
+    pub holdbody_fallbacks: Vec<u8>,
+    pub holdend_fallbacks: Vec<u8>,
+    pub receptor_fallbacks: Vec<u8>,
+    pub hitobject_rotations: Vec<u8>,
+    pub receptor_rotations: Vec<u8>,
 }
 
 impl Default for Keymode {
@@ -474,6 +486,13 @@ impl Default for Keymode {
             mini_song_bar_display_pos_y: 0,
             mini_song_bar_display_width_factor: 30,
             mini_song_bar_display_height: 4,
+            use_fallback: false,
+            hitobject_fallbacks: Vec::new(),
+            holdbody_fallbacks: Vec::new(),
+            holdend_fallbacks: Vec::new(),
+            receptor_fallbacks: Vec::new(),
+            hitobject_rotations: Vec::new(),
+            receptor_rotations: Vec::new(),
         }
     }
 }
@@ -645,6 +664,15 @@ impl Keymode {
                 "MiniSongBarDisplayWidthFactor" => km.mini_song_bar_display_width_factor = value_str.parse().unwrap_or(km.mini_song_bar_display_width_factor),
                 "MiniSongBarDisplayHeight" => km.mini_song_bar_display_height = value_str.parse().unwrap_or(km.mini_song_bar_display_height),
 
+                // fallbacks
+                "UseFallback" => km.use_fallback = parse_bool(value_str).unwrap_or(km.use_fallback),
+                "HitObjectFallbacks" => km.hitobject_fallbacks = parse_list::<u8>(value_str),
+                "HoldBodyFallbacks" => km.holdbody_fallbacks = parse_list::<u8>(value_str),
+                "HoldEndFallbacks" => km.holdend_fallbacks = parse_list::<u8>(value_str),
+                "ReceptorFallbacks" => km.receptor_fallbacks = parse_list::<u8>(value_str),
+                "HitObjectRotations" => km.hitobject_rotations = parse_list::<u8>(value_str),
+                "ReceptorRotations" => km.receptor_rotations = parse_list::<u8>(value_str),
+
                 _ => {}
             }
         }
@@ -674,6 +702,13 @@ impl Keymode {
                     add_key_value(&mut result, $key, " = ", &serialize_bool(self.$field).to_string(), "\n");
                 }
             };
+        }
+        macro_rules! wl {
+            ($key:literal, $field:ident) => {{
+                let joined = self.$field.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",");
+                let joined_d = d.$field.iter().map(|v| v.to_string()).collect::<Vec<_>>().join(",");
+                add_key_value_if_not_default(&mut result, $key, " = ", &joined, &joined_d);
+            }};
         }
 
         // notes
@@ -823,6 +858,12 @@ impl Keymode {
         wi!("MiniSongBarDisplayWidthFactor", mini_song_bar_display_width_factor);
         wi!("MiniSongBarDisplayHeight", mini_song_bar_display_height);
 
+        wb!("UseFallback", use_fallback);
+        wl!("HitobjectFallbacks", hitobject_fallbacks);
+        wl!("HoldbodyFallbacks", holdbody_fallbacks);
+        wl!("HoldendFallbacks", holdend_fallbacks);
+        wl!("ReceptorFallbacks", receptor_fallbacks);
+
         result
     }
 }
@@ -842,6 +883,10 @@ impl Keymode {
 
 impl KeymodeInvariant for Keymode {
     fn get_keymode(&self) -> u8 { self.keymode }
+
+    fn shared_km_str() -> StringPattern {
+        StringPattern::new("shared")
+    }
 
     fn get_receptors(&self) -> Vec<String> {
         self.saturate_per_lane(&dynamic_assets::Receptors::UP)

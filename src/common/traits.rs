@@ -52,12 +52,21 @@ pub trait ManiaSkinConfig: SkinConfig {
 
 pub trait KeymodeInvariant: Sized {
     fn get_keymode(&self) -> u8;
-    
+
+    fn shared_km_str() -> StringPattern { StringPattern::from("") }
+
     /// get any asset from a pattern if it has {keys} and {lane} placeholders, replacing them with the keymode and lane number respectively
     fn get_generic(&self, pattern: StringPattern, _lane: usize) -> StringPattern {
         StringPattern::from(
             pattern
                     .replace("{keys}", &self.get_keymode().to_string())
+                    .replace("{lane}", &_lane.to_string()))
+    }
+
+    fn get_shared(&self, pattern: StringPattern, _lane: usize) -> StringPattern {
+        StringPattern::from(
+            pattern
+                    .replace("{keys}", &Self::shared_km_str().to_string())
                     .replace("{lane}", &_lane.to_string()))
     }
 
