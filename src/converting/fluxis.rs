@@ -250,8 +250,8 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
-            hit_lighting: HitLighting { normal: Some(blank_texture.clone()),
-                hold: Some(blank_texture.clone()) },
+            hit_lighting_normal: HitLightingNormal::new(Vec::new(), None, None, None),
+            hit_lighting_hold: HitLightingHold::new(Vec::new(), None, None, None),
             column_lighting: ColumnLighting { texture: Some(texture_or_blank(column_lighting_path)) },
             judgement_line: JudgementLine {
                 texture: if !show_judgement_line {

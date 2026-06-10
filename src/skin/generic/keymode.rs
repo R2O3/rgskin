@@ -26,7 +26,9 @@ pub struct Keymode {
     pub long_note_tail: Vec<LongNoteTail>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub hit_lighting: HitLighting,
+    pub hit_lighting_normal: HitLightingNormal,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub hit_lighting_hold: HitLightingHold,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub column_lighting: ColumnLighting,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]

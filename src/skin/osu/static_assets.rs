@@ -1,6 +1,7 @@
 use crate::def_const_type_enum;
 
 // TODO: add attributes
+// TODO: add animatable to dynamic assets
 
 def_const_type_enum! (pub Mania => StringPattern {
     HIT0 => "mania-hit0",

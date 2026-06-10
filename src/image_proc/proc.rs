@@ -1,5 +1,5 @@
 use std::sync::{Arc, RwLock};
-use image::{imageops::{self, FilterType}, DynamicImage, GenericImageView, Rgba};
+use image::{DynamicImage, GenericImage, GenericImageView, Rgba, imageops::{self, FilterType}};
 use crate::{
     io::texture::Texture,
     process_texture, process_texture_mut,
@@ -198,4 +198,51 @@ pub fn blend_alpha(bg: u8, fg: u8, _alpha: f32) -> u8 {
     let bg_alpha = bg as f32 / 255.0;
     let fg_alpha = fg as f32 / 255.0;
     ((fg_alpha + bg_alpha * (1.0 - fg_alpha)) * 255.0) as u8
+}
+
+pub fn extract_from_sheet(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<DynamicImage>
+{
+    let (width, height) = sheet.dimensions();
+
+    let sprite_w = width / columns;
+    let sprite_h = height / rows;
+
+    let mut result = Vec::with_capacity((rows * columns) as usize);
+
+    for j in 0..rows {
+        for i in 0..columns {
+            let x = i * sprite_w;
+            let y = j * sprite_h;
+
+            let sprite = sheet.crop_imm(x, y, sprite_w, sprite_h);
+
+            result.push(sprite);
+        }
+    }
+
+    result
+}
+
+pub fn concat_into_sheet(sprites: Vec<&DynamicImage>, rows: u32, columns: u32) -> Option<DynamicImage> {
+    if sprites.is_empty() {
+        return None
+    }
+
+    let (sprite_w, sprite_h) = sprites[0].dimensions();
+    let width = sprite_w * columns;
+    let height = sprite_h * rows;
+
+    let mut sheet = image::RgbaImage::new(width, height);
+
+    for (index, sprite) in sprites.into_iter().enumerate() {
+        let i = (index as u32) % columns;
+        let j = (index as u32) / columns;
+
+        let x = i * sprite_w;
+        let y = j * sprite_h;
+
+        sheet.copy_from(sprite, x, y).unwrap();
+    }
+
+    Some(DynamicImage::ImageRgba8(sheet))
 }

@@ -85,9 +85,25 @@ impl std::borrow::Borrow<str> for StringPattern {
 
 impl StringPattern {
     pub fn matches_path(&self, path: &str) -> bool {
-        match_template(&self.0, path)
-            || path.strip_suffix("@2x")
-                   .map_or(false, |base| match_template(&self.0, base))
+        if match_template(&self.0, path) {
+            return true;
+        }
+
+        if let Some(idx) = path.rfind('@') {
+            let base = &path[..idx];
+            if match_template(&self.0, base) {
+                return true;
+            }
+        }
+
+        false
+    }
+
+    pub fn get_sheet_size(&self) -> Option<(u32, u32)> {
+        self.0.split("@").nth(1)
+              .and_then(|suffix| suffix.strip_suffix("x"))
+              .and_then(|num_str| num_str.parse::<u32>().ok())
+              .map(|n| (n, n))
     }
 }
 
@@ -112,7 +128,7 @@ fn match_template(pattern: &str, input: &str) -> bool {
 
                 let close = match p[brace_start..].find('}') {
                     Some(j) => brace_start + j + 1,
-                    None    => return false, // malformed pattern
+                    None => return false, // malformed pattern
                 };
                 p = &p[close..];
 
@@ -124,7 +140,7 @@ fn match_template(pattern: &str, input: &str) -> bool {
                 } else {
                     match i.to_lowercase().find(&delimiter.to_lowercase()) {
                         Some(pos) => pos,
-                        None      => return false,
+                        None => return false,
                     }
                 };
 

@@ -16,7 +16,7 @@ use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
 use crate::traits::{KeymodeInvariant, ManiaSkinConfig};
 use crate::utils::osu::OsuDimensions;
 use crate::utils::skin::{cleanup_stores, StoreRelocator};
-use crate::{Binary, BinaryArcExtOption, BinaryState, Resources};
+use crate::{Binary, BinaryArcExt, BinaryArcExtOption, BinaryState, Resources, StringPattern};
 
 pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
     let mut textures = skin.textures.clone();
@@ -214,6 +214,29 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
 
+        let get_frames = |fallback_key: &str, prefix: StringPattern| -> Vec<Arc<RwLock<Texture>>> {
+            if let Some(tex) = textures.get_shared(fallback_key) {
+                vec![tex]
+            } else {
+                let (_, mut all_textures): (Vec<&str>, Vec<Arc<RwLock<Texture>>>) = textures
+                    .get_shared_all(|t| t.get_path().starts_with(&prefix.to_string()))
+                    .iter()
+                    .cloned()
+                    .unzip();
+
+                all_textures.sort_by_key(|arc| {
+                    let path = arc.get_path();
+
+                    path.split('-')
+                        .last()
+                        .and_then(|s| s.parse::<u32>().ok())
+                        .unwrap_or(0)
+                });
+
+                all_textures
+            }
+        };
+
         keymodes.push(Keymode { 
             keymode: key_count as u8,
             layout,
@@ -223,10 +246,8 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
-            hit_lighting: HitLighting { 
-                normal: Some(texture_or_blank(&keymode.lighting_n)),
-                hold: Some(texture_or_blank(&keymode.lighting_l)) 
-            },
+            hit_lighting_normal: HitLightingNormal::new(get_frames(&keymode.lighting_n, static_assets::Mania::LIGHTINGN), Some(keymode.light_frame_per_second as f32), None, None),
+            hit_lighting_hold: HitLightingHold::new(get_frames(&keymode.lighting_l, static_assets::Mania::LIGHTINGL), Some(keymode.light_frame_per_second as f32), None, None),
             column_lighting: ColumnLighting { 
                 texture: Some(texture_or_blank(&keymode.stage_light)) 
             },
@@ -520,6 +541,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         let stage_width = (keymode.layout.column_widths.iter().sum::<f32>() + (keymode.layout.column_spacing.iter().sum::<f32>())) * OsuDimensions::X.as_f32() * OsuDimensions::ColumnScaleFromGeneric.as_f32();
         let playfield_pos = (OsuDimensions::Y.as_f32() * aspect_ratio - stage_width.round()) * keymode.layout.x_offset;
 
+        // TODO: add animated assets to osu
+
         let osu_keymode = osu::Keymode {
             keymode: keymode.keymode,
             keys_under_notes: !keymode.layout.receptor_above_notes,
@@ -537,8 +560,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             long_note_head_images,
             long_note_body_images,
             long_note_tail_images,
-            lighting_n: keymode.hit_lighting.normal.get_path().unwrap_or_default(),
-            lighting_l: keymode.hit_lighting.hold.get_path().unwrap_or_default(),
+            lighting_n: keymode.hit_lighting_normal.get_path().unwrap_or_default(),
+            lighting_l: keymode.hit_lighting_hold.get_path().unwrap_or_default(),
             stage_light: keymode.column_lighting.texture.get_path().unwrap_or_default(),
             stage_right: keymode.stage.border_right.get_path().unwrap_or_default(),
             stage_left: keymode.stage.border_left.get_path().unwrap_or_default(),

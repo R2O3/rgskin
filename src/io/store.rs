@@ -99,7 +99,61 @@ pub trait Store<T: Binary>: Debug {
         let normalized = normalize(path);
         self.map().get(&normalized).map(|arc| arc.write().unwrap())
     }
-    
+
+    fn get_all<'a, F>(&'a self, mut predicate: F) -> Vec<(&'a str, std::sync::RwLockReadGuard<'a, T>)>
+    where
+        F: FnMut(&T) -> bool,
+        T: 'a,
+    {
+        self.map()
+            .iter()
+            .filter_map(|(k, arc)| {
+                let guard = arc.read().unwrap();
+                if predicate(&*guard) {
+                    Some((k.as_str(), guard))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn get_shared_all<'a, F>(&'a self, mut predicate: F) -> Vec<(&'a str, Arc<RwLock<T>>)>
+    where
+        F: FnMut(&T) -> bool,
+        T: 'a,
+    {
+        self.map()
+            .iter()
+            .filter_map(|(k, arc)| {
+                let guard = arc.read().unwrap();
+                if predicate(&*guard) {
+                    Some((k.as_str(), Arc::clone(arc)))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
+    fn get_mut_all<'a, F>(&'a self, mut predicate: F) -> Vec<(&'a str, std::sync::RwLockWriteGuard<'a, T>)>
+    where
+        F: FnMut(&T) -> bool,
+        T: 'a,
+    {
+        self.map()
+            .iter()
+            .filter_map(|(k, arc)| {
+                let guard = arc.write().unwrap();
+                if predicate(&*guard) {
+                    Some((k.as_str(), guard))
+                } else {
+                    None
+                }
+            })
+            .collect()
+    }
+
     fn contains(&self, path: &str) -> bool {
         let normalized = normalize(path);
         self.map().contains_key(&normalized)

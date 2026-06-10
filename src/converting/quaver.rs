@@ -1,24 +1,23 @@
 use std::sync::{Arc, RwLock};
 
-use image::GenericImageView;
+use image::{DynamicImage, GenericImageView};
 
 use crate::common::skin::AssetAttribute;
 use crate::common::traits::LaneFallback;
 use crate::quaver::{dynamic_assets, static_assets};
 use crate::utils::quaver::QuaDimensions;
-use crate::{Binary, BinaryArcExt, BinaryArcExtOption, ConstTypeEnum, Resources, StringPattern, quaver};
+use crate::{Binary, BinaryArcExt, BinaryArcExtOption, BinaryState, ConstTypeEnum, Resources, StringPattern, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
 use crate::common::color::Rgba;
 use crate::common::vector::Vector3;
 use crate::extensions::{TextureArcExt, VecExtensions};
 use crate::generic::elements::{
-    ColumnLighting, Cursor, Healthbar, HitLighting, Judgement, JudgementLine, LongNoteBody,
-    LongNoteHead, LongNoteTail, NormalNote, ReceptorDown, ReceptorUp, Stage,
+    ColumnLighting, Cursor, Healthbar, HitLightingHold, HitLightingNormal, Judgement, JudgementLine, LongNoteBody, LongNoteHead, LongNoteTail, NormalNote, ReceptorDown, ReceptorUp, SkinElement, Stage
 };
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::sound::{GenericGameplaySounds, ManiaGameplaySounds, Sounds, UISounds};
 use crate::generic::{Gameplay, UI};
-use crate::image_proc::proc::{dist_from_bottom, trim_image_vertical};
+use crate::image_proc::proc::{concat_into_sheet, dist_from_bottom, extract_from_sheet, trim_image_vertical};
 use crate::io::texture::{Texture, TextureProcessor};
 use crate::io::Store;
 use crate::skin::generic::{GenericManiaSkin, Keymode, Metadata};
@@ -210,15 +209,42 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         };
 
         let fallbacks: Vec<LaneFallback> = (0..key_count)
-            .map(|i| LaneFallback {
-                receptor: receptor_up_fallbacks[i].clone().unwrap_or_default(),
-                receptor_down: receptor_down_fallbacks[i].clone().unwrap_or_default(),
-                normal_note: normal_notes_fallbacks[i].clone().unwrap_or_default(),
-                long_note_head: long_note_heads_fallbacks[i].clone().unwrap_or_default(),
-                long_note_body: long_note_bodies_fallbacks[i].clone().unwrap_or_default(),
-                long_note_tail: long_note_tails_fallbacks[i].clone().unwrap_or_default(),
-            })
-            .collect();
+        .map(|i| LaneFallback {
+            receptor: resolve_tex_path(&receptors[i], receptor_up_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
+            receptor_down: resolve_tex_path(&receptors_down[i], receptor_down_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
+            normal_note: resolve_tex_path(&normal_notes[i], normal_notes_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
+            long_note_head: resolve_tex_path(&long_note_heads[i], long_note_heads_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
+            long_note_body: resolve_tex_path(&long_note_bodies[i], long_note_bodies_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
+            long_note_tail: resolve_tex_path(&long_note_tails[i], long_note_tails_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
+        })
+        .collect();
+
+        let get_frames = |sheet: StringPattern| -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
+            if let Some(sheet_tex) = textures.get_shared(&sheet.to_string()) {
+                println!("Hehe: {:?}", sheet_tex.get_path());
+                if let Some((rows, cols)) = sheet.get_sheet_size() {
+                    let result = extract_from_sheet(&sheet_tex.get_data().unwrap(), rows, cols)
+                        .into_iter()
+                        .enumerate()
+                        .map(|(idx, img)| {
+                            Arc::new(RwLock::new(Texture::new_with_state(
+                                format!("{}-{}", sheet.to_string(), idx),
+                                BinaryState::Loaded(img),
+                            )))
+                        })
+                        .collect();
+
+                    (result, rows, cols)
+                } else {
+                    (vec![sheet_tex], 1, 1)
+                }
+            } else {
+                (Vec::new(), 1, 1)
+            }
+        };
+
+        let hln = get_frames(keymode.get_generic(dynamic_assets::Lighting::HIT_LIGHTING, 0));
+        let hlh = get_frames(keymode.get_generic(dynamic_assets::Lighting::HOLD_LIGHTING, 0));
 
         keymodes.push(Keymode {
             keymode: key_count as u8,
@@ -229,10 +255,8 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
-            hit_lighting: HitLighting {
-                normal: Some(Arc::clone(&blank_texture)),
-                hold: Some(Arc::clone(&blank_texture)),
-            },
+            hit_lighting_normal: HitLightingNormal::new(hln.0, Some(keymode.hit_lighting_fps as f32), Some(hln.2), Some(hln.1)),
+            hit_lighting_hold: HitLightingHold::new(hlh.0, Some(keymode.hold_lighting_fps as f32), Some(hlh.2), Some(hlh.1)),
             column_lighting: ColumnLighting { texture: Some(Arc::clone(&blank_texture)) },
             judgement_line: JudgementLine { texture: Some(Arc::clone(&blank_texture)), color: Rgba::default() },
             stage: Stage::new(
@@ -325,9 +349,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
 
     let mut qua_keymodes = Vec::new();
 
-    let mut tr = StoreRelocator::new(&mut textures);
+    
     let mut sr = StoreRelocator::new(&mut samples);
-
 
     for keymode in &skin.keymodes {
         let mut qua_km = quaver::Keymode::default();
@@ -348,42 +371,77 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
         let mut body_processor = TextureProcessor::<()>::new();
 
         for i in 0..(keymode.keymode as usize) {
-            if let Some(r) = keymode.receptor_up.get(i) {
-                tr.reloc_arc_lock(&r.texture, StringPattern::from(&q_receptors[i]));
-            }
-            if let Some(r) = keymode.receptor_down.get(i) {
-                tr.reloc_arc_lock(&r.texture, StringPattern::from(&q_receptors_down[i]));
-            }
-            if let Some(n) = keymode.normal_note.get(i) {
-                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_normal_notes[i]));
-            }
-            if let Some(n) = keymode.long_note_head.get(i) {
-                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_heads[i]));
-            }
-            if let Some(n) = keymode.long_note_body.get(i) {
-                if let Some(texture_arc) = &n.texture
-                {
-                        body_processor.process_once_void(texture_arc, |arc_texture| {
-                            arc_texture.data_mut(|img| {
-                                let (width, height) = img.dimensions();
-                                let max_res = QuaDimensions::MaxResolution.as_u32();
-                                
-                                if width > max_res || height > max_res {
-                                    *img = img.resize_exact(
-                                        width.min(max_res),
-                                        height.min(max_res),
-                                        image::imageops::FilterType::Lanczos3
-                                    );
-                                }
-                            });
-                        });
+            {
+
+                let mut tr = StoreRelocator::new(&mut textures);
+
+                if let Some(r) = keymode.receptor_up.get(i) {
+                    tr.reloc_arc_lock(&r.texture, StringPattern::from(&q_receptors[i]));
                 }
-                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_bodies[i]));
+                if let Some(r) = keymode.receptor_down.get(i) {
+                    tr.reloc_arc_lock(&r.texture, StringPattern::from(&q_receptors_down[i]));
+                }
+                if let Some(n) = keymode.normal_note.get(i) {
+                    tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_normal_notes[i]));
+                }
+                if let Some(n) = keymode.long_note_head.get(i) {
+                    tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_heads[i]));
+                }
+                if let Some(n) = keymode.long_note_body.get(i) {
+                    if let Some(texture_arc) = &n.texture
+                    {
+                            body_processor.process_once_void(texture_arc, |arc_texture| {
+                                arc_texture.data_mut(|img| {
+                                    let (width, height) = img.dimensions();
+                                    let max_res = QuaDimensions::MaxResolution.as_u32();
+                                    
+                                    if width > max_res || height > max_res {
+                                        *img = img.resize_exact(
+                                            width.min(max_res),
+                                            height.min(max_res),
+                                            image::imageops::FilterType::Lanczos3
+                                        );
+                                    }
+                                });
+                            });
+                    }
+                    tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_bodies[i]));
+                }
+                if let Some(n) = keymode.long_note_tail.get(i) {
+                    tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_tails[i]));
+                }
             }
-            if let Some(n) = keymode.long_note_tail.get(i) {
-                tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_tails[i]));
+
+            fn get_sheet<T: SkinElement>(element: &T, pattern: StringPattern) -> Option<Texture> {
+                let sprite_locks = element.as_texture_frames();
+                let sprites_vec: Vec<_> = sprite_locks.iter().collect();
+
+                let mut sprites: Vec<&DynamicImage> = sprites_vec
+                    .iter()
+                    .map(|g| g.state().as_loaded().expect("Sprite not loaded"))
+                    .collect();
+
+                if sprites.len() == 1 {
+                    let key = pattern.to_string();
+                    let sheet = sprites.remove(0).clone();
+                    Some(Texture::with_data(key, sheet))
+                } else {
+                    let rows = element.get_rows().unwrap_or(1);
+                    let cols = element.get_columns().unwrap_or(1);
+                    let sheet = concat_into_sheet(sprites, rows, cols);
+
+                    let key = format!("{}@{}x{}", pattern.to_string(), rows, cols);
+
+                    sheet.map(|tex| Texture::with_data(key, tex))
+                }
+            }
+
+            if let Some(tex) = get_sheet(&keymode.hit_lighting_normal, keymode.get_generic(dynamic_assets::Lighting::HIT_LIGHTING, 0)) {
+                textures.insert(tex);
             }
         }
+
+        let mut tr = StoreRelocator::new(&mut textures);
 
         tr.reloc_arc_lock(&keymode.stage.background, qua_km.get_generic(dynamic_assets::Stage::BG_MASK, 0));
         tr.reloc_arc_lock(&keymode.stage.border_right, qua_km.get_generic(dynamic_assets::Stage::RIGHT_BORDER, 0));
