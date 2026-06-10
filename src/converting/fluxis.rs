@@ -27,7 +27,6 @@ use crate::skin::fluxis::{
 };
 use crate::traits::{KeymodeInvariant, ManiaSkin};
 use crate::utils::fluxis::FluXisDimensions;
-use crate::utils::math::Resizer;
 use crate::utils::skin::{StoreRelocator, cleanup_stores};
 use crate::{Binary, BinaryArcExt, BinaryArcExtOption, GenericManiaSkin, Resources};
 
@@ -416,11 +415,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
 
     let mut body_processor = TextureProcessor::<()>::new();
     let mut tail_processor = TextureProcessor::<()>::new();
-
-    let resize = Resizer::new(
-        skin.resolution,
-        Some(Vector2::new(FluXisDimensions::X.as_u32(), FluXisDimensions::Y.as_u32()))
-    );
     
     for keymode in &skin.keymodes {
         let key_count = keymode.keymode as u8;

@@ -74,4 +74,10 @@ impl<'a, T: Binary + 'static, S: Store<T>> StoreRelocator<'a, T, S> {
             self.store.copy(item_path, &target_path);
         }
     }
+
+    pub fn reloc_str_if_not_exist(&mut self, original_path: &str, target_path: StringPattern) {
+        if !self.store.contains(&target_path) {
+            let _ = self.store.copy(original_path, &target_path);
+        }
+    }
 }

@@ -14,9 +14,8 @@ use crate::osu::{self, General, OsuSkin, OsuSkinIni};
 use crate::skin::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::skin::generic::{elements::*, Keymode, Metadata, GenericManiaSkin};
 use crate::traits::{KeymodeInvariant, ManiaSkinConfig};
-use crate::utils::math::Resizer;
 use crate::utils::osu::OsuDimensions;
-use crate::utils::skin::cleanup_stores;
+use crate::utils::skin::{cleanup_stores, StoreRelocator};
 use crate::{Binary, BinaryArcExtOption, BinaryState, Resources};
 
 pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -361,11 +360,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
     let mut samples = skin.samples.clone();
     let mut osu_keymodes: Vec<osu::Keymode> = Vec::new();
 
-    let resize = Resizer::new(
-        skin.resolution,
-        Some(Vector2::new(OsuDimensions::X.as_u32(), OsuDimensions::Y.as_u32()))
-    );
-
     let blank_texture: Arc<RwLock<Texture>> = textures.get_shared("blank")
         .unwrap_or(Arc::new(RwLock::new(Texture::from_blank("blank".to_string()))));
 
@@ -477,36 +471,24 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             }
         }
 
-        // todo: use new store relocator
+        let mut tr = StoreRelocator::new(&mut textures);
+        let mut sr = StoreRelocator::new(&mut samples);
+
+        tr.reloc_arc_lock(&skin.gameplay.judgement.flawless, static_assets::Mania::HIT300G);
+        tr.reloc_arc_lock(&skin.gameplay.judgement.perfect, static_assets::Mania::HIT300);
+        tr.reloc_arc_lock(&skin.gameplay.judgement.great, static_assets::Mania::HIT200);
+        tr.reloc_arc_lock(&skin.gameplay.judgement.good, static_assets::Mania::HIT100);
+        tr.reloc_arc_lock(&skin.gameplay.judgement.bad, static_assets::Mania::HIT50);
+        tr.reloc_arc_lock(&skin.gameplay.judgement.miss, static_assets::Mania::HIT0);
 
         // these wouldn't be present in other skins
-        if !textures.contains(&static_assets::Interface::STAR) {
-            textures.copy("blank", &static_assets::Interface::STAR);
-        }
-
-        if !textures.contains(&static_assets::Interface::STAR2) {
-            textures.copy("blank", &static_assets::Interface::STAR2);
-        }
-
-        if !textures.contains(&static_assets::Interface::SCOREBAR_MARKER) {
-            textures.copy("blank", &static_assets::Interface::SCOREBAR_MARKER);
-        }
-
-        if !textures.contains(&static_assets::Mania::STAGE_HINT) {
-            textures.copy("blank", &static_assets::Mania::STAGE_HINT);
-        }
-
-        if !textures.contains(&static_assets::Mania::WARNINGARROW) {
-            textures.copy("blank", &static_assets::Mania::WARNINGARROW);
-        }
-
-        if !textures.contains(&static_assets::Interface::CURSORMIDDLE) {
-            textures.copy("blank", &static_assets::Interface::CURSORMIDDLE);
-        }
-
-        if !textures.contains(&static_assets::Interface::CURSORTRAIL) {
-            textures.copy("blank", &static_assets::Interface::CURSORTRAIL);
-        }
+        tr.reloc_str_if_not_exist("blank", static_assets::Interface::STAR);
+        tr.reloc_str_if_not_exist("blank", static_assets::Interface::STAR2);
+        tr.reloc_str_if_not_exist("blank", static_assets::Interface::SCOREBAR_MARKER);
+        tr.reloc_str_if_not_exist("blank", static_assets::Mania::STAGE_HINT);
+        tr.reloc_str_if_not_exist("blank", static_assets::Mania::WARNINGARROW);
+        tr.reloc_str_if_not_exist("blank", static_assets::Interface::CURSORMIDDLE);
+        tr.reloc_str_if_not_exist("blank", static_assets::Interface::CURSORTRAIL);
 
         if !textures.contains(&static_assets::Interface::CURSOR) {
             if let Some(cursor_arc) = &skin.ui.cursor.texture {
@@ -522,38 +504,14 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         }
 
         // Samples
-
-        if let Some(s) = &skin.sounds.ui.menu_back_click {
-            samples.copy(s, &static_assets::Samples::MENU_BACK_CLICK);
-        }
-
-        if let Some(s) = &skin.sounds.ui.ui_click {
-            samples.copy(s, &static_assets::Samples::CLICK_SHORT_CONFIRM);
-        }
-
-        if let Some(s) = &skin.sounds.ui.ui_select {
-            samples.copy(s, &static_assets::Samples::MENU_FREEPLAY_CLICK);
-        }
-
-        if let Some(s) = &skin.sounds.ui.ui_hover {
-            samples.copy(s, &static_assets::Samples::CLICK_SHORT);
-        }
-
-        if let Some(s) = &skin.sounds.gameplay.miss {
-            samples.copy(s, &static_assets::Samples::COMBOBREAK);
-        }
-
-        if let Some(s) = &skin.sounds.gameplay.fail {
-            samples.copy(s, &static_assets::Samples::FAILSOUND);
-        }
-
-        if let Some(s) = &skin.sounds.gameplay.restart {
-            samples.copy(s, &static_assets::Samples::PAUSE_RETRY_CLICK);
-        }
-
-        if let Some(s) = &skin.sounds.mania.hit {
-            samples.copy(s, &static_assets::Samples::DRUM_HITNORMAL);
-        }
+        sr.reloc_str(&skin.sounds.ui.menu_back_click, static_assets::Samples::MENU_BACK_CLICK);
+        sr.reloc_str(&skin.sounds.ui.ui_click, static_assets::Samples::CLICK_SHORT_CONFIRM);
+        sr.reloc_str(&skin.sounds.ui.ui_select, static_assets::Samples::MENU_FREEPLAY_CLICK);
+        sr.reloc_str(&skin.sounds.ui.ui_hover, static_assets::Samples::CLICK_SHORT);
+        sr.reloc_str(&skin.sounds.gameplay.miss, static_assets::Samples::COMBOBREAK);
+        sr.reloc_str(&skin.sounds.gameplay.fail, static_assets::Samples::FAILSOUND);
+        sr.reloc_str(&skin.sounds.gameplay.restart, static_assets::Samples::PAUSE_RETRY_CLICK);
+        sr.reloc_str(&skin.sounds.mania.hit, static_assets::Samples::DRUM_HITNORMAL);
 
         // we'll assume that the size of the screen is 16:9 since that's most common
         // osu!mania playfield positions depends on your screen ratio
