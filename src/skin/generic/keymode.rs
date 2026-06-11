@@ -1,15 +1,21 @@
+use rgskin_derive::GetAllTextures;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-use crate::{skin::generic::{elements::*, layout::KeymodeLayout}, traits::{KeymodeInvariant, LaneFallback, LaneType}, utils::skin::get_lane_type, BinaryArcExtOption};
+use crate::{BinaryArcExtOption, common::color::Rgba, skin::generic::{elements::*, layout::KeymodeLayout}, traits::{KeymodeInvariant, LaneFallback, LaneType}, utils::skin::get_lane_type};
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
-#[derive(Clone)]
+#[derive(Clone, GetAllTextures)]
 pub struct Keymode {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     pub keymode: u8,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub layout: KeymodeLayout,
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub use_snap_color: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub snap_colors: Vec<Rgba>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub receptor_up: Vec<ReceptorUp>,
@@ -24,6 +30,16 @@ pub struct Keymode {
     pub long_note_body: Vec<LongNoteBody>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub long_note_tail: Vec<LongNoteTail>,
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub base_normal_note: Option<BaseNormalNote>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub base_long_note: Option<BaseHoldHead>,
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub normal_notes_snap_colored: Option<NormalNotesSnapColored>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub long_note_heads_snap_colored: Option<LongNoteHeadsSnapColored>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub hit_lighting_normal: HitLightingNormal,

@@ -40,8 +40,23 @@ impl<'de> Deserialize<'de> for Rgba {
 }
 
 impl Rgba {
+    pub fn alpha(mut self, alpha: u8) -> Self {
+        self.alpha = alpha;
+        self
+    }
+
     pub fn to_image_rs(&self) -> image::Rgba<u8> {
-        image::Rgba::<u8>([self.red, self.green, self.green, self.alpha])
+        image::Rgba::<u8>([self.red, self.green, self.blue, self.alpha])
+    }
+
+    pub fn from_image_rs(rgba: image::Rgba<u8>) -> Self
+    {
+        Rgba {
+            red: rgba.0[0],
+            green: rgba.0[1],
+            blue: rgba.0[2],
+            alpha: rgba.0[3],
+        }
     }
 
     pub fn from_str(s: &str) -> Result<Self, String> {
@@ -104,11 +119,19 @@ impl Rgba {
         }
     }
 
+    pub fn to_hex_rgb(&self) -> String {
+        format!("#{:02x}{:02x}{:02x}", self.red, self.green, self.blue).to_uppercase()
+    }
+
     pub fn to_tuple(&self) -> (u8, u8, u8, u8) {
         (self.red, self.green, self.blue, self.alpha)
     }
     
     pub fn to_str(&self) -> String {
         format!("{},{},{},{}", self.red, self.green, self.blue, self.alpha).to_uppercase()
+    }
+
+    pub fn to_str_rgb(&self) -> String {
+        format!("{},{},{}", self.red, self.green, self.blue).to_uppercase()
     }
 }

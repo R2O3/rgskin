@@ -1,3 +1,4 @@
+use rgskin_derive::MergeDefault;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
@@ -219,8 +220,9 @@ impl HitBubblesRecordedJudgements {
 }
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = QuaKeymode))]
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, MergeDefault)]
 pub struct Keymode {
+    #[merge(skip)]
     pub keymode: u8,
 
     // notes

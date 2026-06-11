@@ -100,10 +100,13 @@ impl StringPattern {
     }
 
     pub fn get_sheet_size(&self) -> Option<(u32, u32)> {
-        self.0.split("@").nth(1)
-              .and_then(|suffix| suffix.strip_suffix("x"))
-              .and_then(|num_str| num_str.parse::<u32>().ok())
-              .map(|n| (n, n))
+        let dimensions = self.0.split('@').nth(1)?;
+        let mut parts = dimensions.split('x');
+
+        let h = parts.next()?.parse::<u32>().ok()?;
+        let w = parts.next()?.parse::<u32>().ok()?;
+
+        Some((h, w))
     }
 }
 

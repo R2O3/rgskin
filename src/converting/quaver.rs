@@ -5,20 +5,21 @@ use image::{DynamicImage, GenericImageView};
 use crate::common::skin::AssetAttribute;
 use crate::common::traits::LaneFallback;
 use crate::quaver::{dynamic_assets, static_assets};
-use crate::utils::quaver::QuaDimensions;
-use crate::{Binary, BinaryArcExt, BinaryArcExtOption, BinaryState, ConstTypeEnum, Resources, StringPattern, quaver};
+use crate::texture::Texture;
+use crate::utils::quaver::{QuaDimensions, TextureResolver};
+use crate::{Binary, BinaryArcExt, BinaryArcExtOption, ConstTypeEnum, Resources, StringPattern, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
 use crate::common::color::Rgba;
 use crate::common::vector::Vector3;
 use crate::extensions::{TextureArcExt, VecExtensions};
 use crate::generic::elements::{
-    ColumnLighting, Cursor, Healthbar, HitLightingHold, HitLightingNormal, Judgement, JudgementLine, LongNoteBody, LongNoteHead, LongNoteTail, NormalNote, ReceptorDown, ReceptorUp, SkinElement, Stage
+    BaseHoldHead, BaseNormalNote, ColumnLighting, Cursor, Healthbar, HitLightingHold, HitLightingNormal, Judgement, JudgementLine, LongNoteBody, LongNoteHead, LongNoteHeadsSnapColored, LongNoteTail, NormalNote, NormalNotesSnapColored, ReceptorDown, ReceptorUp, SkinElement, Stage
 };
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::sound::{GenericGameplaySounds, ManiaGameplaySounds, Sounds, UISounds};
 use crate::generic::{Gameplay, UI};
-use crate::image_proc::proc::{concat_into_sheet, dist_from_bottom, extract_from_sheet, trim_image_vertical};
-use crate::io::texture::{Texture, TextureProcessor};
+use crate::image_proc::proc::{concat_into_sheet, dist_from_bottom, trim_image_vertical};
+use crate::io::texture::TextureProcessor;
 use crate::io::Store;
 use crate::skin::generic::{GenericManiaSkin, Keymode, Metadata};
 use crate::skin::quaver::skin::QuaSkin;
@@ -31,13 +32,17 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
     let samples = skin.samples.clone();
     let mut keymodes: Vec<Keymode> = Vec::new();
 
+    // we want to avoid making changes to the original skin_ini
+    let mut skin_ini  = skin.skin_ini.clone();
+    skin_ini.sync_from_shared();
+
     textures.insert(Texture::from_blank("blank".to_string()));
     let blank_texture = textures.get_shared("blank").unwrap();
 
     let metadata = Metadata {
-        name: skin.skin_ini.general.name.clone(),
-        creator: skin.skin_ini.general.author.clone(),
-        version: skin.skin_ini.general.version.clone(),
+        name: skin_ini.general.name.clone(),
+        creator: skin_ini.general.author.clone(),
+        version: skin_ini.general.version.clone(),
     };
 
     let mut receptor_processor = TextureProcessor::<i32>::new();
@@ -50,7 +55,9 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .collect()
     };
 
-    for keymode in &skin.skin_ini.keymodes {
+    let _shared_km = &skin_ini;
+
+    for keymode in &skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
         let mut max_receptor_offset = 0;
 
@@ -66,6 +73,32 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 .collect()
         };
 
+        let mut resolver = TextureResolver::new(&mut textures, keymode, Arc::clone(&blank_texture));
+
+        let (mut normal_notes_snap_colored, base_normal_note, norm_snap_cols) = resolver.resolve_snap_colored(
+            dynamic_assets::Notes::HIT_OBJECT_SHEET,
+            "base_snap_n",
+            |rows, cols, _len| !(rows != 0 && cols != 1),
+            |frames, rows, cols, colors| NormalNotesSnapColored::new(frames, None, Some(cols), Some(rows), colors),
+            |base_arc| BaseNormalNote::new(base_arc),
+        );
+
+        if let Some(ns) = &mut normal_notes_snap_colored {
+            ns.colors = norm_snap_cols.clone();
+        }
+
+        let (mut long_notes_snap_colored, base_long_note, long_snap_cols) = resolver.resolve_snap_colored(
+            dynamic_assets::Notes::HOLD_OBJECT_SHEET,
+            "base_snap_h",
+            |_rows, _cols, len| len == 9,
+            |frames, rows, cols, colors| LongNoteHeadsSnapColored::new(frames, None, Some(cols), Some(rows), colors),
+            |base_arc| BaseHoldHead::new(base_arc),
+        );
+
+        if let Some(ls) = &mut long_notes_snap_colored {
+            ls.colors = long_snap_cols.clone();
+        }
+
         let receptor_up_fallbacks = build_fallbacks(&keymode.receptor_fallbacks, dynamic_assets::Receptors::UP);
         let receptor_down_fallbacks = build_fallbacks(&keymode.receptor_fallbacks, dynamic_assets::Receptors::DOWN);
         let normal_notes_fallbacks = build_fallbacks(&keymode.hitobject_fallbacks, dynamic_assets::Notes::HIT_OBJECT);
@@ -80,23 +113,17 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         let long_note_bodies = remap(keymode.get_long_note_bodies());
         let long_note_tails = remap(keymode.get_long_note_tails());
 
-        let resolve_tex_path = |path, fallback_path: Option<_>| match fallback_path {
-            Some(fallback) if !textures.contains(path) && keymode.use_fallback => fallback,
-            _ => path,
-        };
-
         // TODO: In the future we'd probably want to trim based on "receptor down" since we only check for transparency with a tolererance
         // and if the down texture has a glow for example it will throw off the trimming and we'd end up with unmatching receptors
         let receptor_up_elements: Vec<ReceptorUp> = receptors
             .iter()
-            .zip(receptor_up_fallbacks.iter())
-            .map(|(path, fallback_path)| {
-                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
-                
-                if let Some(texture) = textures.get_shared(tex_path) {
+            .enumerate()
+            .map(|(i, path)| {
+                let fallback_path = receptor_up_fallbacks.get(i).and_then(|f| f.as_deref());
+                if let Some(texture) = resolver.get_texture_opt(path, fallback_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
                         let off = arc.with_image(|img| {
-                            dist_from_bottom(img, 0.1)
+                            dist_from_bottom(&img.to_rgba8(), 0.1)
                         }).try_into().unwrap_or(0);
 
                         arc.data_mut(|img| {
@@ -116,14 +143,13 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let receptor_down_elements: Vec<ReceptorDown> = receptors_down
             .iter()
-            .zip(receptor_down_fallbacks.iter())
-            .map(|(path, fallback_path)| {
-                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
-                
-                if let Some(texture) = textures.get_shared(tex_path) {
+            .enumerate()
+            .map(|(i, path)| {
+                let fallback_path = receptor_down_fallbacks.get(i).and_then(|f| f.as_deref());
+                if let Some(texture) = resolver.get_texture_opt(path, fallback_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
                         let off = arc.with_image(|img| {
-                            dist_from_bottom(img, 0.1)
+                            dist_from_bottom(&img.to_rgba8(), 0.1)
                         }).try_into().unwrap_or(0);
 
                         arc.data_mut(|img| {
@@ -143,57 +169,43 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let normal_note_elements: Vec<NormalNote> = normal_notes
             .iter()
-            .zip(normal_notes_fallbacks.iter())
-            .map(|(path, fallback_path)| {
-                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
-
-                if let Some(texture) = textures.get_shared(tex_path) {
-                    NormalNote::new(Some(texture))
-                } else {
-                    NormalNote::new(Some(Arc::clone(&blank_texture)))
-                }
+            .enumerate()
+            .map(|(i, path)| {
+                let fallback_path = normal_notes_fallbacks.get(i).and_then(|f| f.as_deref());
+                NormalNote::new(Some(resolver.get_texture(path, fallback_path)))
             })
             .collect();
 
         let long_note_head_elements: Vec<LongNoteHead> = long_note_heads
             .iter()
-            .zip(long_note_heads_fallbacks.iter())
-            .map(|(path, fallback_path)| {
-                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
-
-                if let Some(texture) = textures.get_shared(tex_path) {
+            .enumerate()
+            .map(|(i, path)| {
+                let fallback_path = long_note_heads_fallbacks.get(i).and_then(|f| f.as_deref());
+                
+                if let Some(texture) = resolver.get_texture_opt(path, fallback_path) {
                     LongNoteHead::new(Some(texture))
                 } else {
-                    LongNoteHead::new(Some(Arc::clone(&blank_texture)))
+                    let nn_fallback_path = normal_notes_fallbacks.get(i).and_then(|f| f.as_deref());
+                    LongNoteHead::new(Some(resolver.get_texture(&normal_notes[i], nn_fallback_path)))
                 }
             })
             .collect();
 
         let long_note_body_elements: Vec<LongNoteBody> = long_note_bodies
             .iter()
-            .zip(long_note_bodies_fallbacks.iter())
-            .map(|(path, fallback_path)| {
-                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
-
-                if let Some(texture) = textures.get_shared(tex_path) {
-                    LongNoteBody::new(Some(texture))
-                } else {
-                    LongNoteBody::new(Some(Arc::clone(&blank_texture)))
-                }
+            .enumerate()
+            .map(|(i, path)| {
+                let fallback_path = long_note_bodies_fallbacks.get(i).and_then(|f| f.as_deref());
+                LongNoteBody::new(Some(resolver.get_texture(path, fallback_path)))
             })
             .collect();
 
         let long_note_tail_elements: Vec<LongNoteTail> = long_note_tails
             .iter()
-            .zip(long_note_tails_fallbacks.iter())
-            .map(|(path, fallback_path)| {
-                let tex_path = resolve_tex_path(path, fallback_path.as_deref());
-
-                if let Some(texture) = textures.get_shared(tex_path) {
-                    LongNoteTail::new(Some(texture))
-                } else {
-                    LongNoteTail::new(Some(Arc::clone(&blank_texture)))
-                }
+            .enumerate()
+            .map(|(i, path)| {
+                let fallback_path = long_note_tails_fallbacks.get(i).and_then(|f| f.as_deref());
+                LongNoteTail::new(Some(resolver.get_texture(path, fallback_path)))
             })
             .collect();
 
@@ -209,58 +221,51 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         };
 
         let fallbacks: Vec<LaneFallback> = (0..key_count)
-        .map(|i| LaneFallback {
-            receptor: resolve_tex_path(&receptors[i], receptor_up_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
-            receptor_down: resolve_tex_path(&receptors_down[i], receptor_down_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
-            normal_note: resolve_tex_path(&normal_notes[i], normal_notes_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
-            long_note_head: resolve_tex_path(&long_note_heads[i], long_note_heads_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
-            long_note_body: resolve_tex_path(&long_note_bodies[i], long_note_bodies_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
-            long_note_tail: resolve_tex_path(&long_note_tails[i], long_note_tails_fallbacks.get(i).and_then(|v| v.as_deref())).to_string(),
-        })
-        .collect();
+            .map(|i| {
+                let ln_head_path = &long_note_heads[i];
+                let ln_head_fallback = long_note_heads_fallbacks.get(i).and_then(|v| v.as_deref());
+                let nn_path = &normal_notes[i];
+                let nn_fallback = normal_notes_fallbacks.get(i).and_then(|v| v.as_deref());
 
-        let get_frames = |sheet: StringPattern| -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
-            if let Some(sheet_tex) = textures.get_shared(&sheet.to_string()) {
-                println!("Hehe: {:?}", sheet_tex.get_path());
-                if let Some((rows, cols)) = sheet.get_sheet_size() {
-                    let result = extract_from_sheet(&sheet_tex.get_data().unwrap(), rows, cols)
-                        .into_iter()
-                        .enumerate()
-                        .map(|(idx, img)| {
-                            Arc::new(RwLock::new(Texture::new_with_state(
-                                format!("{}-{}", sheet.to_string(), idx),
-                                BinaryState::Loaded(img),
-                            )))
-                        })
-                        .collect();
-
-                    (result, rows, cols)
-                } else {
-                    (vec![sheet_tex], 1, 1)
+                LaneFallback {
+                    receptor: resolver.resolve_path(&receptors[i], receptor_up_fallbacks.get(i).and_then(|v| v.as_deref())),
+                    receptor_down: resolver.resolve_path(&receptors_down[i], receptor_down_fallbacks.get(i).and_then(|v| v.as_deref())),
+                    normal_note: resolver.resolve_path(nn_path, nn_fallback),
+                    long_note_head: if resolver.get_texture_opt(ln_head_path, ln_head_fallback).is_some() {
+                        resolver.resolve_path(ln_head_path, ln_head_fallback)
+                    } else {
+                        resolver.resolve_path(nn_path, nn_fallback)
+                    },
+                    long_note_body: resolver.resolve_path(&long_note_bodies[i], long_note_bodies_fallbacks.get(i).and_then(|v| v.as_deref())),
+                    long_note_tail: resolver.resolve_path(&long_note_tails[i], long_note_tails_fallbacks.get(i).and_then(|v| v.as_deref())),
                 }
-            } else {
-                (Vec::new(), 1, 1)
-            }
-        };
+            })
+            .collect();
 
-        let hln = get_frames(keymode.get_generic(dynamic_assets::Lighting::HIT_LIGHTING, 0));
-        let hlh = get_frames(keymode.get_generic(dynamic_assets::Lighting::HOLD_LIGHTING, 0));
+        let hln = resolver.get_frames(keymode.get_generic(dynamic_assets::Lighting::HIT_LIGHTING, 0));
+        let hlh = resolver.get_frames(keymode.get_generic(dynamic_assets::Lighting::HOLD_LIGHTING, 0));
 
         keymodes.push(Keymode {
             keymode: key_count as u8,
             layout,
+            use_snap_color: keymode.use_hit_object_sheet,
+            snap_colors: norm_snap_cols,
             receptor_up: receptor_up_elements,
             receptor_down: receptor_down_elements,
+            base_normal_note,
+            base_long_note,
             normal_note: normal_note_elements,
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
+            normal_notes_snap_colored,
+            long_note_heads_snap_colored: long_notes_snap_colored,
             hit_lighting_normal: HitLightingNormal::new(hln.0, Some(keymode.hit_lighting_fps as f32), Some(hln.2), Some(hln.1)),
             hit_lighting_hold: HitLightingHold::new(hlh.0, Some(keymode.hold_lighting_fps as f32), Some(hlh.2), Some(hlh.1)),
             column_lighting: ColumnLighting { texture: Some(Arc::clone(&blank_texture)) },
             judgement_line: JudgementLine { texture: Some(Arc::clone(&blank_texture)), color: Rgba::default() },
             stage: Stage::new(
-                textures.get_shared(&keymode.get_generic(dynamic_assets::Stage::BG_MASK, 0)),
+                 textures.get_shared(&keymode.get_generic(dynamic_assets::Stage::BG_MASK, 0)),
                  textures.get_shared(&keymode.get_generic(dynamic_assets::Stage::RIGHT_BORDER, 0)),
                  textures.get_shared(&keymode.get_generic(dynamic_assets::Stage::LEFT_BORDER, 0))
                 ),
@@ -280,7 +285,7 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 ).ok()?;
                 Some(Arc::new(RwLock::new(tex)))
             }),
-            centered: skin.skin_ini.general.center_cursor,
+            centered: skin_ini.general.center_cursor,
             rotate: false
         }
     };

@@ -3,6 +3,50 @@ use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields, ItemStruct, Path, Token, Ident};
 use syn::parse::{Parse, ParseStream};
 
+#[proc_macro_derive(MergeDefault, attributes(merge))]
+pub fn derive_merge_default(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+    let name = &input.ident;
+
+    let fields = match input.data {
+        Data::Struct(ref data) => match data.fields {
+            Fields::Named(ref fields) => &fields.named,
+            _ => panic!("MergeDefault only works on structs with named fields"),
+        },
+        _ => panic!("MergeDefault only works on structs"),
+    };
+
+    let field_calls = fields.iter().filter_map(|f| {
+        let is_skipped = f.attrs.iter().any(|attr| {
+            attr.path().is_ident("merge") && 
+            attr.parse_nested_meta(|meta| {
+                if meta.path.is_ident("skip") { Ok(()) } else { Err(meta.error("unsupported")) }
+            }).is_ok()
+        });
+
+        if is_skipped { return None; }
+
+        let field_name = &f.ident;
+        Some(quote! {
+            if self.#field_name == default_km.#field_name {
+                self.#field_name = shared_km.#field_name.clone();
+            }
+        })
+    });
+
+    let expanded = quote! {
+        impl #name {
+            /// merges right into left if left is default
+            pub fn merge_default(&mut self, shared_km: &#name) {
+                let default_km = #name::default();
+                #(#field_calls)*
+            }
+        }
+    };
+
+    TokenStream::from(expanded)
+}
+
 // textures
 
 #[proc_macro_derive(GetAllTextures)]

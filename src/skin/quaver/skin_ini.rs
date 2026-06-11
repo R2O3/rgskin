@@ -25,6 +25,9 @@ pub struct QuaSkinIni {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
     #[merge(strategy = utils::merge::skin::overwrite_keymode)]
     pub keymodes: Vec<Keymode>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(getter_with_clone))]
+    #[merge(strategy = utils::merge::any::overwrite)]
+    pub shared_keymode: Option<Keymode>,
 }
 
 impl ToString for QuaSkinIni {
@@ -71,6 +74,7 @@ impl FromStr for QuaSkinIni {
         let mut song_select = SongSelect::default();
         let mut results = Results::default();
         let mut keymodes: Vec<Keymode> = Vec::new();
+        let mut shared_keymode: Option<Keymode> = None;
 
         from_ini(s, |section, content| {
             match section {
@@ -79,6 +83,10 @@ impl FromStr for QuaSkinIni {
                 "MenuBorder" => menu_border = MenuBorder::from_str(content)?,
                 "SongSelect" => song_select = SongSelect::from_str(content)?,
                 "Results" => results = Results::from_str(content)?,
+                s if &s.to_uppercase() == "KEYSSHARED" || &s.to_uppercase() == "SHAREDK" => {
+                    let km = Keymode::from_str(content)?;
+                    shared_keymode = Some(km);
+                },
                 s if s.to_lowercase().ends_with('k') && s.len() > 1 => {
                     let mut km = Keymode::from_str(content)?;
                     if let Ok(n) = section.to_lowercase().trim_end_matches('k').parse::<u8>() {
@@ -91,7 +99,7 @@ impl FromStr for QuaSkinIni {
             Ok(())
         })?;
 
-        Ok(QuaSkinIni { general, main_menu, menu_border, song_select, results, keymodes })
+        Ok(QuaSkinIni { general, main_menu, menu_border, song_select, results, keymodes, shared_keymode })
     }
 }
 
@@ -155,5 +163,18 @@ impl QuaSkinIni {
 impl QuaSkinIni {
     pub fn get_keymode(&self, keymode: u8) -> Option<&Keymode> {
         self.keymodes.iter().find(|k| k.keymode == keymode)
+    }
+
+    /// makes the keymodes use the shared configs that it's missing
+    pub fn sync_from_shared(&mut self) {
+        if let Some(shared_km) = &self.shared_keymode {
+            for km in &mut self.keymodes {
+                let id = km.keymode;
+                
+                km.merge_default(shared_km);
+                
+                km.keymode = id;
+            }
+        }
     }
 }

@@ -1,3 +1,4 @@
+use rgskin_derive::GetAllTextures;
 use crate::{common::color::Rgba, io::texture::Texture, Binary};
 use image::imageops::FilterType;
 use std::sync::{Arc, RwLock};
@@ -103,7 +104,7 @@ macro_rules! skin_element {
     };
     
     ($name:ident; $primary:ident $(, $extra:ident)*; $($attr:ident: $attr_type:ty),*) => {
-        #[derive(Clone)]
+        #[derive(Clone, GetAllTextures)]
         pub struct $name {
             pub $primary: Option<Arc<RwLock<Texture>>>,
             $(pub $extra: Option<Arc<RwLock<Texture>>>,)*
@@ -210,7 +211,7 @@ macro_rules! skin_element_sheet {
     };
     
     ($name:ident; $primary:ident $(, $extra:ident)*; $($attr:ident: $attr_type:ty),*) => {
-        #[derive(Clone)]
+        #[derive(Clone, GetAllTextures)]
         pub struct $name {
             pub $primary: Vec<Arc<RwLock<Texture>>>,
             $(pub $extra: Vec<Arc<RwLock<Texture>>>,)*
@@ -391,7 +392,11 @@ macro_rules! skin_element_sheet {
 skin_element!(ReceptorUp);
 skin_element!(ReceptorDown);
 skin_element!(NormalNote);
+skin_element!(BaseNormalNote);
+skin_element_sheet!(NormalNotesSnapColored; snaps; colors: Vec<Rgba>);
 skin_element!(LongNoteHead);
+skin_element!(BaseHoldHead);
+skin_element_sheet!(LongNoteHeadsSnapColored; snaps; colors: Vec<Rgba>);
 skin_element!(LongNoteTail);
 skin_element!(LongNoteBody);
 skin_element!(Healthbar; fill, background);

@@ -59,7 +59,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
-                            let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
+                            let offset = arc_texture.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1));
                             if let Err(e) = to_osu_column_draw(arc_texture, average_column_width as u32) {
                                 eprintln!("Failed to process receptor texture: {}", e);
                             }
@@ -87,7 +87,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
-                            let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
+                            let offset = arc_texture.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1));
                             if let Err(e) = to_osu_column_draw(arc_texture, average_column_width as u32) {
                                 eprintln!("Failed to process receptor texture: {}", e);
                             }
@@ -240,12 +240,18 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
         keymodes.push(Keymode { 
             keymode: key_count as u8,
             layout,
+            use_snap_color: false,
+            snap_colors: Vec::new(),
             receptor_up: receptor_up_elements,
             receptor_down: receptor_down_elements,
+            base_normal_note: None,
+            base_long_note: None,
             normal_note: normal_note_elements,
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
+            normal_notes_snap_colored: None,
+            long_note_heads_snap_colored: None,
             hit_lighting_normal: HitLightingNormal::new(get_frames(&keymode.lighting_n, static_assets::Mania::LIGHTINGN), Some(keymode.light_frame_per_second as f32), None, None),
             hit_lighting_hold: HitLightingHold::new(get_frames(&keymode.lighting_l, static_assets::Mania::LIGHTINGL), Some(keymode.light_frame_per_second as f32), None, None),
             column_lighting: ColumnLighting { 

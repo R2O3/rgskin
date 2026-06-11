@@ -1,3 +1,15 @@
+pub mod serialize_rgb {
+    use serde::Serializer;
+    use crate::common::color::Rgba;
+
+    pub fn hex<S>(rgba: &Rgba, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        serializer.serialize_str(&rgba.to_hex_rgb())
+    }
+}
+
 #[inline]
 pub fn parse_u16_list(value: &str) -> Vec<u16> {
     value.split(',')

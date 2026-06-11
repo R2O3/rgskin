@@ -71,7 +71,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc| {
-                            arc.with_image(|img| dist_from_bottom(img, 0.1)) as i32
+                            arc.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1)) as i32
                         });
                         receptor_processor.process_once_void(&texture, |arc| {
                             arc.data_mut(|img| {
@@ -100,7 +100,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |tex| {
-                            tex.with_image(|img| dist_from_bottom(img, 0.1)) as i32
+                            tex.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1)) as i32
                         });
                         receptor_processor.process_once_void(&texture, |arc| {
                             arc.data_mut(|img| {
@@ -241,15 +241,22 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
 
         let column_lighting_path = &skin.skin_json.overrides.lighting.column_lighting;
         let texture_or_blank = |path: &str| textures.get_shared(path).unwrap_or(blank_texture.clone());
+
         keymodes.push(Keymode { 
             keymode: key_count as u8,
             layout: new_layout,
+            snap_colors: skin.skin_json.snap_colors.to_vec(),
+            use_snap_color: false,
             receptor_up: receptor_up_elements,
             receptor_down: receptor_down_elements,
+            base_normal_note: None,
+            base_long_note: None,
             normal_note: normal_note_elements,
             long_note_head: long_note_head_elements,
             long_note_body: long_note_body_elements,
             long_note_tail: long_note_tail_elements,
+            normal_notes_snap_colored: None,
+            long_note_heads_snap_colored: None,
             hit_lighting_normal: HitLightingNormal::new(Vec::new(), None, None, None),
             hit_lighting_hold: HitLightingHold::new(Vec::new(), None, None, None),
             column_lighting: ColumnLighting { texture: Some(texture_or_blank(column_lighting_path)) },
@@ -418,6 +425,16 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     
     for keymode in &skin.keymodes {
         let key_count = keymode.keymode as u8;
+        let use_snap_color = keymode.use_snap_color;
+
+        let base_note_images: Vec<Option<String>> = vec![
+            keymode.base_normal_note.as_ref().and_then(|n| n.get_path());
+            key_count as usize
+        ];
+        let base_long_head_images: Vec<Option<String>> = vec![
+            keymode.base_long_note.as_ref().and_then(|n| n.get_path());
+            key_count as usize
+        ];
         
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
@@ -429,16 +446,43 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             .map(|receptor| receptor.get_path().unwrap_or_default())
             .collect();
         
-        let normal_note_images: Vec<String> = keymode.normal_note
-            .iter()
-            .map(|note| note.get_path().unwrap_or_default())
-            .collect();
-        
-        let long_note_head_images: Vec<String> = keymode.long_note_head
-            .iter()
-            .map(|note| note.get_path().unwrap_or_default())
-            .collect();
+        let normal_note_images: Vec<String> = {
+            let per_key = keymode.normal_note
+                .iter()
+                .map(|n| n.get_path().unwrap_or_default())
+                .collect();
 
+            if use_snap_color && base_note_images.first().is_some_and(|p| p.is_some()) {
+                base_note_images.iter().map(|p| p.clone().unwrap_or_default()).collect()
+            } else {
+                per_key
+            }
+        };
+
+        let long_note_head_images: Vec<String> = {
+            let per_key: Vec<String> = keymode.long_note_head
+                .iter()
+                .enumerate()
+                .map(|(i, n)| {
+                    let path = n.get_path().unwrap_or_default();
+                    
+                    if path.is_empty() || path == "blank" {
+                        keymode.normal_note.get(i).and_then(|nn| nn.get_path()).unwrap_or_default()
+                    } else {
+                        path
+                    }
+                })
+                .collect();
+
+            if use_snap_color && base_long_head_images.first().is_some_and(|p| p.is_some()) {
+                base_long_head_images.iter().map(|p| p.clone().unwrap_or_default()).collect()
+            
+            } else if use_snap_color && base_note_images.first().is_some_and(|p| p.is_some()) {
+                base_note_images.iter().map(|p| p.clone().unwrap_or_default()).collect()
+            } else {
+                per_key
+            }
+        };
         
         // you can't do percy in fluXis (at least not above 4096px)
         let long_note_body_images: Vec<String> = keymode.long_note_body
@@ -548,6 +592,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         snap_colors: SnapColors::default(),
     };
 
+    let default_keymode = skin.get_keymode(4).unwrap_or(skin.keymodes.first().unwrap());
+
     let mut tr = StoreRelocator::new(&mut textures);
     let mut sr = StoreRelocator::new(&mut samples);
 
@@ -557,8 +603,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     tr.reloc_arc_lock(&skin.gameplay.judgement.good, static_assets::Judgement::ALRIGHT);
     tr.reloc_arc_lock(&skin.gameplay.judgement.bad, static_assets::Judgement::OKAY);
     tr.reloc_arc_lock(&skin.gameplay.judgement.miss, static_assets::Judgement::MISS);
-    
-    let default_keymode = skin.get_keymode(4).unwrap_or(skin.keymodes.first().unwrap());
 
     skin_json.overrides.health.foreground = health_foreground;
     skin_json.overrides.health.background = health_background;
@@ -581,8 +625,9 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
     skin_json.overrides.stage.border_right_top = blank_texture.get_path();
     skin_json.overrides.stage.background_top = blank_texture.get_path();
 
-    skin_json.sync_overrides_from_keymodes();
+    skin_json.snap_colors = SnapColors::from_vec(default_keymode.snap_colors.clone()).unwrap_or(SnapColors::default());
 
+    skin_json.sync_overrides_from_keymodes();
 
     sr.reloc_str(&skin.sounds.ui.menu_back_click, static_assets::Samples::UI_BACK);
     sr.reloc_str(&skin.sounds.ui.ui_click, static_assets::Samples::UI_CLICK);
