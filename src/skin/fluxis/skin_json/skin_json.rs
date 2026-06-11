@@ -203,7 +203,7 @@ impl FromStr for SkinJson {
 
 impl SkinConfig for SkinJson {
     fn get_required_texture_paths(&self) -> Vec<StringPattern> {
-        let mut paths = Vec::new();
+        let mut paths: Vec<StringPattern> = Vec::new();
 
         for keymode in &self.keymodes {
             Keymodes::iter(keymode, |vec, _, _, _| {
@@ -228,6 +228,13 @@ impl SkinConfig for SkinJson {
         }
 
         paths.push(static_assets::Other::ICON.into());
+        paths.extend(static_assets::Judgement::iter_mapped(|t| t.into()));
+        paths.extend(static_assets::Stage::iter_mapped(|t| t.into()));
+        paths.extend(static_assets::UserInterface::iter_mapped(|t| t.into()));
+        paths.extend(static_assets::Health::iter_mapped(|t| t.into()));
+        paths.extend(static_assets::Lighting::iter_mapped(|t| t.into()));
+        paths.extend(static_assets::Gameplay::iter_mapped(|t| t.into()));
+        paths.extend(static_assets::Results::iter_mapped(|t| t.into()));
 
         paths.sort_unstable();
         paths.dedup();

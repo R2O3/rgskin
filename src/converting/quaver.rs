@@ -55,8 +55,6 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .collect()
     };
 
-    let _shared_km = &skin_ini;
-
     for keymode in &skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
         let mut max_receptor_offset = 0;
@@ -297,8 +295,18 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
     }
 
     let gameplay = Gameplay {
-        health_bar: Healthbar::new(None, None),
-        judgement: Judgement::new(None, None, None, None, None, None),
+        health_bar: Healthbar::new(
+            textures.get_shared(&static_assets::HealthBar::FOREGROUND),
+            textures.get_shared(&static_assets::HealthBar::BACKGROUND)
+        ),
+        judgement: Judgement::new(
+            textures.get_shared(&static_assets::Judgements::MARV),
+            textures.get_shared(&static_assets::Judgements::PERF),
+            textures.get_shared(&static_assets::Judgements::GREAT),
+            textures.get_shared(&static_assets::Judgements::GOOD),
+            textures.get_shared(&static_assets::Judgements::OKAY),
+            textures.get_shared(&static_assets::Judgements::MISS),
+        ),
         layout: HUDLayout {
             combo: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: get_anchor::<static_assets::Numbers>(static_assets::Numbers::COMBO), origin: Origin::TopLeft }),
             rating: (Vector3::new(0.0, 0.0, 1.0), Alignment { anchor: Anchor::TopLeft, origin: Origin::TopLeft }),
@@ -353,9 +361,6 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
     skin_ini.general.use_skin_backgrounds = false;
 
     let mut qua_keymodes = Vec::new();
-
-    
-    let mut sr = StoreRelocator::new(&mut samples);
 
     for keymode in &skin.keymodes {
         let mut qua_km = quaver::Keymode::default();
@@ -454,6 +459,19 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
 
         qua_keymodes.push(qua_km);
     }
+
+    let mut tr = StoreRelocator::new(&mut textures);
+    let mut sr = StoreRelocator::new(&mut samples);
+
+    tr.reloc_arc_lock(&skin.gameplay.health_bar.background, static_assets::HealthBar::BACKGROUND);
+    tr.reloc_arc_lock(&skin.gameplay.health_bar.fill, static_assets::HealthBar::FOREGROUND);
+
+    tr.reloc_arc_lock(&skin.gameplay.judgement.flawless, static_assets::Judgements::MARV);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.perfect, static_assets::Judgements::PERF);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.great, static_assets::Judgements::GREAT);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.good, static_assets::Judgements::GOOD);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.bad, static_assets::Judgements::OKAY);
+    tr.reloc_arc_lock(&skin.gameplay.judgement.miss, static_assets::Judgements::MISS);
 
     sr.reloc_str(&skin.sounds.ui.menu_back_click, static_assets::Sfx::BACK);
     sr.reloc_str(&skin.sounds.ui.ui_click, static_assets::Sfx::CLICK);
