@@ -1,0 +1,11 @@
+[build]
+jobs = 8
+
+[target.wasm32-unknown-unknown]
+rustflags = [
+    "-C", "target-feature=+atomics,+bulk-memory,+mutable-globals",
+    "-Z", "threads=8", 
+]
+
+[unstable]
+build-std = ["panic_abort", "std"]
