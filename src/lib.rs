@@ -1,9 +1,13 @@
+#[cfg(all(target_arch = "wasm32", feature = "browser"))]
+pub use wasm_bindgen_rayon::init_thread_pool;
+
 pub(crate) mod skin;
 pub(crate) mod converting;
 pub(crate) mod exporting;
 pub(crate) mod importing;
 pub(crate) mod io;
 pub(crate) mod common;
+pub(crate) mod common_traits;
 
 mod resources;
 

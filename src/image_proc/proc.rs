@@ -1,5 +1,6 @@
 use std::sync::{Arc, RwLock};
-use image::{DynamicImage, GenericImage, GenericImageView, ImageBuffer, Rgba, RgbaImage, imageops::{self, FilterType}};
+use image::{DynamicImage, GenericImageView, Rgba, RgbaImage, imageops::{self, FilterType}};
+use rayon::prelude::*;
 use crate::{
     common, io::texture::Texture, process_texture, process_texture_mut
 }; 
@@ -9,18 +10,25 @@ pub fn dist_from_top(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
     let tolerance = (255.0 * alpha_tolerance).clamp(0.0, 255.0) as u8;
     let raw = img.as_raw();
 
-    for y in 0..height {
-        let row_start = (y * width) as usize * 4;
-        let row_end = row_start + (width as usize) * 4;
-        
-        for pixel in raw[row_start..row_end].chunks_exact(4) {
-            if pixel[3] > tolerance {
-                return y;
+    let chunk_size = 32;
+    let first_rows: Vec<Option<u32>> = (0..height)
+        .collect::<Vec<_>>()
+        .par_chunks(chunk_size)
+        .map(|chunk| {
+            for &y in chunk {
+                let row_start = (y * width) as usize * 4;
+                let row_end = row_start + (width as usize) * 4;
+                for pixel in raw[row_start..row_end].chunks_exact(4) {
+                    if pixel[3] > tolerance {
+                        return Some(y);
+                    }
+                }
             }
-        }
-    }
+            None
+        })
+        .collect();
 
-    height
+    first_rows.into_iter().flatten().min().unwrap_or(height)
 }
 
 pub fn dist_from_bottom(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
@@ -28,18 +36,26 @@ pub fn dist_from_bottom(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
     let tolerance = (255.0 * alpha_tolerance).clamp(0.0, 255.0) as u8;
     let raw = img.as_raw();
 
-    for y in (0..height).rev() {
-        let row_start = (y * width) as usize * 4;
-        let row_end = row_start + (width as usize) * 4;
-        
-        for pixel in raw[row_start..row_end].chunks_exact(4) {
-            if pixel[3] > tolerance {
-                return height - 1 - y;
+    let chunk_size = 32;
+    let last_rows: Vec<Option<u32>> = (0..height)
+        .collect::<Vec<_>>()
+        .par_chunks(chunk_size)
+        .map(|chunk| {
+            for &y in chunk.iter().rev() {
+                let row_start = (y * width) as usize * 4;
+                let row_end = row_start + (width as usize) * 4;
+                for pixel in raw[row_start..row_end].chunks_exact(4) {
+                    if pixel[3] > tolerance {
+                        return Some(y);
+                    }
+                }
             }
-        }
-    }
+            None
+        })
+        .collect();
 
-    height
+    let max_row = last_rows.into_iter().flatten().max().unwrap_or(0);
+    height - 1 - max_row
 }
 
 pub fn dist_from_left(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
@@ -47,21 +63,20 @@ pub fn dist_from_left(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
     let tolerance = (255.0 * alpha_tolerance).clamp(0.0, 255.0) as u8;
     let raw = img.as_raw();
 
-    let mut min_left = width;
-
-    for y in 0..height {
-        let row_start = (y * width) as usize * 4;
-        
-        for x in 0..(min_left as usize) {
-            if raw[row_start + x * 4 + 3] > tolerance {
-                min_left = x as u32;
-                break;
+    let leftmost: u32 = (0..height)
+        .into_par_iter()
+        .map(|y| {
+            let row_start = (y * width) as usize * 4;
+            for x in 0..width {
+                if raw[row_start + (x as usize) * 4 + 3] > tolerance {
+                    return x;
+                }
             }
-        }
-        if min_left == 0 { break; }
-    }
-
-    min_left
+            width
+        })
+        .min()
+        .unwrap_or(width);
+    leftmost
 }
 
 pub fn dist_from_right(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
@@ -69,21 +84,20 @@ pub fn dist_from_right(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
     let tolerance = (255.0 * alpha_tolerance).clamp(0.0, 255.0) as u8;
     let raw = img.as_raw();
 
-    let mut max_right = 0;
-
-    for y in 0..height {
-        let row_start = (y * width) as usize * 4;
-        
-        for x in (max_right..width).rev() {
-            if raw[row_start + (x as usize) * 4 + 3] > tolerance {
-                max_right = x + 1;
-                break;
+    let rightmost: u32 = (0..height)
+        .into_par_iter()
+        .map(|y| {
+            let row_start = (y * width) as usize * 4;
+            for x in (0..width).rev() {
+                if raw[row_start + (x as usize) * 4 + 3] > tolerance {
+                    return x + 1;
+                }
             }
-        }
-        if max_right == width { break; }
-    }
-    
-    width - max_right
+            0
+        })
+        .max()
+        .unwrap_or(0);
+    width - rightmost
 }
 
 pub fn trim_image_vertical(img: DynamicImage, alpha_tolerance: f32) -> DynamicImage {
@@ -100,18 +114,17 @@ pub fn trim_image_vertical(img: DynamicImage, alpha_tolerance: f32) -> DynamicIm
     }
     
     let new_height = bottom_trim - top_trim;
+    let mut trimmed_img = RgbaImage::new(width, new_height);
     
-    let rgba_img = img.to_rgba8();
-    let mut trimmed_img = image::RgbaImage::new(width, new_height);
-    
-    for y in 0..new_height {
-        for x in 0..width {
-            let source_y = y + top_trim;
-            let pixel = rgba_img.get_pixel(x, source_y);
-            trimmed_img.put_pixel(x, y, *pixel);
-        }
-    }
-    
+    trimmed_img
+        .par_chunks_mut((width * 4) as usize)
+        .enumerate()
+        .for_each(|(y, row_out)| {
+            let source_y = y as u32 + top_trim;
+            let source_row = &rgba_img.as_raw()[(source_y * width) as usize * 4..][..row_out.len()];
+            row_out.copy_from_slice(source_row);
+        });
+
     DynamicImage::ImageRgba8(trimmed_img)
 }
 
@@ -129,18 +142,17 @@ pub fn trim_image_horizontal(img: DynamicImage, alpha_tolerance: f32) -> Dynamic
     }
     
     let new_width = right_trim - left_trim;
+    let mut trimmed_img = RgbaImage::new(new_width, height);
     
-    let rgba_img = img.to_rgba8();
-    let mut trimmed_img = image::RgbaImage::new(new_width, height);
-    
-    for y in 0..height {
-        for x in 0..new_width {
-            let source_x = x + left_trim;
-            let pixel = rgba_img.get_pixel(source_x, y);
-            trimmed_img.put_pixel(x, y, *pixel);
-        }
-    }
-    
+    trimmed_img
+        .par_chunks_mut((new_width * 4) as usize)
+        .enumerate()
+        .for_each(|(y, row_out)| {
+            let source_start = ((y as u32 * width) + left_trim) as usize * 4;
+            let source_row = &rgba_img.as_raw()[source_start..][..row_out.len()];
+            row_out.copy_from_slice(source_row);
+        });
+
     DynamicImage::ImageRgba8(trimmed_img)
 }
 
@@ -156,7 +168,6 @@ pub fn get_trim_bounds(img: &DynamicImage, alpha_tolerance: f32) -> (u32, u32, u
 
 pub fn trim_image(img: DynamicImage, alpha_tolerance: f32) -> DynamicImage {
     let (width, height) = img.dimensions();
-
     let (top, bottom, left, right) = get_trim_bounds(&img, alpha_tolerance);
     
     let top_trim = top;
@@ -177,23 +188,25 @@ pub fn trim_image(img: DynamicImage, alpha_tolerance: f32) -> DynamicImage {
 pub fn pad_image_vertical(img: DynamicImage, top_pad: u32, bottom_pad: u32) -> DynamicImage {
     let (width, height) = img.dimensions();
     let new_height = height + top_pad + bottom_pad;
-    
+
     let rgba_img = img.to_rgba8();
-    let mut padded_img = image::RgbaImage::new(width, new_height);
-    
-    for y in 0..new_height {
-        for x in 0..width {
-            padded_img.put_pixel(x, y, Rgba([0, 0, 0, 0]));
-        }
-    }
-    
-    for y in 0..height {
-        for x in 0..width {
-            let pixel = rgba_img.get_pixel(x, y);
-            padded_img.put_pixel(x, y + top_pad, *pixel);
-        }
-    }
-    
+    let mut padded_img = RgbaImage::new(width, new_height);
+
+    padded_img
+        .par_chunks_mut(4)
+        .for_each(|pixel| pixel.fill(0));
+
+    padded_img
+        .par_chunks_mut((width * 4) as usize)
+        .enumerate()
+        .for_each(|(y, row_out)| {
+            let src_y = y as u32 - top_pad;
+            if src_y < height {
+                let source_row = &rgba_img.as_raw()[(src_y * width) as usize * 4..][..row_out.len()];
+                row_out.copy_from_slice(source_row);
+            }
+        });
+
     DynamicImage::ImageRgba8(padded_img)
 }
 
@@ -242,60 +255,93 @@ pub fn resize_height(
 }
 
 pub fn fill_rect(
-    base: &mut image::RgbaImage,
-    color: &image::Rgba<u8>,
+    base: &mut RgbaImage,
+    color: &Rgba<u8>,
     x: u32,
     y: u32,
     width: u32,
     height: u32,
 ) {
-    let img_width = base.width();
-    let img_height = base.height();
-    
+    let img_width = base.width() as usize;
+    let img_height = base.height() as usize;
+    let x = x as usize;
+    let y = y as usize;
+    let width = width as usize;
+    let height = height as usize;
+
     let x_end = (x + width).min(img_width);
     let y_end = (y + height).min(img_height);
-    
-    for py in y..y_end {
-        for px in x..x_end {
-            base.put_pixel(px, py, *color);
-        }
+    if x >= x_end || y >= y_end {
+        return;
     }
+
+    let raw = base.as_mut();
+    raw.par_chunks_mut(img_width * 4)
+        .enumerate()
+        .for_each(|(py, row)| {
+            if py < y || py >= y_end {
+                return;
+            }
+            for px in x..x_end {
+                let offset = px * 4;
+                row[offset..offset + 4].copy_from_slice(&color.0);
+            }
+        });
 }
 
-// stupid I know but the simplest and works
 pub fn get_dominant_color(img: &DynamicImage, filter: FilterType) -> Rgba<u8> {
     let resized = img.resize_exact(1, 1, filter);
     resized.get_pixel(0, 0)
 }
 
 pub fn overlay_image(
-    base: &mut image::RgbaImage,
-    overlay: &image::RgbaImage,
+    base: &mut RgbaImage,
+    overlay: &RgbaImage,
     x: u32,
-    y: u32
+    y: u32,
 ) {
-    for oy in 0..overlay.height() {
-        for ox in 0..overlay.width() {
-            let px = x + ox;
-            let py = y + oy;
-            
-            if px < base.width() && py < base.height() {
-                let src_pixel = overlay.get_pixel(ox, oy);
-                let alpha = src_pixel[3] as f32 / 255.0;
-                
+    let (ow, oh) = overlay.dimensions();
+    let (bw, bh) = (base.width(), base.height());
+
+    let x_start = x.max(0) as usize;
+    let y_start = y.max(0) as usize;
+    let x_end = (x + ow).min(bw) as usize;
+    let y_end = (y + oh).min(bh) as usize;
+    if x_start >= x_end || y_start >= y_end {
+        return;
+    }
+
+    let raw = base.as_mut();
+    let img_width = bw as usize;
+    let overlay_width = ow as usize;
+    let overlay_raw = overlay.as_raw();
+
+    raw.par_chunks_mut(img_width * 4)
+        .enumerate()
+        .for_each(|(py, row)| {
+            if py < y_start || py >= y_end {
+                return;
+            }
+            let src_row = py - y as usize;
+            let overlay_row_start = src_row * overlay_width * 4;
+            for px in x_start..x_end {
+                let src_col = px - x as usize;
+                let overlay_offset = overlay_row_start + src_col * 4;
+                let alpha = overlay_raw[overlay_offset + 3] as f32 / 255.0;
                 if alpha > 0.0 {
-                    let dst_pixel = base.get_pixel(px, py);
-                    let blended = image::Rgba([
-                        blend_channel(dst_pixel[0], src_pixel[0], alpha),
-                        blend_channel(dst_pixel[1], src_pixel[1], alpha),
-                        blend_channel(dst_pixel[2], src_pixel[2], alpha),
-                        blend_alpha(dst_pixel[3], src_pixel[3], alpha),
+                    let base_offset = px * 4;
+                    let dst = &row[base_offset..base_offset + 4];
+                    let src = &overlay_raw[overlay_offset..overlay_offset + 4];
+                    let blended = Rgba([
+                        blend_channel(dst[0], src[0], alpha),
+                        blend_channel(dst[1], src[1], alpha),
+                        blend_channel(dst[2], src[2], alpha),
+                        blend_alpha(dst[3], src[3], alpha),
                     ]);
-                    base.put_pixel(px, py, blended);
+                    row[base_offset..base_offset + 4].copy_from_slice(&blended.0);
                 }
             }
-        }
-    }
+        });
 }
 
 fn to_linear(c: u8) -> f32 {
@@ -321,122 +367,133 @@ pub fn extract_grayscale_base(
     tints: Option<&[common::color::Rgba]>,
     filter: FilterType,
 ) -> DynamicImage {
+    use rayon::prelude::*;
+
     assert!(!images.is_empty());
     if let Some(t) = tints {
         assert_eq!(t.len(), images.len());
     }
 
     let (w, h) = images[0].dimensions();
+    let n = (w * h) as usize;
+    let count = images.len() as f32;
 
-    let mut num   = vec![0.0f32; (w * h) as usize];
+    let mut acc = vec![0.0f32; n * 2];
     let mut denom = 0.0f32;
-    let mut alpha = vec![0.0f32; (w * h) as usize];
 
     for (i, img) in images.iter().enumerate() {
-        debug_assert_eq!(img.dimensions(), (w, h));
-
         let Rgba([tr, tg, tb, _]) = tints
             .map(|t| t[i].to_image_rs())
             .unwrap_or_else(|| get_dominant_color(img, filter));
 
         let tint = [to_linear(tr), to_linear(tg), to_linear(tb)];
-        let t2: f32 = tint.iter().map(|&t| t * t).sum();
+        let t2: f32 = tint[0] * tint[0] + tint[1] * tint[1] + tint[2] * tint[2];
 
         if t2 < 1e-6 {
             continue;
         }
-
         denom += t2;
 
         let rgba = img.to_rgba8();
-        for (x, y, pixel) in rgba.enumerate_pixels() {
-            let Rgba([r, g, b, a]) = *pixel;
-            let idx = (y * w + x) as usize;
-            num[idx] += to_linear(r) * tint[0]
-                      + to_linear(g) * tint[1]
-                      + to_linear(b) * tint[2];
-            alpha[idx] += a as f32 / 255.0;
-        }
+        let raw = rgba.as_raw();
+
+        acc.par_chunks_mut(2)
+            .zip(raw.par_chunks_exact(4))
+            .for_each(|(na, px)| {
+                na[0] += to_linear(px[0]) * tint[0]
+                    + to_linear(px[1]) * tint[1]
+                    + to_linear(px[2]) * tint[2];
+                na[1] += px[3] as f32 / 255.0;
+            });
     }
 
-    let count = images.len() as f32;
+    let mut raw_out = vec![0u8; n * 4];
+    raw_out
+        .par_chunks_mut(4)
+        .zip(acc.par_chunks(2))
+        .for_each(|(out, na)| {
+            let v = to_srgb(na[0] / denom);
+            let a = ((na[1] / count) * 255.0) as u8;
+            out[0] = v;
+            out[1] = v;
+            out[2] = v;
+            out[3] = a;
+        });
 
-    let buf: RgbaImage = ImageBuffer::from_fn(w, h, |x, y| {
-        let idx = (y * w + x) as usize;
-        let v = to_srgb(num[idx] / denom);
-        let a = ((alpha[idx] / count) * 255.0) as u8;
-        Rgba([v, v, v, a])
-    });
-
-    DynamicImage::ImageRgba8(buf)
+    DynamicImage::ImageRgba8(RgbaImage::from_raw(w, h, raw_out).unwrap())
 }
 
-pub fn extract_from_sheet(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<DynamicImage>
-{
+pub fn extract_from_sheet(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<DynamicImage> {
     let (width, height) = sheet.dimensions();
-
     let sprite_w = width / columns;
     let sprite_h = height / rows;
 
-    let mut result = Vec::with_capacity((rows * columns) as usize);
-
-    for j in 0..rows {
-        for i in 0..columns {
+    (0..(rows * columns))
+        .into_par_iter()
+        .map(|idx| {
+            let i = idx % columns;
+            let j = idx / columns;
             let x = i * sprite_w;
             let y = j * sprite_h;
-
-            let sprite = sheet.crop_imm(x, y, sprite_w, sprite_h);
-
-            result.push(sprite);
-        }
-    }
-
-    result
+            sheet.crop_imm(x, y, sprite_w, sprite_h)
+        })
+        .collect()
 }
 
-pub fn extract_from_sheet_trimmed(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<DynamicImage>
-{
+pub fn extract_from_sheet_trimmed(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<DynamicImage> {
     let (width, height) = sheet.dimensions();
-
     let sprite_w = width / columns;
     let sprite_h = height / rows;
 
-    let mut result = Vec::with_capacity((rows * columns) as usize);
-
-    for j in 0..rows {
-        for i in 0..columns {
+    (0..(rows * columns))
+        .into_par_iter()
+        .map(|idx| {
+            let i = idx % columns;
+            let j = idx / columns;
             let x = i * sprite_w;
             let y = j * sprite_h;
-
             let sprite = sheet.crop_imm(x, y, sprite_w, sprite_h);
-
-            result.push(trim_image(sprite, 0.1));
-        }
-    }
-
-    result
+            trim_image(sprite, 0.1)
+        })
+        .collect()
 }
 
 pub fn concat_into_sheet(sprites: Vec<&DynamicImage>, rows: u32, columns: u32) -> Option<DynamicImage> {
     if sprites.is_empty() {
-        return None
+        return None;
     }
 
     let (sprite_w, sprite_h) = sprites[0].dimensions();
     let width = sprite_w * columns;
     let height = sprite_h * rows;
 
-    let mut sheet = image::RgbaImage::new(width, height);
+    let sprites_rgba: Vec<RgbaImage> = sprites.into_iter().map(|s| s.to_rgba8()).collect();
+    let sprite_raws: Vec<&[u8]> = sprites_rgba.iter().map(|s| &s.as_raw()[..]).collect();
 
-    for (index, sprite) in sprites.into_iter().enumerate() {
-        let i = (index as u32) % columns;
-        let j = (index as u32) / columns;
+    let mut sheet_buffer = vec![0u8; (width * height) as usize * 4];
 
-        let x = i * sprite_w;
-        let y = j * sprite_h;
+    sheet_buffer.par_chunks_mut((width * 4) as usize)
+        .enumerate()
+        .for_each(|(py, row_out)| {
+            let py = py as u32;
+            let sprite_row = py / sprite_h;
+            let local_y = py % sprite_h;
+            if sprite_row >= rows {
+                return;
+            }
+            for col in 0..columns {
+                let sprite_idx = (sprite_row * columns + col) as usize;
+                if sprite_idx >= sprite_raws.len() {
+                    continue;
+                }
+                let src_start = (local_y * sprite_w) as usize * 4;
+                let dest_offset = (col * sprite_w) as usize * 4;
+                let src_slice = &sprite_raws[sprite_idx][src_start..src_start + (sprite_w as usize) * 4];
+                let dest_slice = &mut row_out[dest_offset..dest_offset + (sprite_w as usize) * 4];
+                dest_slice.copy_from_slice(src_slice);
+            }
+        });
 
-        sheet.copy_from(sprite, x, y).unwrap();
-    }
-
+    let sheet = RgbaImage::from_raw(width, height, sheet_buffer).unwrap();
     Some(DynamicImage::ImageRgba8(sheet))
 }

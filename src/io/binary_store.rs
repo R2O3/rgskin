@@ -1,4 +1,5 @@
-use std::{collections::HashMap, sync::{Arc, RwLock}};
+use std::sync::{Arc, RwLock};
+use dashmap::DashMap;
 use merge::Merge;
 use wasm_bindgen::prelude::*;
 use js_sys::{Uint8Array, ArrayBuffer};
@@ -12,8 +13,8 @@ use crate::{impl_store_wasm, io::{Binary, BinaryState, RawBytes, Store}};
 #[derive(Clone, Merge, Debug)]
 pub struct BinaryStore {
     #[wasm_bindgen(skip)]
-    #[merge(strategy = merge::hashmap::overwrite)]
-    binaries: HashMap<String, Arc<RwLock<RawBytes>>>,
+    #[merge(strategy = crate::utils::merge::dashmap::overwrite)]  // adjust path if needed
+    binaries: DashMap<String, Arc<RwLock<RawBytes>>>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -22,7 +23,7 @@ impl BinaryStore {
     #[wasm_bindgen(constructor)]
     pub fn new_wasm() -> Self {
         BinaryStore {
-            binaries: HashMap::new(),
+            binaries: DashMap::new(),
         }
     }
 
@@ -94,6 +95,7 @@ impl_store_wasm!(BinaryStore, RawBytes);
 
 impl Store<RawBytes> for BinaryStore {
     type Data = BinaryState<Vec<u8>>;
+    type MapType = DashMap<String, Arc<RwLock<RawBytes>>>;
     
     fn create_item(path: String, data: Self::Data, _hash: Option<u64>) -> RawBytes {
         RawBytes {
@@ -115,11 +117,11 @@ impl Store<RawBytes> for BinaryStore {
         item.state().clone()
     }
     
-    fn map(&self) -> &HashMap<String, Arc<RwLock<RawBytes>>> {
+    fn map(&self) -> &DashMap<String, Arc<RwLock<RawBytes>>> {
         &self.binaries
     }
     
-    fn map_mut(&mut self) -> &mut HashMap<String, Arc<RwLock<RawBytes>>> {
+    fn map_mut(&mut self) -> &mut DashMap<String, Arc<RwLock<RawBytes>>> {
         &mut self.binaries
     }
 }
@@ -127,7 +129,7 @@ impl Store<RawBytes> for BinaryStore {
 impl BinaryStore {
     pub fn new() -> Self {
         BinaryStore {
-            binaries: HashMap::new(),
+            binaries: DashMap::new(),
         }
     }
 
@@ -150,22 +152,22 @@ impl BinaryStore {
     }
     
     pub fn all_loaded(&self) -> bool {
-        self.iter().all(|(_, arc)| {
-            let binary = arc.read().unwrap();
+        self.binaries.iter().all(|entry| {
+            let binary = entry.value().read().unwrap();
             binary.has_data()
         })
     }
     
     pub fn loaded_count(&self) -> usize {
-        self.iter().filter(|(_, arc)| {
-            let binary = arc.read().unwrap();
+        self.binaries.iter().filter(|entry| {
+            let binary = entry.value().read().unwrap();
             binary.has_data()
         }).count()
     }
     
     pub fn unloaded_paths(&self) -> Vec<String> {
-        self.iter().filter_map(|(_, arc)| {
-            let binary = arc.read().unwrap();
+        self.binaries.iter().filter_map(|entry| {
+            let binary = entry.value().read().unwrap();
             if !binary.has_data() {
                 Some(binary.get_path().to_string())
             } else {

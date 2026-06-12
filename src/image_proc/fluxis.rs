@@ -1,4 +1,5 @@
 use image::{DynamicImage, Rgba};
+use rayon::prelude::*;
 use crate::{
     fluxis::{skin_json::Keymode, SkinJson},
     image_proc::proc::{fill_rect, overlay_image},
@@ -42,29 +43,31 @@ fn draw_background(
     textures: &TextureStore,
     bg_key: &str,
     width: u32,
-    height: u32
+    height: u32,
 ) {
     let mut use_black_bg = true;
-    
+
     if let Some(bg_texture) = textures.get_shared(bg_key) {
         if let Some(bg_img_dynamic) = bg_texture.get_data() {
             let bg_img = bg_img_dynamic.to_rgba8();
-            
+
             if is_valid_background(&bg_img) {
                 use_black_bg = false;
                 let scaled_bg = image::imageops::resize(
-                    &bg_img, width, height, image::imageops::FilterType::Lanczos3
+                    &bg_img, width, height, image::imageops::FilterType::Lanczos3,
                 );
-                
-                for y in 0..height {
-                    for x in 0..width {
-                        canvas.put_pixel(x, y, *scaled_bg.get_pixel(x, y));
-                    }
-                }
+                canvas
+                    .par_chunks_mut((width * 4) as usize)
+                    .enumerate()
+                    .for_each(|(y, row)| {
+                        let src_row_start = (y as u32 * width) as usize * 4;
+                        let src_row = &scaled_bg.as_raw()[src_row_start..src_row_start + row.len()];
+                        row.copy_from_slice(src_row);
+                    });
             }
         }
     }
-    
+
     if use_black_bg {
         fill_rect(canvas, &Rgba([0, 0, 0, 255]), 0, 0, width, height);
     }

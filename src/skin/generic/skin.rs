@@ -61,14 +61,14 @@ impl<'a> ManiaSkin<'a> for GenericManiaSkin {
 
     fn get_required_texture_paths(&self) -> Vec<StringPattern> {
         self.textures.iter()
-            .filter(|(_, texture)| texture.is_loaded())
+            .into_iter().filter(|(_, texture)| texture.is_loaded())
             .map(|(path, _)| StringPattern::from(path.to_owned()))
             .collect()
     }
     
     fn get_required_sample_paths(&self) -> Vec<StringPattern> {
         self.samples.iter()
-            .map(|(path, _)| StringPattern::from(path.to_owned()))
+            .into_iter().map(|(path, _)| StringPattern::from(path.to_owned()))
             .collect()
     }
 }

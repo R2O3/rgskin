@@ -48,6 +48,7 @@ merge = "0.2.0"
 serde = { version = "1.0.228", default-features = false, features = ["derive", "alloc"] }
 serde_json = { version = "1.0.145", default-features = false, features = ["std"] }
 serde_derive = "1.0.228"
+dashmap = { version = "6.2.1", features = ["rayon"] }
 
 [profile.release]
 strip = false

@@ -42,26 +42,49 @@ where
 }
 
 pub fn export_textures(textures: &TextureStore) -> Result<HashMap<String, Vec<u8>>, JsError> {
-    export_binaries(textures, |texture| {
-        let texture_path_with_ext = change_extension(texture.get_path(), "png");
-        
-        if let Some(img) = texture.get_data() {
-            let mut bytes = Vec::new();
-            let mut cursor = std::io::Cursor::new(&mut bytes);
-            img.write_to(&mut cursor, image::ImageFormat::Png)
-                .map_err(|e| JsError::new(&e.to_string()))?;
-            Ok(Some((texture_path_with_ext, bytes)))
-        } else if let Some(bytes) = texture.get_unloaded_data() {
-            Ok(Some((texture_path_with_ext, bytes.to_vec())))
-        } else {
-            Ok(None)
+    use rayon::prelude::*;
+    use std::sync::Arc;
+
+    let arcs: Vec<Arc<std::sync::RwLock<crate::io::texture::Texture>>> = textures
+        .textures
+        .iter()
+        .map(|entry| Arc::clone(entry.value()))
+        .collect();
+
+    let encoded: Vec<Result<Option<(String, Vec<u8>)>, String>> = arcs
+        .par_iter()
+        .map(|arc| {
+            let texture = arc.read().map_err(|e| e.to_string())?;
+            let out_path = change_extension(texture.get_path(), "png");
+
+            if let Some(img) = texture.state().as_loaded() {
+                let mut bytes = Vec::new();
+                img.write_to(
+                    &mut std::io::Cursor::new(&mut bytes),
+                    image::ImageFormat::Png,
+                )
+                .map_err(|e| e.to_string())?;
+                Ok(Some((out_path, bytes)))
+            } else if let Some(raw) = texture.state().as_unloaded() {
+                Ok(Some((out_path, raw.clone())))
+            } else {
+                Ok(None)
+            }
+        })
+        .collect();
+
+    let mut files = HashMap::new();
+    for result in encoded {
+        if let Some((path, bytes)) = result.map_err(|e| JsError::new(&e))? {
+            files.insert(path, bytes);
         }
-    })
+    }
+    Ok(files)
 }
 
 pub fn export_samples(samples: &SampleStore) -> Result<HashMap<String, Vec<u8>>, JsError> {
     export_binaries(samples, |sample| {
-        let sample_path_with_ext = change_extension(sample.get_path(), "wav"); // TODO: preserve original extension to avoid bugs
+        let sample_path_with_ext = change_extension(sample.get_path(), "wav"); // TODO: preserve original extension
         
         if let Some(bytes) = sample.get_data() {
             Ok(Some((sample_path_with_ext, bytes.to_vec())))

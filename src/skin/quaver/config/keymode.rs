@@ -18,8 +18,6 @@ fn parse_list<T: std::str::FromStr>(value: &str) -> Vec<T> {
     value.split(',').filter_map(|s| s.trim().parse::<T>().ok()).collect()
 }
 
-// TODO: add support for quaver fallback (sharedK)
-
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen)]
 #[derive(Clone, Debug, PartialEq)]
 pub enum DefaultSkin {
@@ -375,11 +373,17 @@ pub struct Keymode {
     pub mini_song_bar_display_height: i32,
 
     pub use_fallback: bool,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub hitobject_fallbacks: Vec<u8>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub holdbody_fallbacks: Vec<u8>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub holdend_fallbacks: Vec<u8>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub receptor_fallbacks: Vec<u8>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub hitobject_rotations: Vec<u8>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub receptor_rotations: Vec<u8>,
 }
 

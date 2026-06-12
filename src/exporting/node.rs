@@ -38,34 +38,53 @@ where
 }
 
 pub fn export_textures(textures: &TextureStore, path: &str) -> io::Result<()> {
-    export_binaries(textures, path, |texture, base_path| {
-        let texture_path_with_ext = change_extension(texture.get_path(), "png");
-        let output_path = node::join_path(base_path, &texture_path_with_ext);
-        
-        if let Some(slash_pos) = output_path.rfind('/') {
-            let parent = &output_path[..slash_pos];
-            node::create_dir_all(parent)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-        } else if let Some(slash_pos) = output_path.rfind('\\') {
-            let parent = &output_path[..slash_pos];
-            node::create_dir_all(parent)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
-        }
-        
-        if let Some(img) = texture.get_data() {
-            let mut bytes: Vec<u8> = Vec::new();
-            img.write_to(&mut std::io::Cursor::new(&mut bytes), image::ImageFormat::Png)
+    use rayon::prelude::*;
+    use std::sync::Arc;
+
+    node::create_dir_all(path)
+        .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+
+    let arcs: Vec<Arc<std::sync::RwLock<crate::io::texture::Texture>>> = textures
+        .textures
+        .iter()
+        .map(|entry| Arc::clone(entry.value()))
+        .collect();
+
+    let encoded: Vec<io::Result<Option<(String, Vec<u8>)>>> = arcs
+        .par_iter()
+        .map(|arc| {
+            let texture = arc.read().unwrap();
+            let out_path = change_extension(texture.get_path(), "png");
+
+            if let Some(img) = texture.state().as_loaded() {
+                let mut bytes = Vec::new();
+                img.write_to(
+                    &mut std::io::Cursor::new(&mut bytes),
+                    image::ImageFormat::Png,
+                )
                 .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
-            
+                Ok(Some((out_path, bytes)))
+            } else if let Some(raw) = texture.state().as_unloaded() {
+                Ok(Some((out_path, raw.clone())))
+            } else {
+                Ok(None)
+            }
+        })
+        .collect();
+
+    for result in encoded {
+        if let Some((rel_path, bytes)) = result? {
+            let output_path = node::join_path(path, &rel_path);
+            if let Some(slash_pos) = output_path.rfind('/') {
+                let parent = &output_path[..slash_pos];
+                node::create_dir_all(parent)
+                    .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
+            }
             node::write_file(&output_path, &bytes)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
-        } else if let Some(bytes) = texture.get_unloaded_data() {
-            node::write_file(&output_path, bytes)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))
-        } else {
-            Ok(())
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e.to_string()))?;
         }
-    })
+    }
+    Ok(())
 }
 
 pub fn export_samples(samples: &SampleStore, path: &str) -> io::Result<()> {

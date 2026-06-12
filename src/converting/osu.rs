@@ -218,10 +218,10 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             if let Some(tex) = textures.get_shared(fallback_key) {
                 vec![tex]
             } else {
-                let (_, mut all_textures): (Vec<&str>, Vec<Arc<RwLock<Texture>>>) = textures
-                    .get_shared_all(|t| t.get_path().starts_with(&prefix.to_string()))
-                    .iter()
-                    .cloned()
+                let prefix_string = prefix.to_string();
+                let (_, mut all_textures): (Vec<String>, Vec<Arc<RwLock<Texture>>>) = textures
+                    .get_shared_all(|t| t.get_path().starts_with(&prefix_string))
+                    .into_iter()
                     .unzip();
 
                 all_textures.sort_by_key(|arc| {

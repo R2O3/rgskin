@@ -37,28 +37,55 @@ where
 }
 
 pub fn export_textures(textures: &TextureStore, path: &str) -> io::Result<()> {
-    export_binaries(textures, path, |texture, base_path| {
-        let texture_path_with_ext = change_extension(texture.get_path(), "png");
-        let output_path = Path::new(base_path).join(&texture_path_with_ext);
-        
-        if let Some(parent) = output_path.parent() {
-            fs::create_dir_all(parent)?;
+    use rayon::prelude::*;
+    use std::sync::Arc;
+
+    fs::create_dir_all(path)?;
+
+    let arcs: Vec<Arc<std::sync::RwLock<crate::io::texture::Texture>>> = textures
+        .textures
+        .iter()
+        .map(|entry| Arc::clone(entry.value()))
+        .collect();
+
+    let encoded: Vec<io::Result<Option<(String, Vec<u8>)>>> = arcs
+        .par_iter()
+        .map(|arc| {
+            let texture = arc.read().unwrap();
+            let out_path = change_extension(texture.get_path(), "png");
+
+            if let Some(img) = texture.state().as_loaded() {
+                let mut bytes = Vec::new();
+                img.write_to(
+                    &mut std::io::Cursor::new(&mut bytes),
+                    image::ImageFormat::Png,
+                )
+                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))?;
+                Ok(Some((out_path, bytes)))
+            } else if let Some(raw) = texture.state().as_unloaded() {
+                Ok(Some((out_path, raw.clone())))
+            } else {
+                Ok(None)
+            }
+        })
+        .collect();
+
+    let base = Path::new(path);
+    for result in encoded {
+        if let Some((rel_path, bytes)) = result? {
+            let out = base.join(&rel_path);
+            if let Some(parent) = out.parent() {
+                fs::create_dir_all(parent)?;
+            }
+            fs::write(&out, &bytes)?;
         }
-        
-        if let Some(img) = texture.get_data() {
-            img.save_with_format(&output_path, image::ImageFormat::Png)
-                .map_err(|e| io::Error::new(io::ErrorKind::Other, e))
-        } else if let Some(bytes) = texture.get_unloaded_data() {
-            fs::write(&output_path, bytes)
-        } else {
-            Ok(())
-        }
-    })
+    }
+    Ok(())
 }
 
 pub fn export_samples(samples: &SampleStore, path: &str) -> io::Result<()> {
     export_binaries(samples, path, |sample, base_path| {
-        let sample_path_with_ext = change_extension(sample.get_path(), "wav"); // TODO: preserve original extension to avoid bugs
+        let sample_path_with_ext = change_extension(sample.get_path(), "wav"); // TODO: preserve original extension
         let output_path = Path::new(base_path).join(&sample_path_with_ext);
         
         if let Some(parent) = output_path.parent() {
@@ -77,11 +104,8 @@ pub fn export_osu_ini(skin_ini: &osu::OsuSkinIni, path: &str) -> io::Result<()> 
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)?;
     }
-    
     let ini_content = skin_ini.to_string();
-    
     fs::write(path, ini_content)?;
-    
     Ok(())
 }
 
@@ -89,11 +113,8 @@ pub fn export_quaver_ini(skin_ini: &crate::quaver::QuaSkinIni, path: &str) -> io
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)?;
     }
-    
     let ini_content = skin_ini.to_string();
-    
     fs::write(path, ini_content)?;
-    
     Ok(())
 }
 
@@ -101,11 +122,8 @@ pub fn export_fluxis_skin_json(skin_json: &fluxis::SkinJson, path: &str) -> io::
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)?;
     }
-    
     let json_content = skin_json.to_string();
-    
     fs::write(path, json_content)?;
-    
     Ok(())
 }
 
@@ -113,17 +131,13 @@ pub fn export_fluxis_layout_json(layout_json: &fluxis::FluXisLayout, path: &str)
     if let Some(parent) = Path::new(path).parent() {
         fs::create_dir_all(parent)?;
     }
-    
     let json_content = layout_json.to_str().unwrap();
-    
     fs::write(path, json_content)?;
-    
     Ok(())
 }
 
 pub fn export_osu_skin(skin: &OsuSkin, path: &str) -> io::Result<()> {
     let skin_ini = &skin.skin_ini;
-
     let skin_path = Path::new(path).join(&skin_ini.general.name);
     fs::create_dir_all(&skin_path)?;
     
@@ -138,7 +152,6 @@ pub fn export_osu_skin(skin: &OsuSkin, path: &str) -> io::Result<()> {
 
 pub fn export_quaver_skin(skin: &crate::quaver::QuaSkin, path: &str) -> io::Result<()> {
     let skin_ini = &skin.skin_ini;
-
     let skin_path = Path::new(path).join(&skin_ini.general.name);
     fs::create_dir_all(&skin_path)?;
     

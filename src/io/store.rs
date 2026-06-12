@@ -5,6 +5,7 @@ use wasm_bindgen::prelude::*;
 use js_sys::Array;
 
 use crate::Binary;
+use crate::common_traits::MapOps;
 use crate::utils::io::normalize;
 
 #[macro_export]
@@ -63,14 +64,15 @@ macro_rules! impl_store_wasm {
 
 pub trait Store<T: Binary>: Debug {
     type Data;
+    type MapType: MapOps<String, Arc<RwLock<T>>>;
 
     fn create_item(path: String, data: Self::Data, hash: Option<u64>) -> T;
     fn get_item_path(item: &T) -> &str;
     fn set_item_path(item: &mut T, path: String);
     fn clone_item_data(item: &T) -> Self::Data;
 
-    fn map(&self) -> &HashMap<String, Arc<RwLock<T>>>;
-    fn map_mut(&mut self) -> &mut HashMap<String, Arc<RwLock<T>>>;
+    fn map(&self) -> &Self::MapType;
+    fn map_mut(&mut self) -> &mut Self::MapType;
 
     fn insert(&mut self, item: T) -> Arc<RwLock<T>> {
         let path = normalize(Self::get_item_path(&item));
@@ -85,73 +87,45 @@ pub trait Store<T: Binary>: Debug {
         arc
     }
     
-    fn get(&self, path: &str) -> Option<std::sync::RwLockReadGuard<'_, T>> {
+    fn get(&self, path: &str) -> Option<Arc<RwLock<T>>> {
         let normalized = normalize(path);
-        self.map().get(&normalized).map(|arc| arc.read().unwrap())
+        self.map().clone_value(&normalized)
     }
     
     fn get_shared(&self, path: &str) -> Option<Arc<RwLock<T>>> {
-        let normalized = normalize(path);
-        self.map().get(&normalized).map(Arc::clone)
+        self.get(path)
     }
     
-    fn get_mut(&self, path: &str) -> Option<std::sync::RwLockWriteGuard<'_, T>> {
-        let normalized = normalize(path);
-        self.map().get(&normalized).map(|arc| arc.write().unwrap())
+    fn get_mut(&self, path: &str) -> Option<Arc<RwLock<T>>> {
+        self.get(path)
     }
 
-    fn get_all<'a, F>(&'a self, mut predicate: F) -> Vec<(&'a str, std::sync::RwLockReadGuard<'a, T>)>
+    fn get_all<F>(&self, mut predicate: F) -> Vec<(String, Arc<RwLock<T>>)>
     where
         F: FnMut(&T) -> bool,
-        T: 'a,
     {
-        self.map()
-            .iter()
-            .filter_map(|(k, arc)| {
-                let guard = arc.read().unwrap();
-                if predicate(&*guard) {
-                    Some((k.as_str(), guard))
-                } else {
-                    None
-                }
-            })
-            .collect()
+        let mut result = Vec::new();
+        self.map().for_each_entry(|k, arc| {
+            let guard = arc.read().unwrap();
+            if predicate(&*guard) {
+                result.push((k.clone(), Arc::clone(arc)));
+            }
+        });
+        result
     }
 
-    fn get_shared_all<'a, F>(&'a self, mut predicate: F) -> Vec<(&'a str, Arc<RwLock<T>>)>
+    fn get_shared_all<F>(&self, predicate: F) -> Vec<(String, Arc<RwLock<T>>)>
     where
         F: FnMut(&T) -> bool,
-        T: 'a,
     {
-        self.map()
-            .iter()
-            .filter_map(|(k, arc)| {
-                let guard = arc.read().unwrap();
-                if predicate(&*guard) {
-                    Some((k.as_str(), Arc::clone(arc)))
-                } else {
-                    None
-                }
-            })
-            .collect()
+        self.get_all(predicate)
     }
 
-    fn get_mut_all<'a, F>(&'a self, mut predicate: F) -> Vec<(&'a str, std::sync::RwLockWriteGuard<'a, T>)>
+    fn get_mut_all<F>(&self, predicate: F) -> Vec<(String, Arc<RwLock<T>>)>
     where
         F: FnMut(&T) -> bool,
-        T: 'a,
     {
-        self.map()
-            .iter()
-            .filter_map(|(k, arc)| {
-                let guard = arc.write().unwrap();
-                if predicate(&*guard) {
-                    Some((k.as_str(), guard))
-                } else {
-                    None
-                }
-            })
-            .collect()
+        self.get_all(predicate) // write is not possible without guard lifetime issues
     }
 
     fn contains(&self, path: &str) -> bool {
@@ -176,36 +150,28 @@ pub trait Store<T: Binary>: Debug {
         self.map_mut().clear();
     }
 
-    fn keys<'a>(&'a self) -> impl Iterator<Item = &'a str> + 'a
-    where
-        T: 'a,
-    {
-        self.map().keys().map(|s| s.as_str())
+    fn keys(&self) -> Vec<String> {
+        self.map().keys_cloned()
     }
 
-    fn iter<'a>(&'a self) -> impl Iterator<Item = (&'a str, &'a Arc<RwLock<T>>)> 
-    where
-        T: 'a,
-    {
-        self.map().iter().map(|(k, v)| (k.as_str(), v))
+    fn iter(&self) -> Vec<(String, Arc<RwLock<T>>)> {
+        let mut vec = Vec::with_capacity(self.len());
+        self.map().for_each_entry(|k, v| {
+            vec.push((k.clone(), Arc::clone(v)));
+        });
+        vec
     }
 
-    fn iter_mut<'a>(&'a mut self) -> impl Iterator<Item = (&'a str, &'a mut Arc<RwLock<T>>)> 
-    where
-        T: 'a,
-    {
-        self.map_mut().iter_mut().map(|(k, v)| (k.as_str(), v))
+    fn iter_mut(&mut self) -> Vec<(String, Arc<RwLock<T>>)> {
+        self.iter()
     }
 
-    fn paths<'a>(&'a self) -> impl Iterator<Item = &'a str>
-    where
-        T: 'a,
-    {
+    fn paths(&self) -> Vec<String> {
         self.keys()
     }
 
     fn get_paths(&self) -> Vec<String> {
-        self.keys().map(|s| s.to_string()).collect()
+        self.keys()
     }
 
     fn make_unique(&mut self, new_path: &str, mut item: T) -> String {
@@ -245,7 +211,7 @@ pub trait Store<T: Binary>: Debug {
         let original_ref = self.get_shared(original_path)?;
         let original = original_ref.read().unwrap();
         let data = Self::clone_item_data(&*original);
-        let hash = original.get_hash();       // read before drop
+        let hash = original.get_hash();
         drop(original);
 
         let new_item = Self::create_item(new_path.to_string(), data, hash);
@@ -264,7 +230,7 @@ pub trait Store<T: Binary>: Debug {
         let original_ref = self.get_shared(original_path)?;
         let original = original_ref.read().unwrap();
         let data = Self::clone_item_data(&*original);
-        let hash = original.get_hash();       // same pattern as copy
+        let hash = original.get_hash();
         drop(original);
 
         let new_item = Self::create_item(new_base_path.to_string(), data, hash);
@@ -280,8 +246,8 @@ pub trait Store<T: Binary>: Debug {
         let normalized = normalize(path);
 
         let (target_hash, target_arc) = {
-            let arc = match self.map().get(&normalized) {
-                Some(a) => Arc::clone(a),
+            let arc = match self.map().clone_value(&normalized) {
+                Some(a) => a,
                 None => return HashMap::new(),
             };
             let hash = match arc.read().unwrap().get_hash() {
@@ -292,13 +258,16 @@ pub trait Store<T: Binary>: Debug {
         };
 
         let mut culled = HashMap::new();
-        for (key, arc) in self.map_mut().iter_mut() {
-            if *key == normalized {
+        let keys = self.map().keys_cloned();
+        for key in keys {
+            if key == normalized {
                 continue;
             }
-            if arc.read().unwrap().get_hash() == Some(target_hash) {
-                *arc = Arc::clone(&target_arc);
-                culled.insert(key.clone(), normalized.clone());
+            if let Some(arc) = self.map().clone_value(&key) {
+                if arc.read().unwrap().get_hash() == Some(target_hash) {
+                    self.map_mut().insert(key.clone(), Arc::clone(&target_arc));
+                    culled.insert(key, normalized.clone());
+                }
             }
         }
         culled
@@ -308,15 +277,16 @@ pub trait Store<T: Binary>: Debug {
         let mut canonical: HashMap<u64, (Arc<RwLock<T>>, String)> = HashMap::new();
         let mut replacements: Vec<(String, Arc<RwLock<T>>, String)> = Vec::new();
 
-        for (path, arc) in self.map().iter() {
+        let entries: Vec<(String, Arc<RwLock<T>>)> = self.iter();
+        for (path, arc) in entries {
             if let Some(hash) = arc.read().unwrap().get_hash() {
                 match canonical.entry(hash) {
                     hash_map::Entry::Vacant(e) => {
-                        e.insert((Arc::clone(arc), path.to_string()));
+                        e.insert((Arc::clone(&arc), path.to_string()));
                     }
                     hash_map::Entry::Occupied(e) => {
                         let (canonical_arc, canonical_path) = e.get();
-                        replacements.push((path.to_string(), Arc::clone(canonical_arc), canonical_path.clone()));
+                        replacements.push((path, Arc::clone(canonical_arc), canonical_path.clone()));
                     }
                 }
             }
@@ -334,7 +304,8 @@ pub trait Store<T: Binary>: Debug {
     where 
         F: FnOnce(&T) -> R,
     {
-        let guard = self.get(path)?;
+        let arc = self.get(path)?;
+        let guard = arc.read().unwrap();
         Some(f(&*guard))
     }
     
@@ -342,7 +313,8 @@ pub trait Store<T: Binary>: Debug {
     where 
         F: FnOnce(&mut T) -> R,
     {
-        let mut guard = self.get_mut(path)?;
+        let arc = self.get(path)?;
+        let mut guard = arc.write().unwrap();
         Some(f(&mut *guard))
     }
     
@@ -350,19 +322,22 @@ pub trait Store<T: Binary>: Debug {
     where 
         F: FnMut(&T),
     {
-        for (_, arc) in self.iter() {
+        self.map().for_each_entry(|_, arc| {
             let guard = arc.read().unwrap();
             f(&*guard);
-        }
+        });
     }
     
     fn for_each_mut<F>(&self, mut f: F)
     where 
         F: FnMut(&mut T),
     {
-        for (_, arc) in self.iter() {
-            let mut guard = arc.write().unwrap();
-            f(&mut *guard);
+        let paths = self.map().keys_cloned();
+        for path in paths {
+            if let Some(arc) = self.map().clone_value(&path) {
+                let mut guard = arc.write().unwrap();
+                f(&mut *guard);
+            }
         }
     }
 
@@ -376,11 +351,11 @@ pub trait Store<T: Binary>: Debug {
         });
     }
 
-    fn extend(&mut self, other: HashMap<String, Arc<RwLock<T>>>) {
-        for (path, item) in other {
-            let normalized = normalize(&path);
-            self.map_mut().insert(normalized, item);
-        }
+    fn extend(&mut self, other: Self::MapType) {
+        other.for_each_entry(|k, v| {
+            let normalized = normalize(k);
+            self.map_mut().insert(normalized, Arc::clone(v));
+        });
     }
 
     fn wasm_contains(&self, path: &str) -> bool {
@@ -420,8 +395,10 @@ pub trait Store<T: Binary>: Debug {
     }
 
     fn wasm_extend(&mut self, other: &Self) {
-        for (path, item) in other.map().iter() {
-            self.map_mut().insert(path.clone(), Arc::clone(item));
+        let entries = other.iter();
+        for (path, item) in entries {
+            let normalized = normalize(&path);
+            self.map_mut().insert(normalized, item);
         }
     }
 }

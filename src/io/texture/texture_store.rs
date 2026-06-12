@@ -1,4 +1,5 @@
-use std::{collections::HashMap, sync::{Arc, RwLock}};
+use std::sync::{Arc, RwLock};
+use dashmap::DashMap;
 use merge::Merge;
 use wasm_bindgen::prelude::*;
 use js_sys::{Uint8Array, ArrayBuffer};
@@ -9,18 +10,19 @@ use js_sys::Array;
 use image::{DynamicImage, ImageError};
 use crate::{Binary, BinaryState, impl_store_wasm, io::Store, utils::io::normalize};
 use crate::io::texture::Texture;
+use crate::utils;
 
 #[wasm_bindgen]
 #[derive(Clone, Merge, Debug)]
 pub struct TextureStore {
     #[wasm_bindgen(skip)]
-    #[merge(strategy = merge::hashmap::overwrite)]
-    textures: HashMap<String, Arc<RwLock<Texture>>>,
+    #[merge(strategy = utils::merge::dashmap::overwrite)]
+    pub(crate) textures: DashMap<String, Arc<RwLock<Texture>>>,
 
     /// indexes are scaled lower in powers of 2 (0 = 1/2, 1 = 1/4, 2 = 1/8, etc.)
     #[wasm_bindgen(skip)]
-    #[merge(strategy = merge::hashmap::overwrite)]
-    mipmaps: HashMap<String, Vec<DynamicImage>>,
+    #[merge(strategy = utils::merge::dashmap::overwrite)]
+    pub(crate) mipmaps: DashMap<String, Vec<DynamicImage>>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -29,8 +31,8 @@ impl TextureStore {
     #[wasm_bindgen(constructor)]
     pub fn new_wasm() -> Self {
         TextureStore {
-            textures: HashMap::new(),
-            mipmaps: HashMap::new(),
+            textures: DashMap::new(),
+            mipmaps: DashMap::new(),
         }
     }
 
@@ -95,12 +97,13 @@ impl_store_wasm!(TextureStore, Texture);
 
 impl Store<Texture> for TextureStore {
     type Data = BinaryState<image::DynamicImage>;
+    type MapType = DashMap<String, Arc<RwLock<Texture>>>;
     
-    fn create_item(path: String, data: Self::Data, _hash: Option<u64>) -> Texture {
+    fn create_item(path: String, data: Self::Data, hash: Option<u64>) -> Texture {
         Texture {
             path,
             data,
-            hash: _hash,
+            hash,
         }
     }
     
@@ -116,11 +119,11 @@ impl Store<Texture> for TextureStore {
         item.state().clone()
     }
     
-    fn map(&self) -> &HashMap<String, Arc<RwLock<Texture>>> {
+    fn map(&self) -> &DashMap<String, Arc<RwLock<Texture>>> {
         &self.textures
     }
     
-    fn map_mut(&mut self) -> &mut HashMap<String, Arc<RwLock<Texture>>> {
+    fn map_mut(&mut self) -> &mut DashMap<String, Arc<RwLock<Texture>>> {
         &mut self.textures
     }
 }
@@ -128,8 +131,8 @@ impl Store<Texture> for TextureStore {
 impl TextureStore {
     pub fn new() -> Self {
         TextureStore {
-            textures: HashMap::new(),
-            mipmaps: HashMap::new(),
+            textures: DashMap::new(),
+            mipmaps: DashMap::new(),
         }
     }
 
@@ -170,22 +173,22 @@ impl TextureStore {
     }
     
     pub fn all_loaded(&self) -> bool {
-        self.iter().all(|(_, arc)| {
-            let texture = arc.read().unwrap();
+        self.textures.iter().all(|entry| {
+            let texture = entry.value().read().unwrap();
             texture.has_data()
         })
     }
     
     pub fn loaded_count(&self) -> usize {
-        self.iter().filter(|(_, arc)| {
-            let texture = arc.read().unwrap();
+        self.textures.iter().filter(|entry| {
+            let texture = entry.value().read().unwrap();
             texture.has_data()
         }).count()
     }
     
     pub fn unloaded_paths(&self) -> Vec<String> {
-        self.iter().filter_map(|(_, arc)| {
-            let texture = arc.read().unwrap();
+        self.textures.iter().filter_map(|entry| {
+            let texture = entry.value().read().unwrap();
             if !texture.has_data() {
                 Some(texture.get_path().to_string())
             } else {
@@ -199,9 +202,9 @@ impl TextureStore {
         self.mipmaps.insert(normalized, mips);
     }
 
-    pub fn get_mipmap(&self, path: &str, level: usize) -> Option<&DynamicImage> {
+    pub fn get_mipmap(&self, path: &str, level: usize) -> Option<DynamicImage> {
         let normalized = normalize(path);
-        self.mipmaps.get(&normalized)?.get(level)
+        self.mipmaps.get(&normalized).and_then(|mips| mips.get(level).cloned())
     }
 
     pub fn has_mipmaps(&self, path: &str) -> bool {

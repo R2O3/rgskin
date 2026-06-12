@@ -31,6 +31,42 @@ pub mod indexmap {
     }
 }
 
+pub mod dashmap {
+    use merge::Merge;
+    use std::hash::Hash;
+    use dashmap::DashMap;
+
+    /// On conflict, overwrite elements of `left` with `right`.
+    ///
+    /// In other words, this gives precedence to `right`.
+    pub fn overwrite<K: Eq + Hash, V>(left: &mut DashMap<K, V>, right: DashMap<K, V>) {
+        left.extend(right.into_iter())
+    }
+
+    /// On conflict, ignore elements from `right`.
+    ///
+    /// In other words, this gives precedence to `left`.
+    pub fn ignore<K: Eq + Hash, V>(left: &mut DashMap<K, V>, right: DashMap<K, V>) {
+        for (k, v) in right {
+            left.entry(k).or_insert(v);
+        }
+    }
+
+    /// On conflict, recursively merge the elements.
+    pub fn recurse<K: Eq + Hash, V: Merge>(left: &mut DashMap<K, V>, right: DashMap<K, V>) {
+        use dashmap::mapref::entry::Entry;
+
+        for (k, v) in right {
+            match left.entry(k) {
+                Entry::Occupied(mut existing) => existing.get_mut().merge(v),
+                Entry::Vacant(empty) => {
+                    empty.insert(v);
+                }
+            }
+        }
+    }
+}
+
 pub mod skin_element {
     use crate::generic::elements::SkinElement;
 

@@ -1,9 +1,11 @@
 #![allow(unused)]
 
 use std::collections::{HashMap, HashSet};
+use rayon::prelude::*;
 
 use crate::{Binary, Store, texture::{Texture, TextureStore}, utils::io::get_stem};
-use crate::io::StringPattern;
+use crate::io::{BinaryState, StringPattern};
+use crate::utils::io::normalize;
 
 pub fn file_matches_target(file_stem: &str, target_filename: &str) -> bool {
     file_stem.to_lowercase() == target_filename.to_lowercase()
@@ -18,7 +20,6 @@ pub fn path_matches_target(
     if target_parent.is_empty() {
         return file_parent.is_empty() || !file_path.contains('/');
     }
-    
     file_parent.to_lowercase().ends_with(&target_parent.to_lowercase())
 }
 
@@ -53,7 +54,6 @@ pub fn pair_at2x_files<'a>(
     for (path, bytes) in files {
         let canonical = strip_at2x(path);
         let entry = grouped.entry(canonical).or_default();
-        
         if is_at2x(path) {
             entry.1 = Some(bytes);
         } else {
@@ -78,36 +78,107 @@ pub fn pair_at2x_files<'a>(
         .collect()
 }
 
+enum Decoded {
+    Loaded {
+        path: String,
+        image: image::DynamicImage,
+        hash: u64,
+        mip: Option<image::DynamicImage>,
+    },
+    Unloaded {
+        path: String,
+        bytes: Vec<u8>,
+        hash: u64,
+    },
+}
+
 pub fn build_texture_store_from_files(
     files: &HashMap<String, Vec<u8>>,
     load_only: Option<&[StringPattern]>,
 ) -> Result<TextureStore, Box<dyn std::error::Error>> {
-    let mut store = TextureStore::new();
+    let entries = pair_at2x_files(files);
 
-    for entry in pair_at2x_files(files) {
-        match entry {
+    let decoded: Vec<Result<Decoded, image::ImageError>> = entries
+        .par_iter()
+        .map(|entry| match entry {
             TextureEntry::WithMip { canonical_path, hires, lores } => {
-                let should_load = load_only.map_or(true, |s| should_load_from_set(&canonical_path, s));
+                let should_load = load_only
+                    .map_or(true, |s| should_load_from_set(canonical_path, s));
 
                 if should_load {
-                    let texture = Texture::from_bytes(canonical_path.clone(), hires)?;
+                    let hash = xxhash_rust::xxh3::xxh3_64(hires);
+                    let image = image::load_from_memory(hires)?;
                     let mip = image::load_from_memory(lores)?;
-                    store.load_with_mipmaps(canonical_path.clone(), hires, vec![mip]);
+                    Ok(Decoded::Loaded {
+                        path: canonical_path.clone(),
+                        image,
+                        hash,
+                        mip: Some(mip),
+                    })
                 } else {
-                    store.insert(Texture::with_unloaded_data(canonical_path, hires.to_vec()));
+                    let hash = xxhash_rust::xxh3::xxh3_64(hires);
+                    Ok(Decoded::Unloaded {
+                        path: canonical_path.clone(),
+                        bytes: hires.to_vec(),
+                        hash,
+                    })
                 }
             }
             TextureEntry::Plain { path, bytes } => {
-                let should_load = load_only.map_or(true, |s| should_load_from_set(&path, s));
+                let should_load = load_only
+                    .map_or(true, |s| should_load_from_set(path, s));
 
                 if should_load {
-                    store.load_from_bytes(path, bytes)?;
+                    let hash = xxhash_rust::xxh3::xxh3_64(bytes);
+                    let image = image::load_from_memory(bytes)?;
+                    Ok(Decoded::Loaded {
+                        path: path.clone(),
+                        image,
+                        hash,
+                        mip: None,
+                    })
                 } else {
-                    store.insert(Texture::with_unloaded_data(path, bytes.to_vec()));
+                    let hash = xxhash_rust::xxh3::xxh3_64(bytes);
+                    Ok(Decoded::Unloaded {
+                        path: path.clone(),
+                        bytes: bytes.to_vec(),
+                        hash,
+                    })
                 }
             }
+        })
+        .collect();
+
+    let store = TextureStore::new();
+    decoded.into_par_iter().try_for_each(|result| {
+        let decoded = result?;
+        let (path, texture, mip) = match decoded {
+            Decoded::Loaded { path, image, hash, mip } => {
+                let texture = Texture {
+                    path: path.clone(),
+                    data: BinaryState::Loaded(image),
+                    hash: Some(hash),
+                };
+                (path, texture, mip)
+            }
+            Decoded::Unloaded { path, bytes, hash } => {
+                let texture = Texture {
+                    path: path.clone(),
+                    data: BinaryState::Unloaded(bytes),
+                    hash: Some(hash),
+                };
+                (path, texture, None)
+            }
+        };
+
+        let normalized = normalize(&path);
+        let arc = std::sync::Arc::new(std::sync::RwLock::new(texture));
+        store.textures.insert(normalized.clone(), arc);
+        if let Some(mip_image) = mip {
+            store.mipmaps.insert(normalized, vec![mip_image]);
         }
-    }
+        Ok::<_, image::ImageError>(())
+    })?;
 
     Ok(store)
 }
@@ -130,20 +201,14 @@ pub struct SeenFiles {
 }
 
 impl SeenFiles {
-    pub fn new() -> Self {
-        Self {
-            seen: HashSet::new(),
-        }
-    }
-    
+    pub fn new() -> Self { Self { seen: HashSet::new() } }
+
     pub fn try_insert(&mut self, path: &str) -> bool {
-        let path_lower = path.to_lowercase();
-        self.seen.insert(path_lower)
+        self.seen.insert(path.to_lowercase())
     }
-    
+
     pub fn contains(&self, path: &str) -> bool {
-        let path_lower = path.to_lowercase();
-        self.seen.contains(&path_lower)
+        self.seen.contains(&path.to_lowercase())
     }
 }
 
