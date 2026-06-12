@@ -4,7 +4,7 @@ mod test_dependencies;
 use rgskin::utils::io::join_paths_unix;
 use test_dependencies::*;
 
-// #[test]
+#[test]
 pub fn osu_to_fluxis_test() -> Result<(), Box<dyn std::error::Error>> {
     benchmark_closure(||
     {
