@@ -6,7 +6,7 @@ use crate::common::skin::AssetAttribute;
 use crate::common::traits::LaneFallback;
 use crate::quaver::config::keymode::HealthBarType;
 use crate::quaver::{dynamic_assets, static_assets};
-use crate::texture::Texture;
+use crate::texture::{ProcessorStrategy, Texture};
 use crate::utils::quaver::{QuaDimensions, TextureResolver};
 use crate::{Binary, BinaryArcExt, BinaryArcExtOption, ConstTypeEnum, Resources, StringPattern, quaver};
 use crate::common::alignment::{Alignment, Anchor, Origin};
@@ -56,6 +56,10 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .collect()
     };
 
+    // used in resolver
+    let mut frame_processor = TextureProcessor::with_strategy(ProcessorStrategy::HashFallbackPath);
+    let mut snap_processor = TextureProcessor::with_strategy(ProcessorStrategy::HashFallbackPath);
+
     for keymode in &skin_ini.keymodes {
         let key_count = keymode.keymode as usize;
         let mut max_receptor_offset = 0;
@@ -72,7 +76,13 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 .collect()
         };
 
-        let mut resolver = TextureResolver::new(&mut textures, keymode, Arc::clone(&blank_texture));
+        let mut resolver = TextureResolver::new(
+            &mut textures, 
+            keymode, 
+            Arc::clone(&blank_texture),
+            &mut frame_processor,
+            &mut snap_processor
+        );
 
         let (mut normal_notes_snap_colored, base_normal_note, norm_note_snap_cols) = resolver.resolve_snap_colored(
             dynamic_assets::Notes::HIT_OBJECT_SHEET,

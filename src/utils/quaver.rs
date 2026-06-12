@@ -2,7 +2,12 @@ use std::sync::{Arc, RwLock};
 
 use image::{DynamicImage, imageops::FilterType};
 
-use crate::{Binary, BinaryArcExt, BinaryState, Store, StringPattern, TextureArcExt, common::color::Rgba, image_proc::proc::{extract_from_sheet, extract_from_sheet_trimmed, extract_grayscale_base, get_dominant_color}, numeric_enum, quaver, texture::Texture, traits::KeymodeInvariant};
+use crate::{
+    Binary, BinaryArcExt, BinaryState, Store, StringPattern, TextureArcExt,
+    common::color::Rgba, 
+    image_proc::proc::{extract_from_sheet, extract_from_sheet_trimmed, extract_grayscale_base, get_dominant_color}, 
+    numeric_enum, quaver, texture::{Texture, TextureProcessor}, traits::KeymodeInvariant,
+};
 
 numeric_enum! {
     pub enum QuaDimensions: u32 {
@@ -12,15 +17,29 @@ numeric_enum! {
     }
 }
 
-pub struct TextureResolver<'a, S: Store<Texture>> {
+pub struct TextureResolver<'a, 'p, S: Store<Texture>> {
     textures: &'a mut S,
     keymode: &'a quaver::Keymode,
     blank_texture: Arc<RwLock<Texture>>,
+    frame_processor: &'p mut TextureProcessor<(Vec<Arc<RwLock<Texture>>>, u32, u32)>,
+    snap_processor: &'p mut TextureProcessor<(Vec<Rgba>, Option<Arc<RwLock<Texture>>>)>,
 }
 
-impl<'a, S: Store<Texture>> TextureResolver<'a, S> {
-    pub fn new(textures: &'a mut S, keymode: &'a quaver::Keymode, blank_texture: Arc<RwLock<Texture>>) -> Self {
-        Self { textures, keymode, blank_texture }
+impl<'a, 'p, S: Store<Texture>> TextureResolver<'a, 'p, S> {
+    pub fn new(
+        textures: &'a mut S, 
+        keymode: &'a quaver::Keymode, 
+        blank_texture: Arc<RwLock<Texture>>,
+        frame_processor: &'p mut TextureProcessor<(Vec<Arc<RwLock<Texture>>>, u32, u32)>,
+        snap_processor: &'p mut TextureProcessor<(Vec<Rgba>, Option<Arc<RwLock<Texture>>>)>,
+    ) -> Self {
+        Self { 
+            textures, 
+            keymode, 
+            blank_texture,
+            frame_processor,
+            snap_processor,
+        }
     }
 
     pub fn resolve_path(&self, path: &str, fallback_path: Option<&str>) -> String {
@@ -40,14 +59,14 @@ impl<'a, S: Store<Texture>> TextureResolver<'a, S> {
         self.textures.get_shared(&tex_path)
     }
 
-    pub fn get_frames(&self, sheet: StringPattern, trimmed: bool) -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
+    pub fn get_frames(&mut self, sheet: StringPattern, trimmed: bool) -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
         match self.textures.get_shared(&sheet.to_string()) {
             Some(tex) => self.build_frames(tex, &sheet, trimmed),
             None => (Vec::new(), 1, 1),
         }
     }
 
-    pub fn get_frames_from_tex(&self, sheet_tex: Option<Arc<RwLock<Texture>>>, trimmed: bool) -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
+    pub fn get_frames_from_tex(&mut self, sheet_tex: Option<Arc<RwLock<Texture>>>, trimmed: bool) -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
         match sheet_tex {
             Some(tex) => {
                 let sheet = StringPattern::from(tex.get_path());
@@ -57,29 +76,33 @@ impl<'a, S: Store<Texture>> TextureResolver<'a, S> {
         }
     }
 
-    fn build_frames(&self, sheet_tex: Arc<RwLock<Texture>>, sheet: &StringPattern, trimmed: bool) -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
-        if let Some((rows, cols)) = sheet.get_sheet_size() {
-            let data = sheet_tex.get_data().unwrap();
-            let raw_frames = if trimmed {
-                extract_from_sheet_trimmed(&data, rows, cols)
-            } else {
-                extract_from_sheet(&data, rows, cols)
-            };
+    fn build_frames(&mut self, sheet_tex: Arc<RwLock<Texture>>, sheet: &StringPattern, trimmed: bool) -> (Vec<Arc<RwLock<Texture>>>, u32, u32) {
+        let sheet_clone = sheet.clone();
 
-            let frames = raw_frames
-                .into_iter()
-                .enumerate()
-                .map(|(idx, img)| {
-                    Arc::new(RwLock::new(Texture::new_with_state(
-                        format!("{}-{}", sheet, idx),
-                        BinaryState::Loaded(img),
-                    )))
-                })
-                .collect();
-            (frames, rows, cols)
-        } else {
-            (vec![sheet_tex], 1, 1)
-        }
+        self.frame_processor.process_once(&sheet_tex, move |tex| {
+            if let Some((rows, cols)) = sheet_clone.get_sheet_size() {
+                let data = tex.get_data().unwrap();
+                let raw_frames = if trimmed {
+                    extract_from_sheet_trimmed(&data, rows, cols)
+                } else {
+                    extract_from_sheet(&data, rows, cols)
+                };
+
+                let frames = raw_frames
+                    .into_iter()
+                    .enumerate()
+                    .map(|(idx, img)| {
+                        Arc::new(RwLock::new(Texture::new_with_state(
+                            format!("{}-{}", sheet_clone, idx),
+                            BinaryState::Loaded(img),
+                        )))
+                    })
+                    .collect();
+                (frames, rows, cols)
+            } else {
+                (vec![tex.clone()], 1, 1)
+            }
+        })
     }
 
     pub fn get_generic_or_shared_sheet(&self, pattern: StringPattern, rows: u32, cols: u32) -> Option<Arc<RwLock<Texture>>> {
@@ -100,41 +123,67 @@ impl<'a, S: Store<Texture>> TextureResolver<'a, S> {
         build_base: impl FnOnce(Option<Arc<RwLock<Texture>>>) -> TBase,
     ) -> (Option<TSnap>, Option<TBase>, Vec<Rgba>) {
         let sheet_tex = self.get_generic_or_shared_sheet(sheet_pattern, 9, 1);
-        let (frames, rows, cols) = self.get_frames_from_tex(sheet_tex, trimmed);
+        let sheet_arc = match &sheet_tex {
+            Some(arc) => arc,
+            None => return (None, None, Vec::new()),
+        };
+
+        let (frames, rows, cols) = self.get_frames_from_tex(sheet_tex.clone(), trimmed);
 
         if !validate(rows, cols, frames.len()) {
             return (None, None, Vec::new());
         }
 
-        let colors: Vec<Rgba> = frames.iter()
-            .map(|t| {
-                let col = t.image_ref(|img| get_dominant_color(img, FilterType::Triangle));
-                Rgba::from_image_rs(col.unwrap_or(image::Rgba([0, 0, 0, 0])))
-            })
-            .collect();
+        let textures = &mut self.textures;
 
-        let snap_cols = build_snap(frames.clone(), rows, cols, colors.clone());
+        let (colors, base_arc) = self.snap_processor.process_once(&sheet_arc, |_| {
+            let colors: Vec<Rgba> = frames.iter()
+                .map(|t| {
+                    let col = t.image_ref(|img| get_dominant_color(img, FilterType::Triangle));
+                    Rgba::from_image_rs(col.unwrap_or(image::Rgba([0, 0, 0, 0])))
+                })
+                .collect();
 
-        if !grayscale {
-            let base_arc = frames.first().cloned();
-            return (Some(snap_cols), Some(build_base(base_arc)), colors);
-        }
+            let mut base_arc = None;
 
-        let images: Vec<DynamicImage> = frames.iter()
-            .filter_map(|t| t.image_ref(|img| img.clone()))
-            .collect();
+            if grayscale && !frames.is_empty() {
+                fn stack_locks<'a>(
+                    frames: &'a [Arc<RwLock<Texture>>],
+                    refs: &mut Vec<&'a DynamicImage>,
+                    f: impl FnOnce(&[&DynamicImage]),
+                ) {
+                    if let Some((first, rest)) = frames.split_first() {
+                        first.with_image(|img| {
+                            let img_unsafe_ref = unsafe { &*(img as *const DynamicImage) };
+                            refs.push(img_unsafe_ref);
+                            stack_locks(rest, refs, f);
+                        });
+                    } else {
+                        f(refs);
+                    }
+                }
 
-        if images.is_empty() {
-            return (Some(snap_cols), None, colors);
-        }
+                let mut images_refs = Vec::with_capacity(frames.len());
+                stack_locks(&frames, &mut images_refs, |refs| {
+                    let base_tex = Texture::with_data(
+                        base_tex_name.to_string(),
+                        extract_grayscale_base(refs, Some(&colors), FilterType::Triangle),
+                    );
+                    base_arc = Some(textures.insert(base_tex));
+                });
+            }
 
-        let images_refs: Vec<&DynamicImage> = images.iter().collect();
-        let base_tex = Texture::with_data(
-            base_tex_name.to_string(), 
-            extract_grayscale_base(&images_refs, Some(&colors), FilterType::Triangle)
-        );
-        let base_arc = self.textures.insert(base_tex);
+            (colors, base_arc)
+        });
 
-        (Some(snap_cols), Some(build_base(Some(base_arc))), colors)
+        let base_result = if !grayscale {
+            Some(build_base(frames.first().cloned()))
+        } else {
+            base_arc.clone().map(|arc| build_base(Some(arc)))
+        };
+
+        let snap_cols = build_snap(frames, rows, cols, colors.clone());
+
+        (Some(snap_cols), base_result, colors)
     }
 }

@@ -4,4 +4,4 @@ mod texture_processor;
 
 pub use texture_store::TextureStore;
 pub use texture::Texture;
-pub use texture_processor::TextureProcessor;
+pub use texture_processor::*;

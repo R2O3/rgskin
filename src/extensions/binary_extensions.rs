@@ -12,6 +12,8 @@ pub trait BinaryArcExt<T: Binary> {
     fn path_ref<F, R>(&self, f: F) -> R
     where
         F: FnOnce(&str) -> R;
+
+    fn get_hash(&self) -> Option<u64>;
     
     fn get_data(&self) -> Option<T::LoadedData>
     where
@@ -103,6 +105,10 @@ where
 
     fn get_path(&self) -> String {
         self.read().unwrap().get_path().to_string()
+    }
+
+    fn get_hash(&self) -> Option<u64> {
+        self.read().unwrap().get_hash()
     }
     
     fn path_ref<F, R>(&self, f: F) -> R

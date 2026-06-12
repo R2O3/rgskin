@@ -6,14 +6,43 @@ use crate::extensions::TextureArcExt;
 use crate::io::texture::Texture;
 use crate::BinaryArcExt;
 
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
+pub enum TextureKey {
+    Path(String),
+    Hash(u64),
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum ProcessorStrategy {
+    Path,
+    HashFallbackPath,
+}
+
 pub struct TextureProcessor<T = ()> {
-    processed: HashMap<String, T>,
+    processed: HashMap<TextureKey, T>,
+    strategy: ProcessorStrategy,
 }
 
 impl<T> TextureProcessor<T> {
     pub fn new() -> Self {
+        Self::with_strategy(ProcessorStrategy::Path)
+    }
+
+    pub fn with_strategy(strategy: ProcessorStrategy) -> Self {
         Self {
             processed: HashMap::new(),
+            strategy,
+        }
+    }
+
+    fn get_key(&self, texture: &Arc<RwLock<Texture>>) -> TextureKey {
+        match self.strategy {
+            ProcessorStrategy::HashFallbackPath => {
+                texture.get_hash()
+                    .map(TextureKey::Hash)
+                    .unwrap_or_else(|| TextureKey::Path(texture.get_path()))
+            }
+            ProcessorStrategy::Path => TextureKey::Path(texture.get_path()),
         }
     }
 
@@ -22,14 +51,14 @@ impl<T> TextureProcessor<T> {
         F: FnOnce(&Arc<RwLock<Texture>>) -> T,
         T: Clone,
     {
-        let path = texture.get_path();
+        let key = self.get_key(texture);
         
-        if let Some(cached) = self.processed.get(&path) {
+        if let Some(cached) = self.processed.get(&key) {
             return cached.clone();
         }
         
         let result = f(texture);
-        self.processed.insert(path, result.clone());
+        self.processed.insert(key, result.clone());
         result
     }
 
@@ -38,22 +67,22 @@ impl<T> TextureProcessor<T> {
         F: FnOnce(&Arc<RwLock<Texture>>),
         T: Default,
     {
-        let path = texture.get_path();
+        let key = self.get_key(texture);
         
-        if self.processed.contains_key(&path) {
+        if self.processed.contains_key(&key) {
             return;
         }
         
         f(texture);
-        self.processed.insert(path, T::default());
+        self.processed.insert(key, T::default());
     }
 
     pub fn is_processed(&self, texture: &Arc<RwLock<Texture>>) -> bool {
-        self.processed.contains_key(&texture.get_path())
+        self.processed.contains_key(&self.get_key(texture))
     }
 
     pub fn get_cached(&self, texture: &Arc<RwLock<Texture>>) -> Option<&T> {
-        self.processed.get(&texture.get_path())
+        self.processed.get(&self.get_key(texture))
     }
 }
 
