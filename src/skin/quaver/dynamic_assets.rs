@@ -59,6 +59,34 @@ def_const_type_enum!(pub Notes => StringPattern {
     ],
 });
 
+def_const_type_enum!(pub Mines => StringPattern {
+    MINE => "{keys}k/HitObjects/note-mine-{lane}" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    MINE_START => "{keys}k/HitObjects/note-minestart-{lane}" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    MINE_BODY => "{keys}k/HitObjects/note-minebody-{lane}" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Animatable(AnimationSpriteType::SpriteSheet), 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    MINE_END => "{keys}k/HitObjects/note-mineend-{lane}" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    MINE_SHEET => "{keys}k/HitObjects/note-mine-sheet" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+    MINE_START_SHEET => "{keys}k/HitObjects/note-minestart-sheet" [
+        AssetAttribute::Texture, 
+        AssetAttribute::Alignment(Anchor::TopLeft)
+    ],
+});
+
 def_const_type_enum!(pub Receptors => StringPattern {
     UP => "{keys}k/Receptors/receptor-up-{lane}" [
         AssetAttribute::Texture, 

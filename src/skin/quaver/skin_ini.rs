@@ -113,6 +113,7 @@ impl SkinConfig for QuaSkinIni {
         result.extend(dynamic_assets::LaneCover::iter_mapped(|t| t));
         result.extend(dynamic_assets::Lighting::iter_mapped(|t| t));
         result.extend(dynamic_assets::Notes::iter_mapped(|t| t));
+        result.extend(dynamic_assets::Mines::iter_mapped(|t| t));
         result.extend(dynamic_assets::Receptors::iter_mapped(|t| t));
 
         result.extend(dynamic_assets::Stage::iter_mapped(|t| t));

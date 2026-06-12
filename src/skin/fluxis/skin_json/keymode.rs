@@ -14,6 +14,7 @@ define_keymode!(
     (long_note_tail_images, "HitObjects", "LongNoteEnd", ""),
     (tick_images, "HitObjects", "Tick", ""),
     (tick_images_small, "HitObjects", "Tick", "-small"),
+    (normal_mine_images, "HitObjects", "Landmine", ""),
 );
 
 #[cfg_attr(target_arch = "wasm32", wasm_bindgen(js_name = FluXisKeymode))]
@@ -70,6 +71,10 @@ pub struct Keymode {
     #[serde(skip)]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub long_note_tail_images: Vec<String>,
+
+    #[serde(skip)]
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub normal_mine_images: Vec<String>,
     
     #[serde(skip)]
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
@@ -98,6 +103,7 @@ impl Default for Keymode {
             long_note_head_images: Vec::new(),
             long_note_body_images: Vec::new(),
             long_note_tail_images: Vec::new(),
+            normal_mine_images: Vec::new(),
             tick_images: Vec::new(),
             tick_images_small: Vec::new(),
         }
@@ -116,6 +122,8 @@ impl KeymodeInvariant for Keymode {
     fn get_long_note_bodies(&self) -> Vec<String> { self.long_note_body_images.clone() }
     fn get_long_note_tails(&self) -> Vec<String> { self.long_note_tail_images.clone() }
 
+    fn get_normal_mines(&self) -> Vec<String> { self.normal_mine_images.clone() }
+
     fn primary_fallback(&self, _lane: usize) -> LaneFallback {
         let keymode = self.get_keymode();
 
@@ -126,6 +134,7 @@ impl KeymodeInvariant for Keymode {
             long_note_head: format!("hitobjects/longnotestart/{}k-{}", keymode, _lane),
             long_note_body: format!("hitobjects/longnotebody/{}k-{}", keymode, _lane),
             long_note_tail: format!("hitobjects/longnoteend/{}k-{}", keymode, _lane),
+            normal_mine: format!("hitobjects/landmine/{}k-{}", keymode, _lane),
         }
     }
     fn secondary_fallback(&self, _lane: usize) -> LaneFallback { self.primary_fallback(_lane) }

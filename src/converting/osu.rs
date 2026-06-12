@@ -246,12 +246,15 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
             receptor_down: receptor_down_elements,
             base_normal_note: None,
             base_long_note: None,
-            normal_note: normal_note_elements,
-            long_note_head: long_note_head_elements,
-            long_note_body: long_note_body_elements,
-            long_note_tail: long_note_tail_elements,
+            base_normal_mine: None,
+            normal_notes: normal_note_elements,
+            long_note_heads: long_note_head_elements,
+            long_note_bodies: long_note_body_elements,
+            long_note_tails: long_note_tail_elements,
+            normal_mines: Vec::new(),
             normal_notes_snap_colored: None,
             long_note_heads_snap_colored: None,
+            normal_mines_snap_colored: None,
             hit_lighting_normal: HitLightingNormal::new(get_frames(&keymode.lighting_n, static_assets::Mania::LIGHTINGN), Some(keymode.light_frame_per_second as f32), None, None),
             hit_lighting_hold: HitLightingHold::new(get_frames(&keymode.lighting_l, static_assets::Mania::LIGHTINGL), Some(keymode.light_frame_per_second as f32), None, None),
             column_lighting: ColumnLighting { 
@@ -268,7 +271,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 textures.get_shared(&keymode.stage_left)
                     .or(textures.get_shared(&static_assets::Mania::STAGE_LEFT)),
             ),
-            fallbacks
+            fallbacks,
         });
     }
 
@@ -459,7 +462,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             .collect();
 
         let normal_note_images: Vec<String> = {
-            let per_key = keymode.normal_note
+            let per_key = keymode.normal_notes
                 .iter()
                 .map(|n| n.get_path().unwrap_or_default())
                 .collect();
@@ -472,14 +475,14 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         };
 
         let long_note_head_images: Vec<String> = {
-            let per_key: Vec<String> = keymode.long_note_head
+            let per_key: Vec<String> = keymode.long_note_heads
                 .iter()
                 .enumerate()
                 .map(|(i, n)| {
                     let path = n.get_path().unwrap_or_default();
                     
                     if path.is_empty() || path == "blank" {
-                        keymode.normal_note.get(i).and_then(|nn| nn.get_path()).unwrap_or_default()
+                        keymode.normal_notes.get(i).and_then(|nn| nn.get_path()).unwrap_or_default()
                     } else {
                         path
                     }
@@ -496,12 +499,12 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             }
         };
 
-        let long_note_body_images: Vec<String> = keymode.long_note_body
+        let long_note_body_images: Vec<String> = keymode.long_note_bodies
             .iter()
             .map(|note| note.get_path().unwrap_or_default())
             .collect();
 
-        let long_note_tail_images: Vec<String> = keymode.long_note_tail
+        let long_note_tail_images: Vec<String> = keymode.long_note_tails
             .iter()
             .map(|note| {
                 if let Some(texture_arc) = &note.texture {

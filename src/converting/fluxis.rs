@@ -61,6 +61,7 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             && fallbacks.len() == keymode.long_note_head_images.len()
             && fallbacks.len() == keymode.long_note_body_images.len()
             && fallbacks.len() == keymode.long_note_tail_images.len()
+            && fallbacks.len() == keymode.normal_mine_images.len()
             , "Length of fallbacks doesn't match actual keymode"
         );
 
@@ -226,6 +227,26 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             })
             .collect();
 
+        let normal_mine_elements: Vec<NormalMine> = keymode.normal_mine_images
+            .iter()
+            .zip(fallbacks.iter().map(|f| &f.normal_mine))
+            .map(|(path, fallback_path)| {
+                if !path.is_empty() {
+                    if let Some(texture) = textures.get_shared(path) {
+                        NormalMine::new(Some(texture))
+                    } else {
+                        NormalMine::new(Some(Arc::clone(&blank_texture)))
+                    }
+                } else {
+                    if let Some(fallback) = textures.get_shared(fallback_path) {
+                        NormalMine::new(Some(fallback))
+                    } else {
+                        NormalMine::new(Some(Arc::clone(&blank_texture)))
+                    }
+                }
+            })
+            .collect();
+
         let show_judgement_line = !skin.skin_json.overrides.stage.hitline.trim().is_empty();
 
         let new_layout = KeymodeLayout {
@@ -251,12 +272,15 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
             receptor_down: receptor_down_elements,
             base_normal_note: None,
             base_long_note: None,
-            normal_note: normal_note_elements,
-            long_note_head: long_note_head_elements,
-            long_note_body: long_note_body_elements,
-            long_note_tail: long_note_tail_elements,
+            base_normal_mine: None,
+            normal_notes: normal_note_elements,
+            long_note_heads: long_note_head_elements,
+            long_note_bodies: long_note_body_elements,
+            long_note_tails: long_note_tail_elements,
+            normal_mines: normal_mine_elements,
             normal_notes_snap_colored: None,
             long_note_heads_snap_colored: None,
+            normal_mines_snap_colored: None,
             hit_lighting_normal: HitLightingNormal::new(Vec::new(), None, None, None),
             hit_lighting_hold: HitLightingHold::new(Vec::new(), None, None, None),
             column_lighting: ColumnLighting { texture: Some(texture_or_blank(column_lighting_path)) },
@@ -435,6 +459,10 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             keymode.base_long_note.as_ref().and_then(|n| n.get_path());
             key_count as usize
         ];
+        let base_mine_images: Vec<Option<String>> = vec![
+            keymode.base_normal_mine.as_ref().and_then(|n| n.get_path());
+            key_count as usize
+        ];
         
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
@@ -447,7 +475,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             .collect();
         
         let normal_note_images: Vec<String> = {
-            let per_key = keymode.normal_note
+            let per_key = keymode.normal_notes
                 .iter()
                 .map(|n| n.get_path().unwrap_or_default())
                 .collect();
@@ -460,14 +488,14 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         };
 
         let long_note_head_images: Vec<String> = {
-            let per_key: Vec<String> = keymode.long_note_head
+            let per_key: Vec<String> = keymode.long_note_heads
                 .iter()
                 .enumerate()
                 .map(|(i, n)| {
                     let path = n.get_path().unwrap_or_default();
                     
                     if path.is_empty() || path == "blank" {
-                        keymode.normal_note.get(i).and_then(|nn| nn.get_path()).unwrap_or_default()
+                        keymode.normal_notes.get(i).and_then(|nn| nn.get_path()).unwrap_or_default()
                     } else {
                         path
                     }
@@ -485,7 +513,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
         };
         
         // you can't do percy in fluXis (at least not above 4096px)
-        let long_note_body_images: Vec<String> = keymode.long_note_body
+        let long_note_body_images: Vec<String> = keymode.long_note_bodies
             .iter()
             .map(|note| {
                 if let Some(texture_arc) = &note.texture {
@@ -510,7 +538,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             })
             .collect();
 
-        let long_note_tail_images: Vec<String> = keymode.long_note_tail
+        let long_note_tail_images: Vec<String> = keymode.long_note_tails
             .iter()
             .map(|note| {
                 if let Some(texture_arc) = &note.texture {
@@ -555,6 +583,19 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             })
             .collect();
 
+        let normal_mine_images: Vec<String> = {
+            let per_key = keymode.normal_mines
+                .iter()
+                .map(|n| n.get_path().unwrap_or_default())
+                .collect();
+
+            if use_snap_color && base_mine_images.first().is_some_and(|p| p.is_some()) {
+                base_mine_images.iter().map(|p| p.clone().unwrap_or_default()).collect()
+            } else {
+                per_key
+            }
+        };
+
         fluxis_keymodes.push(skin_json::Keymode {
             keymode: key_count,
             receptor_images,
@@ -563,6 +604,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             long_note_head_images,
             long_note_body_images,
             long_note_tail_images,
+            normal_mine_images,
             receptors_first: !keymode.layout.receptor_above_notes,
             hit_position: ((keymode.layout.hit_position * FluXisDimensions::Y.as_f32()).round() as i32)
                 .clamp(-FluXisDimensions::Y.as_i32(), FluXisDimensions::Y.as_i32()),
@@ -573,7 +615,9 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
             tint_notes: false,
             tint_lns: false,
             tint_receptors: false,
-            ..Default::default()
+            colors: Vec::new(),
+            tick_images: Vec::new(),
+            tick_images_small: Vec::new(),
         });
     }
     

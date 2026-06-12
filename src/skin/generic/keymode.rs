@@ -23,23 +23,29 @@ pub struct Keymode {
     pub receptor_down: Vec<ReceptorDown>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub normal_note: Vec<NormalNote>,
+    pub normal_notes: Vec<NormalNote>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub long_note_head: Vec<LongNoteHead>,
+    pub long_note_heads: Vec<LongNoteHead>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub long_note_body: Vec<LongNoteBody>,
+    pub long_note_bodies: Vec<LongNoteBody>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
-    pub long_note_tail: Vec<LongNoteTail>,
+    pub long_note_tails: Vec<LongNoteTail>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub normal_mines: Vec<NormalMine>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub base_normal_note: Option<BaseNormalNote>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub base_long_note: Option<BaseHoldHead>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub base_normal_mine: Option<BaseNormalMine>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub normal_notes_snap_colored: Option<NormalNotesSnapColored>,
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub long_note_heads_snap_colored: Option<LongNoteHeadsSnapColored>,
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
+    pub normal_mines_snap_colored: Option<NormalMinesSnapColored>,
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen(skip))]
     pub hit_lighting_normal: HitLightingNormal,
@@ -69,19 +75,23 @@ impl KeymodeInvariant for Keymode {
     }
 
     fn get_normal_notes(&self) -> Vec<String> {
-        self.normal_note.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
+        self.normal_notes.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
     }
 
     fn get_long_note_heads(&self) -> Vec<String> {
-        self.long_note_head.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
+        self.long_note_heads.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
     }
 
     fn get_long_note_bodies(&self) -> Vec<String> {
-        self.long_note_body.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
+        self.long_note_bodies.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
     }
 
     fn get_long_note_tails(&self) -> Vec<String> {
-        self.long_note_tail.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
+        self.long_note_tails.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
+    }
+
+    fn get_normal_mines(&self) -> Vec<String> {
+        self.normal_mines.iter().map(|n| n.texture.get_path().unwrap_or_default()).collect()
     }
 
     // I really can't be bothered to properly implement this

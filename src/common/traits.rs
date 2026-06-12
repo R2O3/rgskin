@@ -79,6 +79,8 @@ pub trait KeymodeInvariant: Sized {
     fn get_long_note_bodies(&self) -> Vec<String>;
     fn get_long_note_tails(&self) -> Vec<String>;
 
+    fn get_normal_mines(&self) -> Vec<String>;
+
     fn primary_fallback(&self, _lane: usize) -> LaneFallback;
     fn secondary_fallback(&self, _lane: usize) -> LaneFallback;
     fn middle_fallback(&self, _lane: usize) -> LaneFallback;
@@ -106,4 +108,5 @@ pub struct LaneFallback {
     pub long_note_head: String,
     pub long_note_body: String,
     pub long_note_tail: String,
+    pub normal_mine: String,
 }

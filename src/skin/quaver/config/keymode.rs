@@ -908,6 +908,9 @@ impl KeymodeInvariant for Keymode {
     fn get_long_note_tails(&self) -> Vec<String> {
         self.saturate_per_lane(&dynamic_assets::Notes::HOLD_END)
     }
+    fn get_normal_mines(&self) -> Vec<String> {
+        self.saturate_per_lane(&dynamic_assets::Mines::MINE)
+    }
 
     fn primary_fallback(&self, lane: usize) -> LaneFallback {
         self.fallback_for_lane(lane)
@@ -951,6 +954,7 @@ impl Keymode {
             long_note_head: saturate(&dynamic_assets::Notes::HOLD_HIT_OBJECT),
             long_note_body: saturate(&dynamic_assets::Notes::HOLD_BODY),
             long_note_tail: saturate(&dynamic_assets::Notes::HOLD_END),
+            normal_mine: saturate(&dynamic_assets::Mines::MINE),
         }
     }
 }

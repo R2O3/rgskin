@@ -689,6 +689,8 @@ impl KeymodeInvariant for Keymode {
     fn get_long_note_heads(&self) -> Vec<String> { self.long_note_head_images.clone() }
     fn get_long_note_bodies(&self) -> Vec<String> { self.long_note_body_images.clone() }
     fn get_long_note_tails(&self) -> Vec<String> { self.long_note_tail_images.clone() }
+
+    fn get_normal_mines(&self) -> Vec<String> { vec![String::new(); self.get_keymode() as usize] }
     
     fn primary_fallback(&self, _lane: usize) -> LaneFallback {
         LaneFallback {
@@ -698,6 +700,7 @@ impl KeymodeInvariant for Keymode {
             long_note_head: static_assets::Mania::NOTE1H.to_string(),
             long_note_body: static_assets::Mania::NOTE1L.to_string(),
             long_note_tail: static_assets::Mania::NOTE1T.to_string(),
+            normal_mine: String::new()
         }
     }
     
@@ -709,6 +712,7 @@ impl KeymodeInvariant for Keymode {
             long_note_head: static_assets::Mania::NOTE2H.to_string(),
             long_note_body: static_assets::Mania::NOTE2L.to_string(),
             long_note_tail: static_assets::Mania::NOTE2T.to_string(),
+            normal_mine: String::new()
         }
     }
     
@@ -720,6 +724,7 @@ impl KeymodeInvariant for Keymode {
             long_note_head: static_assets::Mania::NOTESH.to_string(),
             long_note_body: static_assets::Mania::NOTESL.to_string(),
             long_note_tail: static_assets::Mania::NOTEST.to_string(),
+            normal_mine: String::new()
         }
     }
 }

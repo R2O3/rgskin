@@ -4,6 +4,7 @@ use image::{DynamicImage, GenericImageView};
 
 use crate::common::skin::AssetAttribute;
 use crate::common::traits::LaneFallback;
+use crate::io::traits::GetAllTextures;
 use crate::quaver::{dynamic_assets, static_assets};
 use crate::texture::Texture;
 use crate::utils::quaver::{QuaDimensions, TextureResolver};
@@ -13,7 +14,7 @@ use crate::common::color::Rgba;
 use crate::common::vector::Vector3;
 use crate::extensions::{TextureArcExt, VecExtensions};
 use crate::generic::elements::{
-    BaseHoldHead, BaseNormalNote, ColumnLighting, Cursor, Healthbar, HitLightingHold, HitLightingNormal, Judgement, JudgementLine, LongNoteBody, LongNoteHead, LongNoteHeadsSnapColored, LongNoteTail, NormalNote, NormalNotesSnapColored, ReceptorDown, ReceptorUp, SkinElement, Stage
+    BaseHoldHead, BaseNormalMine, BaseNormalNote, ColumnLighting, Cursor, Healthbar, HitLightingHold, HitLightingNormal, Judgement, JudgementLine, LongNoteBody, LongNoteHead, LongNoteHeadsSnapColored, LongNoteTail, NormalMine, NormalMinesSnapColored, NormalNote, NormalNotesSnapColored, ReceptorDown, ReceptorUp, SkinElement, Stage
 };
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::sound::{GenericGameplaySounds, ManiaGameplaySounds, Sounds, UISounds};
@@ -73,28 +74,46 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
 
         let mut resolver = TextureResolver::new(&mut textures, keymode, Arc::clone(&blank_texture));
 
-        let (mut normal_notes_snap_colored, base_normal_note, norm_snap_cols) = resolver.resolve_snap_colored(
+        let (mut normal_notes_snap_colored, base_normal_note, norm_note_snap_cols) = resolver.resolve_snap_colored(
             dynamic_assets::Notes::HIT_OBJECT_SHEET,
             "base_snap_n",
+            true,
+            true,
             |rows, cols, _len| !(rows != 0 && cols != 1),
             |frames, rows, cols, colors| NormalNotesSnapColored::new(frames, None, Some(cols), Some(rows), colors),
             |base_arc| BaseNormalNote::new(base_arc),
         );
 
         if let Some(ns) = &mut normal_notes_snap_colored {
-            ns.colors = norm_snap_cols.clone();
+            ns.colors = norm_note_snap_cols.clone();
         }
 
-        let (mut long_notes_snap_colored, base_long_note, long_snap_cols) = resolver.resolve_snap_colored(
+        let (mut long_notes_snap_colored, base_long_note, long_head_snap_cols) = resolver.resolve_snap_colored(
             dynamic_assets::Notes::HOLD_OBJECT_SHEET,
             "base_snap_h",
+            true,
+            true,
             |_rows, _cols, len| len == 9,
             |frames, rows, cols, colors| LongNoteHeadsSnapColored::new(frames, None, Some(cols), Some(rows), colors),
             |base_arc| BaseHoldHead::new(base_arc),
         );
 
         if let Some(ls) = &mut long_notes_snap_colored {
-            ls.colors = long_snap_cols.clone();
+            ls.colors = long_head_snap_cols.clone();
+        }
+
+        let (mut normal_mines_snap_colored, base_normal_mine, norm_mine_snap_cols) = resolver.resolve_snap_colored(
+            dynamic_assets::Mines::MINE_SHEET,
+            "base_snap_m",
+            false,
+            false,
+            |rows, cols, _len| !(rows != 0 && cols != 1),
+            |frames, rows, cols, colors| NormalMinesSnapColored::new(frames, None, Some(cols), Some(rows), colors),
+            |base_arc| BaseNormalMine::new(base_arc),
+        );
+
+        if let Some(ms) = &mut normal_mines_snap_colored {
+            ms.colors = norm_mine_snap_cols.clone();
         }
 
         let receptor_up_fallbacks = build_fallbacks(&keymode.receptor_fallbacks, dynamic_assets::Receptors::UP);
@@ -103,6 +122,7 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         let long_note_heads_fallbacks = build_fallbacks(&keymode.holdbody_fallbacks, dynamic_assets::Notes::HOLD_HIT_OBJECT);
         let long_note_bodies_fallbacks = build_fallbacks(&keymode.holdbody_fallbacks, dynamic_assets::Notes::HOLD_BODY);
         let long_note_tails_fallbacks = build_fallbacks(&keymode.holdend_fallbacks, dynamic_assets::Notes::HOLD_END);
+        let normal_mines_fallbacks = build_fallbacks(&keymode.holdend_fallbacks, dynamic_assets::Mines::MINE);
 
         let receptors = remap(keymode.get_receptors());
         let receptors_down = remap(keymode.get_receptors_down());
@@ -110,6 +130,7 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         let long_note_heads = remap(keymode.get_long_note_heads());
         let long_note_bodies = remap(keymode.get_long_note_bodies());
         let long_note_tails = remap(keymode.get_long_note_tails());
+        let normal_mines = remap(keymode.get_normal_mines());
 
         // TODO: In the future we'd probably want to trim based on "receptor down" since we only check for transparency with a tolererance
         // and if the down texture has a glow for example it will throw off the trimming and we'd end up with unmatching receptors
@@ -207,6 +228,15 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             })
             .collect();
 
+        let normal_mine_elements: Vec<NormalMine> = normal_notes
+            .iter()
+            .enumerate()
+            .map(|(i, path)| {
+                let fallback_path = normal_mines_fallbacks.get(i).and_then(|f| f.as_deref());
+                NormalMine::new(Some(resolver.get_texture(path, fallback_path)))
+            })
+            .collect();
+
         let layout = KeymodeLayout {
             keymode: key_count as u8,
             receptor_above_notes: keymode.receptors_over_hit_objects,
@@ -224,6 +254,8 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 let ln_head_fallback = long_note_heads_fallbacks.get(i).and_then(|v| v.as_deref());
                 let nn_path = &normal_notes[i];
                 let nn_fallback = normal_notes_fallbacks.get(i).and_then(|v| v.as_deref());
+                let nm_path = &normal_mines[i];
+                let nm_fallback = normal_mines_fallbacks.get(i).and_then(|v| v.as_deref());
 
                 LaneFallback {
                     receptor: resolver.resolve_path(&receptors[i], receptor_up_fallbacks.get(i).and_then(|v| v.as_deref())),
@@ -236,28 +268,32 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                     },
                     long_note_body: resolver.resolve_path(&long_note_bodies[i], long_note_bodies_fallbacks.get(i).and_then(|v| v.as_deref())),
                     long_note_tail: resolver.resolve_path(&long_note_tails[i], long_note_tails_fallbacks.get(i).and_then(|v| v.as_deref())),
+                    normal_mine: resolver.resolve_path(&nm_path, nm_fallback),
                 }
             })
             .collect();
 
-        let hln = resolver.get_frames(keymode.get_generic(dynamic_assets::Lighting::HIT_LIGHTING, 0));
-        let hlh = resolver.get_frames(keymode.get_generic(dynamic_assets::Lighting::HOLD_LIGHTING, 0));
+        let hln = resolver.get_frames(keymode.get_generic(dynamic_assets::Lighting::HIT_LIGHTING, 0), false);
+        let hlh = resolver.get_frames(keymode.get_generic(dynamic_assets::Lighting::HOLD_LIGHTING, 0), false);
 
         keymodes.push(Keymode {
             keymode: key_count as u8,
             layout,
             use_snap_color: keymode.use_hit_object_sheet,
-            snap_colors: norm_snap_cols,
+            snap_colors: norm_mine_snap_cols,
             receptor_up: receptor_up_elements,
             receptor_down: receptor_down_elements,
             base_normal_note,
             base_long_note,
-            normal_note: normal_note_elements,
-            long_note_head: long_note_head_elements,
-            long_note_body: long_note_body_elements,
-            long_note_tail: long_note_tail_elements,
+            base_normal_mine,
+            normal_notes: normal_note_elements,
+            long_note_heads: long_note_head_elements,
+            long_note_bodies: long_note_body_elements,
+            long_note_tails: long_note_tail_elements,
+            normal_mines: normal_mine_elements,
             normal_notes_snap_colored,
             long_note_heads_snap_colored: long_notes_snap_colored,
+            normal_mines_snap_colored,
             hit_lighting_normal: HitLightingNormal::new(hln.0, Some(keymode.hit_lighting_fps as f32), Some(hln.2), Some(hln.1)),
             hit_lighting_hold: HitLightingHold::new(hlh.0, Some(keymode.hold_lighting_fps as f32), Some(hlh.2), Some(hlh.1)),
             column_lighting: ColumnLighting { texture: Some(Arc::clone(&blank_texture)) },
@@ -391,13 +427,13 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
                 if let Some(r) = keymode.receptor_down.get(i) {
                     tr.reloc_arc_lock(&r.texture, StringPattern::from(&q_receptors_down[i]));
                 }
-                if let Some(n) = keymode.normal_note.get(i) {
+                if let Some(n) = keymode.normal_notes.get(i) {
                     tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_normal_notes[i]));
                 }
-                if let Some(n) = keymode.long_note_head.get(i) {
+                if let Some(n) = keymode.long_note_heads.get(i) {
                     tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_heads[i]));
                 }
-                if let Some(n) = keymode.long_note_body.get(i) {
+                if let Some(n) = keymode.long_note_bodies.get(i) {
                     if let Some(texture_arc) = &n.texture
                     {
                             body_processor.process_once_void(texture_arc, |arc_texture| {
@@ -417,7 +453,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
                     }
                     tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_bodies[i]));
                 }
-                if let Some(n) = keymode.long_note_tail.get(i) {
+                if let Some(n) = keymode.long_note_tails.get(i) {
                     tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_tails[i]));
                 }
             }
