@@ -404,8 +404,19 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
     let mut tail_processor = TextureProcessor::<()>::new();
 
     for keymode in &skin.keymodes {
+        let key_count = keymode.keymode as u8;
         let average_column_width = keymode.layout.column_widths.average().unwrap_or(0.0);
         let receptor_offset = keymode.layout.receptor_offset;
+        let use_snap_color = keymode.use_snap_color;
+
+        let base_note_images: Vec<Option<String>> = vec![
+            keymode.base_normal_note.as_ref().and_then(|n| n.get_path());
+            key_count as usize
+        ];
+        let base_long_head_images: Vec<Option<String>> = vec![
+            keymode.base_long_note.as_ref().and_then(|n| n.get_path());
+            key_count as usize
+        ];
 
         let receptor_images: Vec<String> = keymode.receptor_up
             .iter()
@@ -447,15 +458,43 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
             })
             .collect();
 
-        let normal_note_images: Vec<String> = keymode.normal_note
-            .iter()
-            .map(|note| note.get_path().unwrap_or_default())
-            .collect();
+        let normal_note_images: Vec<String> = {
+            let per_key = keymode.normal_note
+                .iter()
+                .map(|n| n.get_path().unwrap_or_default())
+                .collect();
 
-        let long_note_head_images: Vec<String> = keymode.long_note_head
-            .iter()
-            .map(|note| note.get_path().unwrap_or_default())
-            .collect();
+            if use_snap_color && base_note_images.first().is_some_and(|p| p.is_some()) {
+                base_note_images.iter().map(|p| p.clone().unwrap_or_default()).collect()
+            } else {
+                per_key
+            }
+        };
+
+        let long_note_head_images: Vec<String> = {
+            let per_key: Vec<String> = keymode.long_note_head
+                .iter()
+                .enumerate()
+                .map(|(i, n)| {
+                    let path = n.get_path().unwrap_or_default();
+                    
+                    if path.is_empty() || path == "blank" {
+                        keymode.normal_note.get(i).and_then(|nn| nn.get_path()).unwrap_or_default()
+                    } else {
+                        path
+                    }
+                })
+                .collect();
+
+            if use_snap_color && base_long_head_images.first().is_some_and(|p| p.is_some()) {
+                base_long_head_images.iter().map(|p| p.clone().unwrap_or_default()).collect()
+            
+            } else if use_snap_color && base_note_images.first().is_some_and(|p| p.is_some()) {
+                base_note_images.iter().map(|p| p.clone().unwrap_or_default()).collect()
+            } else {
+                per_key
+            }
+        };
 
         let long_note_body_images: Vec<String> = keymode.long_note_body
             .iter()
@@ -550,7 +589,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
         // TODO: add animated assets to osu
 
         let osu_keymode = osu::Keymode {
-            keymode: keymode.keymode,
+            keymode: key_count,
             keys_under_notes: !keymode.layout.receptor_above_notes,
             hit_position: ((1.0 - keymode.layout.hit_position) * OsuDimensions::Y.as_f32()) as u32,
             column_start: playfield_pos,
@@ -559,7 +598,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
                 .map(|cw| *cw * OsuDimensions::X.as_f32())
                 .collect(),
             column_spacing: keymode.layout.column_spacing.clone(),
-            column_line_width: vec![0.0; keymode.keymode as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
+            column_line_width: vec![0.0; key_count as usize + 1], // osu skins are the only skins that support line widths so no need to implement in generic skin
             receptor_images,
             receptor_images_down,
             normal_note_images,
