@@ -13,7 +13,7 @@ pub fn cleanup_stores<T: SkinConfig>(config: &T, textures: Option<&mut TextureSt
     }
 
     if let Some(textures) = textures {
-        let texture_paths = config.get_required_texture_paths(); // owned, kept alive
+        let texture_paths = config.get_required_texture_paths();
         let req_texture_paths: HashSet<_> = texture_paths.iter().collect();
 
         textures.retain(|t| req_texture_paths.iter().any(|p| p.matches_path(&t.get_path())));

@@ -4,7 +4,7 @@ use image::{DynamicImage, GenericImageView};
 
 use crate::common::skin::AssetAttribute;
 use crate::common::traits::LaneFallback;
-use crate::io::traits::GetAllTextures;
+use crate::quaver::config::keymode::HealthBarType;
 use crate::quaver::{dynamic_assets, static_assets};
 use crate::texture::Texture;
 use crate::utils::quaver::{QuaDimensions, TextureResolver};
@@ -19,13 +19,13 @@ use crate::generic::elements::{
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::sound::{GenericGameplaySounds, ManiaGameplaySounds, Sounds, UISounds};
 use crate::generic::{Gameplay, UI};
-use crate::image_proc::proc::{concat_into_sheet, dist_from_bottom, trim_image_vertical};
+use crate::image_proc::proc::{concat_into_sheet, dist_from_bottom, rotate_90_deg_ccw, trim_image_vertical};
 use crate::io::texture::TextureProcessor;
 use crate::io::Store;
 use crate::skin::generic::{GenericManiaSkin, Keymode, Metadata};
 use crate::skin::quaver::skin::QuaSkin;
 use crate::skin::quaver::QuaSkinIni;
-use crate::traits::KeymodeInvariant;
+use crate::traits::{KeymodeInvariant, ManiaSkin};
 use crate::utils::skin::{StoreRelocator, cleanup_stores};
 
 pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std::error::Error>> {
@@ -307,6 +307,8 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
         });
     }
 
+    let default_keymode = skin.get_keymode(4).unwrap_or(skin.skin_ini.keymodes.first().unwrap());
+
     let ui = UI {
         cursor: Cursor {
             texture: textures.get_shared(&static_assets::Cursor::MAIN_CURSOR)
@@ -330,10 +332,19 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
             .unwrap_or(Anchor::TopLeft)
     }
 
+    let health_bar_fg = textures.get_shared(&static_assets::HealthBar::FOREGROUND).unwrap_or(blank_texture.clone());
+    let health_bar_bg = textures.get_shared(&&static_assets::HealthBar::BACKGROUND).unwrap_or(blank_texture.clone());
+
+    if default_keymode.health_bar_type == HealthBarType::Horizontal
+    {
+        rotate_90_deg_ccw(&health_bar_fg)?;
+        rotate_90_deg_ccw(&health_bar_bg)?;
+    }
+
     let gameplay = Gameplay {
         health_bar: Healthbar::new(
-            textures.get_shared(&static_assets::HealthBar::FOREGROUND),
-            textures.get_shared(&static_assets::HealthBar::BACKGROUND)
+            Some(health_bar_fg),
+            Some(health_bar_bg)
         ),
         judgement: Judgement::new(
             textures.get_shared(&static_assets::Judgements::MARV),
@@ -406,6 +417,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
         qua_km.column_size = (keymode.layout.column_widths.average().unwrap_or(0.0) * QuaDimensions::X.as_f32()).round() as i32;
         qua_km.receptor_pos_offset_y = keymode.layout.receptor_offset;
         qua_km.hit_pos_offset_y = (qua_km.column_size as f32 - (keymode.layout.hit_position * QuaDimensions::Y.as_f32())).abs() as i32;
+        qua_km.health_bar_type = HealthBarType::Vertical;
 
         let q_receptors = qua_km.get_receptors();
         let q_receptors_down = qua_km.get_receptors_down();

@@ -158,6 +158,23 @@ impl SkinJson {
         }
     }
 
+    pub fn sync_overrides(&mut self) {
+        self.sync_overrides_from_keymodes();
+
+        let mut entries = Vec::new();
+        entries.extend(self.overrides.health.get_fields());
+        entries.extend(self.overrides.stage.get_fields());
+        entries.extend(self.overrides.judgement.get_fields());
+        entries.extend(self.overrides.lighting.get_fields());
+        entries.extend(self.overrides.gameplay.get_fields());
+
+        for (pattern, value) in entries {
+            if !value.is_empty() {
+                self.overrides.raw_overrides.insert(pattern.to_string(), value.clone());
+            }
+        }
+    }
+
     pub fn sync_overrides_from_keymodes(&mut self) {
         for keymode in &self.keymodes {
             let k = keymode.keymode;

@@ -671,7 +671,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
 
     skin_json.snap_colors = SnapColors::from_vec(default_keymode.snap_colors.clone()).unwrap_or(SnapColors::default());
 
-    skin_json.sync_overrides_from_keymodes();
+    skin_json.sync_overrides();
 
     sr.reloc_str(&skin.sounds.ui.menu_back_click, static_assets::Samples::UI_BACK);
     sr.reloc_str(&skin.sounds.ui.ui_click, static_assets::Samples::UI_CLICK);
