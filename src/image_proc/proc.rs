@@ -1,9 +1,54 @@
 use std::sync::{Arc, RwLock};
-use image::{DynamicImage, GenericImageView, Rgba, RgbaImage, imageops::{self, FilterType}};
+use fast_image_resize::{FilterType, ResizeAlg, ResizeOptions, Resizer};
+use image::{Rgba, RgbaImage, imageops};
 use rayon::prelude::*;
 use crate::{
     common, io::texture::Texture, process_texture, process_texture_mut
 }; 
+
+pub fn resize_img(
+    img: &RgbaImage,
+    new_width: u32,
+    new_height: u32,
+    filter: FilterType,
+) -> RgbaImage {
+    let mut dst_image = RgbaImage::new(new_width, new_height);
+
+    let mut resizer = Resizer::new();
+    let options = ResizeOptions::new().resize_alg(ResizeAlg::Convolution(filter));
+
+    resizer.resize(
+        img,
+        &mut dst_image,
+        Some(&options),
+    ).expect("Failed to resize image");
+
+    dst_image
+}
+
+pub fn resize_width(
+    texture: &Arc<RwLock<Texture>>, 
+    new_width: u32,
+    filter: FilterType
+) -> Result<(), Box<dyn std::error::Error>> {
+    process_texture!(texture, |img: RgbaImage| {
+        let aspect_ratio = img.height() as f32 / img.width() as f32;
+        let new_height = (new_width as f32 * aspect_ratio) as u32;
+        resize_img(&img, new_width, new_height, filter)
+    })
+}
+
+pub fn resize_height(
+    texture: &Arc<RwLock<Texture>>, 
+    new_height: u32,
+    filter: FilterType
+) -> Result<(), Box<dyn std::error::Error>> {
+    process_texture!(texture, |img: RgbaImage| {
+        let aspect_ratio = img.width() as f32 / img.height() as f32;
+        let new_width = (new_height as f32 * aspect_ratio) as u32;
+        resize_img(&img, new_width, new_height, filter)
+    })
+}
 
 pub fn dist_from_top(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
     let (width, height) = img.dimensions();
@@ -100,17 +145,15 @@ pub fn dist_from_right(img: &RgbaImage, alpha_tolerance: f32) -> u32 {
     width - rightmost
 }
 
-pub fn trim_image_vertical(img: DynamicImage, alpha_tolerance: f32) -> DynamicImage {
+pub fn trim_image_vertical(img: &RgbaImage, alpha_tolerance: f32) -> RgbaImage {
     let (width, height) = img.dimensions();
-
-    let rgba_img = img.to_rgba8();
     
-    let top_trim = dist_from_top(&rgba_img, alpha_tolerance);
-    let bottom_dist = dist_from_bottom(&rgba_img, alpha_tolerance);
+    let top_trim = dist_from_top(img, alpha_tolerance);
+    let bottom_dist = dist_from_bottom(img, alpha_tolerance);
     let bottom_trim = height - bottom_dist;
     
     if top_trim >= bottom_trim {
-        return img;
+        return img.clone();
     }
     
     let new_height = bottom_trim - top_trim;
@@ -121,24 +164,22 @@ pub fn trim_image_vertical(img: DynamicImage, alpha_tolerance: f32) -> DynamicIm
         .enumerate()
         .for_each(|(y, row_out)| {
             let source_y = y as u32 + top_trim;
-            let source_row = &rgba_img.as_raw()[(source_y * width) as usize * 4..][..row_out.len()];
+            let source_row = &img.as_raw()[(source_y * width) as usize * 4..][..row_out.len()];
             row_out.copy_from_slice(source_row);
         });
 
-    DynamicImage::ImageRgba8(trimmed_img)
+    trimmed_img
 }
 
-pub fn trim_image_horizontal(img: DynamicImage, alpha_tolerance: f32) -> DynamicImage {
+pub fn trim_image_horizontal(img: &RgbaImage, alpha_tolerance: f32) -> RgbaImage {
     let (width, height) = img.dimensions();
-
-    let rgba_img = img.to_rgba8();
     
-    let left_trim = dist_from_left(&rgba_img, alpha_tolerance);
-    let right_dist = dist_from_right(&rgba_img, alpha_tolerance);
+    let left_trim = dist_from_left(img, alpha_tolerance);
+    let right_dist = dist_from_right(img, alpha_tolerance);
     let right_trim = width - right_dist;
     
     if left_trim >= right_trim {
-        return img;
+        return img.clone();
     }
     
     let new_width = right_trim - left_trim;
@@ -149,26 +190,25 @@ pub fn trim_image_horizontal(img: DynamicImage, alpha_tolerance: f32) -> Dynamic
         .enumerate()
         .for_each(|(y, row_out)| {
             let source_start = ((y as u32 * width) + left_trim) as usize * 4;
-            let source_row = &rgba_img.as_raw()[source_start..][..row_out.len()];
+            let source_row = &img.as_raw()[source_start..][..row_out.len()];
             row_out.copy_from_slice(source_row);
         });
 
-    DynamicImage::ImageRgba8(trimmed_img)
+    trimmed_img
 }
 
-pub fn get_trim_bounds(img: &DynamicImage, alpha_tolerance: f32) -> (u32, u32, u32, u32) {
-    let rgba = img.to_rgba8();
+pub fn get_trim_bounds(img: &RgbaImage, alpha_tolerance: f32) -> (u32, u32, u32, u32) {
     (
-        dist_from_top(&rgba, alpha_tolerance),
-        dist_from_bottom(&rgba, alpha_tolerance),
-        dist_from_left(&rgba, alpha_tolerance),
-        dist_from_right(&rgba, alpha_tolerance),
+        dist_from_top(img, alpha_tolerance),
+        dist_from_bottom(img, alpha_tolerance),
+        dist_from_left(img, alpha_tolerance),
+        dist_from_right(img, alpha_tolerance),
     )
 }
 
-pub fn trim_image(img: DynamicImage, alpha_tolerance: f32) -> DynamicImage {
+pub fn trim_image(img: &RgbaImage, alpha_tolerance: f32) -> RgbaImage {
     let (width, height) = img.dimensions();
-    let (top, bottom, left, right) = get_trim_bounds(&img, alpha_tolerance);
+    let (top, bottom, left, right) = get_trim_bounds(img, alpha_tolerance);
     
     let top_trim = top;
     let bottom_trim = height - bottom;
@@ -176,20 +216,19 @@ pub fn trim_image(img: DynamicImage, alpha_tolerance: f32) -> DynamicImage {
     let right_trim = width - right;
     
     if top_trim >= bottom_trim || left_trim >= right_trim {
-        return img;
+        return img.clone();
     }
     
     let new_width = right_trim - left_trim;
     let new_height = bottom_trim - top_trim;
     
-    img.crop_imm(left_trim, top_trim, new_width, new_height)
+    imageops::crop_imm(img, left_trim, top_trim, new_width, new_height).to_image()
 }
 
-pub fn pad_image_vertical(img: DynamicImage, top_pad: u32, bottom_pad: u32) -> DynamicImage {
+pub fn pad_image_vertical(img: &RgbaImage, top_pad: u32, bottom_pad: u32) -> RgbaImage {
     let (width, height) = img.dimensions();
     let new_height = height + top_pad + bottom_pad;
 
-    let rgba_img = img.to_rgba8();
     let mut padded_img = RgbaImage::new(width, new_height);
 
     padded_img
@@ -202,55 +241,29 @@ pub fn pad_image_vertical(img: DynamicImage, top_pad: u32, bottom_pad: u32) -> D
         .for_each(|(y, row_out)| {
             let src_y = y as u32 - top_pad;
             if src_y < height {
-                let source_row = &rgba_img.as_raw()[(src_y * width) as usize * 4..][..row_out.len()];
+                let source_row = &img.as_raw()[(src_y * width) as usize * 4..][..row_out.len()];
                 row_out.copy_from_slice(source_row);
             }
         });
 
-    DynamicImage::ImageRgba8(padded_img)
+    padded_img
 }
 
 pub fn flip_vertical(texture: &Arc<RwLock<Texture>>) {
-    process_texture_mut!(texture, |img: &mut DynamicImage| {
+    process_texture_mut!(texture, |img: &mut RgbaImage| {
         imageops::flip_vertical_in_place(img);
     })
 }
 
 pub fn rotate_90_deg_cw(texture: &Arc<RwLock<Texture>>) -> Result<(), Box<dyn std::error::Error>> {
-    process_texture!(texture, |img: DynamicImage| {
-        let rotated_buffer = imageops::rotate90(&img);
-        DynamicImage::ImageRgba8(rotated_buffer)
+    process_texture!(texture, |img: RgbaImage| {
+        imageops::rotate90(&img)
     })
 }
 
 pub fn rotate_90_deg_ccw(texture: &Arc<RwLock<Texture>>) -> Result<(), Box<dyn std::error::Error>> {
-    process_texture!(texture, |img: DynamicImage| {
-        let rotated_buffer = imageops::rotate270(&img);
-        DynamicImage::ImageRgba8(rotated_buffer)
-    })
-}
-
-pub fn resize_width(
-    texture: &Arc<RwLock<Texture>>, 
-    new_width: u32,
-    filter: image::imageops::FilterType
-) -> Result<(), Box<dyn std::error::Error>> {
-    process_texture!(texture, |img: DynamicImage| {
-        let aspect_ratio = img.height() as f32 / img.width() as f32;
-        let new_height = (new_width as f32 * aspect_ratio) as u32;
-        img.resize_exact(new_width, new_height, filter)
-    })
-}
-
-pub fn resize_height(
-    texture: &Arc<RwLock<Texture>>, 
-    new_height: u32,
-    filter: image::imageops::FilterType
-) -> Result<(), Box<dyn std::error::Error>> {
-    process_texture!(texture, |img: DynamicImage| {
-        let aspect_ratio = img.width() as f32 / img.height() as f32;
-        let new_width = (new_height as f32 * aspect_ratio) as u32;
-        img.resize_exact(new_width, new_height, filter)
+    process_texture!(texture, |img: RgbaImage| {
+        imageops::rotate270(&img)
     })
 }
 
@@ -289,9 +302,9 @@ pub fn fill_rect(
         });
 }
 
-pub fn get_dominant_color(img: &DynamicImage, filter: FilterType) -> Rgba<u8> {
-    let resized = img.resize_exact(1, 1, filter);
-    resized.get_pixel(0, 0)
+pub fn get_dominant_color(img: &RgbaImage, filter: FilterType) -> Rgba<u8> {
+    let resized = resize_img(img, 1, 1, filter);
+    *resized.get_pixel(0, 0)
 }
 
 pub fn overlay_image(
@@ -363,10 +376,10 @@ pub fn blend_alpha(bg: u8, fg: u8, _alpha: f32) -> u8 {
 }
 
 pub fn extract_grayscale_base(
-    images: &[&DynamicImage],
+    images: &[&RgbaImage],
     tints: Option<&[common::color::Rgba]>,
     filter: FilterType,
-) -> DynamicImage {
+) -> RgbaImage {
     use rayon::prelude::*;
 
     assert!(!images.is_empty());
@@ -394,8 +407,7 @@ pub fn extract_grayscale_base(
         }
         denom += t2;
 
-        let rgba = img.to_rgba8();
-        let raw = rgba.as_raw();
+        let raw = img.as_raw();
 
         acc.par_chunks_mut(2)
             .zip(raw.par_chunks_exact(4))
@@ -420,10 +432,10 @@ pub fn extract_grayscale_base(
             out[3] = a;
         });
 
-    DynamicImage::ImageRgba8(RgbaImage::from_raw(w, h, raw_out).unwrap())
+    RgbaImage::from_raw(w, h, raw_out).unwrap()
 }
 
-pub fn extract_from_sheet(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<DynamicImage> {
+pub fn extract_from_sheet(sheet: &RgbaImage, rows: u32, columns: u32) -> Vec<RgbaImage> {
     let (width, height) = sheet.dimensions();
     let sprite_w = width / columns;
     let sprite_h = height / rows;
@@ -435,12 +447,12 @@ pub fn extract_from_sheet(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<
             let j = idx / columns;
             let x = i * sprite_w;
             let y = j * sprite_h;
-            sheet.crop_imm(x, y, sprite_w, sprite_h)
+            imageops::crop_imm(sheet, x, y, sprite_w, sprite_h).to_image()
         })
         .collect()
 }
 
-pub fn extract_from_sheet_trimmed(sheet: &DynamicImage, rows: u32, columns: u32) -> Vec<DynamicImage> {
+pub fn extract_from_sheet_trimmed(sheet: &RgbaImage, rows: u32, columns: u32) -> Vec<RgbaImage> {
     let (width, height) = sheet.dimensions();
     let sprite_w = width / columns;
     let sprite_h = height / rows;
@@ -452,13 +464,13 @@ pub fn extract_from_sheet_trimmed(sheet: &DynamicImage, rows: u32, columns: u32)
             let j = idx / columns;
             let x = i * sprite_w;
             let y = j * sprite_h;
-            let sprite = sheet.crop_imm(x, y, sprite_w, sprite_h);
-            trim_image(sprite, 0.1)
+            let sprite = imageops::crop_imm(sheet, x, y, sprite_w, sprite_h).to_image();
+            trim_image(&sprite, 0.1)
         })
         .collect()
 }
 
-pub fn concat_into_sheet(sprites: Vec<&DynamicImage>, rows: u32, columns: u32) -> Option<DynamicImage> {
+pub fn concat_into_sheet(sprites: &[&RgbaImage], rows: u32, columns: u32) -> Option<RgbaImage> {
     if sprites.is_empty() {
         return None;
     }
@@ -467,8 +479,7 @@ pub fn concat_into_sheet(sprites: Vec<&DynamicImage>, rows: u32, columns: u32) -
     let width = sprite_w * columns;
     let height = sprite_h * rows;
 
-    let sprites_rgba: Vec<RgbaImage> = sprites.into_iter().map(|s| s.to_rgba8()).collect();
-    let sprite_raws: Vec<&[u8]> = sprites_rgba.iter().map(|s| &s.as_raw()[..]).collect();
+    let sprite_raws: Vec<&[u8]> = sprites.iter().map(|s| &s.as_raw()[..]).collect();
 
     let mut sheet_buffer = vec![0u8; (width * height) as usize * 4];
 
@@ -494,6 +505,5 @@ pub fn concat_into_sheet(sprites: Vec<&DynamicImage>, rows: u32, columns: u32) -
             }
         });
 
-    let sheet = RgbaImage::from_raw(width, height, sheet_buffer).unwrap();
-    Some(DynamicImage::ImageRgba8(sheet))
+    RgbaImage::from_raw(width, height, sheet_buffer)
 }

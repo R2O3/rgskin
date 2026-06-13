@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
-use image::imageops::FilterType;
-use image::{GenericImageView, ImageBuffer};
+
+use fast_image_resize::FilterType;
 
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
@@ -11,7 +11,7 @@ use crate::generic::{sound::*, Gameplay, Keymode, Metadata, UI};
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::elements::{*, self};
 use crate::image_proc::generate_fluxis_preview;
-use crate::image_proc::proc::{dist_from_bottom, get_dominant_color, overlay_image, trim_image_vertical};
+use crate::image_proc::proc::{dist_from_bottom, get_dominant_color, overlay_image, resize_img, trim_image_vertical};
 use crate::io::Store;
 use crate::io::texture::{Texture, TextureProcessor};
 use crate::skin::fluxis::layout_json::component::*;
@@ -72,11 +72,12 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc| {
-                            arc.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1)) as i32
+                            arc.with_image(|img| dist_from_bottom(img, 0.1)) as i32
                         });
                         receptor_processor.process_once_void(&texture, |arc| {
                             arc.data_mut(|img| {
-                                *img = trim_image_vertical(img.clone(), 0.2);
+                                let trimmed = trim_image_vertical(img, 0.2);
+                                *img = trimmed;
                             });
                         });
                         max_additional_offset = max_additional_offset.max(offset);
@@ -101,11 +102,12 @@ pub fn to_generic_mania(skin: &FluXisSkin, layout: Option<&FluXisLayout>) -> Res
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |tex| {
-                            tex.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1)) as i32
+                            tex.with_image(|img| dist_from_bottom(img, 0.1)) as i32
                         });
                         receptor_processor.process_once_void(&texture, |arc| {
                             arc.data_mut(|img| {
-                                *img = trim_image_vertical(img.clone(), 0.2);
+                                let trimmed = trim_image_vertical(img, 0.2);
+                                *img = trimmed;
                             });
                         });
                         max_additional_offset = max_additional_offset.max(offset);
@@ -524,10 +526,11 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
                                 let max_res = FluXisDimensions::MaxResolution.as_u32();
                                 
                                 if width > max_res || height > max_res {
-                                    *img = img.resize_exact(
+                                    *img = resize_img(
+                                        img,
                                         width.min(max_res),
                                         height.min(max_res),
-                                        image::imageops::FilterType::Lanczos3
+                                        FilterType::Hamming
                                     );
                                 }
                             });
@@ -549,16 +552,17 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
                                 let max_res = FluXisDimensions::MaxResolution.as_u32();
                                 
                                 if width > max_res || height > max_res {
-                                    *img = img.resize_exact(
+                                    *img = resize_img(
+                                        img,
                                         width.min(max_res),
                                         height.min(max_res),
-                                        image::imageops::FilterType::Lanczos3
+                                        FilterType::Hamming
                                     );
                                 }
                                 
                                 let dom_col = if let Some(stage_arc) = keymode.stage.background.as_ref() {
                                     if let Some(stage_img) = stage_arc.get_data() {
-                                        get_dominant_color(&stage_img, FilterType::Lanczos3)
+                                        get_dominant_color(&stage_img, FilterType::Hamming)
                                     } else {
                                         image::Rgba([0, 0, 0, 255])
                                     }
@@ -566,15 +570,14 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<(FluXisSkin, FluXis
                                     image::Rgba([0, 0, 0, 255])
                                 };
 
-                                let mut bg = ImageBuffer::from_pixel(img.width(), img.height(), dom_col);
+                                let mut bg = image::ImageBuffer::from_pixel(img.width(), img.height(), dom_col);
 
-                                *img = trim_image_vertical(img.clone(), 0.2);
+                                let trimmed = trim_image_vertical(img, 0.2);
                                 let bg_height = bg.height();
 
-                                let img_buffer = img.to_rgba8();
-                                overlay_image(&mut bg, &img_buffer, 0, bg_height.saturating_sub(img.height()) + 1);
+                                overlay_image(&mut bg, &trimmed, 0, bg_height.saturating_sub(trimmed.height()) + 1);
 
-                                *img = image::DynamicImage::ImageRgba8(bg);
+                                *img = bg;
                             });
                         });
                     }

@@ -1,4 +1,6 @@
 use std::sync::{Arc, RwLock};
+use fast_image_resize::FilterType;
+
 use crate::common::alignment::*;
 use crate::common::color::Rgba;
 use crate::common::vector::*;
@@ -59,7 +61,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
-                            let offset = arc_texture.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1));
+                            let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
                             if let Err(e) = to_osu_column_draw(arc_texture, average_column_width as u32) {
                                 eprintln!("Failed to process receptor texture: {}", e);
                             }
@@ -87,7 +89,7 @@ pub fn to_generic_mania(skin: &OsuSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 if !path.is_empty() {
                     if let Some(texture) = textures.get_shared(path) {
                         let offset = receptor_processor.process_once(&texture, |arc_texture| {
-                            let offset = arc_texture.with_image(|img| dist_from_bottom(&img.to_rgba8(), 0.1));
+                            let offset = arc_texture.with_image(|img| dist_from_bottom(img, 0.1));
                             if let Err(e) = to_osu_column_draw(arc_texture, average_column_width as u32) {
                                 eprintln!("Failed to process receptor texture: {}", e);
                             }
@@ -561,7 +563,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<OsuSkin, Box<dyn st
 
         if !textures.contains(&static_assets::Interface::CURSOR) {
             if let Some(cursor_arc) = &skin.ui.cursor.texture {
-                resize_width(cursor_arc, 24, image::imageops::FilterType::Triangle)?;
+                resize_width(cursor_arc, 24, FilterType::Hamming)?;
             }
 
             if let Some(cursor_image) = skin.ui.cursor.texture.clone_data() {

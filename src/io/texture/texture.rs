@@ -1,6 +1,6 @@
 use std::fmt;
 use wasm_bindgen::prelude::*;
-use image::{DynamicImage, ImageError};
+use image::{ImageError, RgbaImage};
 use xxhash_rust::xxh3::xxh3_64;
 use crate::{impl_binary_wasm, io::{Binary, BinaryState}};
 
@@ -10,7 +10,7 @@ pub struct Texture {
     #[wasm_bindgen(getter_with_clone)]
     pub path: String,
     #[wasm_bindgen(skip)]
-    pub data: BinaryState<DynamicImage>,
+    pub data: BinaryState<RgbaImage>,
     #[wasm_bindgen(skip)]
     pub hash: Option<u64>,
 }
@@ -32,7 +32,7 @@ impl Texture {
         let img = ImageBuffer::from_pixel(1, 1, Rgba([0, 0, 0, 0]));
         Texture {
             path,
-            data: BinaryState::Loaded(DynamicImage::ImageRgba8(img)),
+            data: BinaryState::Loaded(img),
             hash: None,
         }
     }
@@ -46,7 +46,7 @@ impl Texture {
 
 impl Binary for Texture {
     type Error = ImageError;
-    type LoadedData = DynamicImage;
+    type LoadedData = RgbaImage;
 
     fn state(&self) -> &BinaryState<Self::LoadedData> {
         &self.data
@@ -69,7 +69,7 @@ impl Binary for Texture {
     }
 
     fn decode_bytes(bytes: &[u8]) -> Result<Self::LoadedData, Self::Error> {
-        image::load_from_memory(bytes)
+        image::load_from_memory(bytes).map(|img| img.to_rgba8())
     }
 
     fn encode_to_bytes(data: &Self::LoadedData) -> Result<Vec<u8>, Self::Error> {
@@ -119,7 +119,7 @@ impl Binary for Texture {
 }
 
 impl Texture {
-    pub fn with_data(path: String, data: DynamicImage) -> Self {
+    pub fn with_data(path: String, data: RgbaImage) -> Self {
         Texture { path, data: BinaryState::Loaded(data), hash: None }
     }
 
@@ -128,7 +128,7 @@ impl Texture {
         Texture { path, data: BinaryState::Unloaded(bytes), hash: Some(hash) }
     }
 
-    pub fn get_loaded_data(&self) -> Option<&DynamicImage> {
+    pub fn get_loaded_data(&self) -> Option<&RgbaImage> {
         self.get_data()
     }
 }

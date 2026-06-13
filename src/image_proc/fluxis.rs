@@ -1,12 +1,8 @@
-use image::{DynamicImage, Rgba};
+use fast_image_resize::FilterType;
+use image::{Rgba, RgbaImage};
 use rayon::prelude::*;
 use crate::{
-    fluxis::{skin_json::Keymode, SkinJson},
-    image_proc::proc::{fill_rect, overlay_image},
-    prelude::TextureStore,
-    traits::ManiaSkinConfig,
-    BinaryArcExt,
-    Store
+    BinaryArcExt, Store, fluxis::{SkinJson, skin_json::Keymode}, image_proc::proc::{fill_rect, overlay_image, resize_img}, prelude::TextureStore, traits::ManiaSkinConfig
 }; 
 
 pub fn generate_fluxis_preview(
@@ -14,7 +10,7 @@ pub fn generate_fluxis_preview(
     textures: &TextureStore,
     width: u32,
     height: u32
-) -> Result<DynamicImage, Box<dyn std::error::Error>> {
+) -> Result<RgbaImage, Box<dyn std::error::Error>> {
     let mut canvas = image::RgbaImage::new(width, height);
     
     draw_background(&mut canvas, textures, &skin_json.overrides.stage.background, width, height);
@@ -35,7 +31,7 @@ pub fn generate_fluxis_preview(
     draw_notes(&mut canvas, keymode_4k, textures, stage_x_offset, scaled_column_width, hit_y + (max_receptor_height as f32 / 1.5) as u32, 
                 note_spacing, note_gap, height)?;
     
-    Ok(DynamicImage::ImageRgba8(canvas))
+    Ok(canvas)
 }
 
 fn draw_background(
@@ -48,13 +44,11 @@ fn draw_background(
     let mut use_black_bg = true;
 
     if let Some(bg_texture) = textures.get_shared(bg_key) {
-        if let Some(bg_img_dynamic) = bg_texture.get_data() {
-            let bg_img = bg_img_dynamic.to_rgba8();
-
+        if let Some(bg_img) = bg_texture.get_data() {
             if is_valid_background(&bg_img) {
                 use_black_bg = false;
-                let scaled_bg = image::imageops::resize(
-                    &bg_img, width, height, image::imageops::FilterType::Lanczos3,
+                let scaled_bg = resize_img(
+                    &bg_img, width, height, FilterType::Hamming,
                 );
                 canvas
                     .par_chunks_mut((width * 4) as usize)
@@ -103,8 +97,7 @@ fn calculate_max_receptor_height(
         .filter_map(|key| textures.get_shared(key))
         .filter_map(|texture| texture.get_data())
         .map(|img| {
-            let receptor_img = img.to_rgba8();
-            let aspect_ratio = receptor_img.height() as f32 / receptor_img.width() as f32;
+            let aspect_ratio = img.height() as f32 / img.width() as f32;
             (scaled_column_width as f32 * aspect_ratio) as u32
         })
         .max()
@@ -130,14 +123,13 @@ fn draw_receptors(
             .ok_or(format!("Receptor image not found for column {}", col))?;
         
         if let Some(receptor_texture) = textures.get_shared(receptor_key) {
-            if let Some(receptor_img_dynamic) = receptor_texture.get_data() {
-                let receptor_img = receptor_img_dynamic.to_rgba8();
+            if let Some(receptor_img) = receptor_texture.get_data() {
                 let aspect_ratio = receptor_img.height() as f32 / receptor_img.width() as f32;
                 let target_height = (scaled_column_width as f32 * aspect_ratio) as u32;
                 
-                let scaled_receptor = image::imageops::resize(
+                let scaled_receptor = resize_img(
                     &receptor_img, scaled_column_width, target_height,
-                    image::imageops::FilterType::Lanczos3
+                    FilterType::Hamming
                 );
                 
                 overlay_image(canvas, &scaled_receptor, x, hit_y);
@@ -192,30 +184,26 @@ fn draw_long_note(
     let ln_tail_key = keymode.long_note_tail_images.get(col as usize)
         .ok_or(format!("Long note tail image not found for column {}", col))?;
     
-    let head_texture = textures.get_shared(ln_head_key)
+    let head_img = textures.get_shared(ln_head_key)
         .and_then(|t| t.get_data())
         .ok_or("Long note head texture not found")?;
-    let body_texture = textures.get_shared(ln_body_key)
+    let body_img = textures.get_shared(ln_body_key)
         .and_then(|t| t.get_data())
         .ok_or("Long note body texture not found")?;
-    let tail_texture = textures.get_shared(ln_tail_key)
+    let tail_img = textures.get_shared(ln_tail_key)
         .and_then(|t| t.get_data())
         .ok_or("Long note tail texture not found")?;
     
-    let head_img = head_texture.to_rgba8();
-    let body_img = body_texture.to_rgba8();
-    let tail_img = tail_texture.to_rgba8();
-    
     let head_aspect = head_img.height() as f32 / head_img.width() as f32;
     let head_height = (scaled_column_width as f32 * head_aspect) as u32;
-    let scaled_head = image::imageops::resize(
-        &head_img, scaled_column_width, head_height, image::imageops::FilterType::Lanczos3
+    let scaled_head = resize_img(
+        &head_img, scaled_column_width, head_height, FilterType::Hamming
     );
     
     let tail_aspect = tail_img.height() as f32 / tail_img.width() as f32;
     let tail_height = (scaled_column_width as f32 * tail_aspect) as u32;
-    let scaled_tail = image::imageops::resize(
-        &tail_img, scaled_column_width, tail_height, image::imageops::FilterType::Lanczos3
+    let scaled_tail = resize_img(
+        &tail_img, scaled_column_width, tail_height, FilterType::Hamming
     );
     
     let staircase_offset = col * (note_spacing / 8);
@@ -230,9 +218,9 @@ fn draw_long_note(
             
             if body_start_y > body_end_y {
                 let body_length = body_start_y - body_end_y;
-                let scaled_body = image::imageops::resize(
+                let scaled_body = resize_img(
                     &body_img, scaled_column_width, body_length,
-                    image::imageops::FilterType::Lanczos3
+                    FilterType::Hamming
                 );
                 overlay_image(canvas, &scaled_body, x, body_end_y);
             }
@@ -260,14 +248,13 @@ fn draw_normal_notes(
         .ok_or(format!("Note image not found for column {}", col))?;
     
     if let Some(note_texture) = textures.get_shared(note_key) {
-        if let Some(note_img_dynamic) = note_texture.get_data() {
-            let note_img = note_img_dynamic.to_rgba8();
+        if let Some(note_img) = note_texture.get_data() {
             let aspect_ratio = note_img.height() as f32 / note_img.width() as f32;
             let target_height = (scaled_column_width as f32 * aspect_ratio) as u32;
             
-            let scaled_note = image::imageops::resize(
+            let scaled_note = resize_img(
                 &note_img, scaled_column_width, target_height,
-                image::imageops::FilterType::Lanczos3
+                FilterType::Hamming
             );
             
             for i in 0..2 {

@@ -1,6 +1,7 @@
 use std::sync::{Arc, RwLock};
 
-use image::{DynamicImage, imageops::FilterType};
+use fast_image_resize::FilterType;
+use image::RgbaImage;
 
 use crate::{
     Binary, BinaryArcExt, BinaryState, Store, StringPattern, TextureArcExt,
@@ -139,7 +140,7 @@ impl<'a, 'p, S: Store<Texture>> TextureResolver<'a, 'p, S> {
         let (colors, base_arc) = self.snap_processor.process_once(&sheet_arc, |_| {
             let colors: Vec<Rgba> = frames.iter()
                 .map(|t| {
-                    let col = t.image_ref(|img| get_dominant_color(img, FilterType::Triangle));
+                    let col = t.image_ref(|img| get_dominant_color(img, FilterType::Hamming));
                     Rgba::from_image_rs(col.unwrap_or(image::Rgba([0, 0, 0, 0])))
                 })
                 .collect();
@@ -149,12 +150,12 @@ impl<'a, 'p, S: Store<Texture>> TextureResolver<'a, 'p, S> {
             if grayscale && !frames.is_empty() {
                 fn stack_locks<'a>(
                     frames: &'a [Arc<RwLock<Texture>>],
-                    refs: &mut Vec<&'a DynamicImage>,
-                    f: impl FnOnce(&[&DynamicImage]),
+                    refs: &mut Vec<&'a RgbaImage>,
+                    f: impl FnOnce(&[&RgbaImage]),
                 ) {
                     if let Some((first, rest)) = frames.split_first() {
                         first.with_image(|img| {
-                            let img_unsafe_ref = unsafe { &*(img as *const DynamicImage) };
+                            let img_unsafe_ref = unsafe { &*(img as *const RgbaImage) };
                             refs.push(img_unsafe_ref);
                             stack_locks(rest, refs, f);
                         });
@@ -167,7 +168,7 @@ impl<'a, 'p, S: Store<Texture>> TextureResolver<'a, 'p, S> {
                 stack_locks(&frames, &mut images_refs, |refs| {
                     let base_tex = Texture::with_data(
                         base_tex_name.to_string(),
-                        extract_grayscale_base(refs, Some(&colors), FilterType::Triangle),
+                        extract_grayscale_base(refs, Some(&colors), FilterType::Hamming),
                     );
                     base_arc = Some(textures.insert(base_tex));
                 });

@@ -7,7 +7,7 @@ use js_sys::{Uint8Array, ArrayBuffer};
 #[cfg(target_arch = "wasm32")]
 use js_sys::Array;
 
-use image::{DynamicImage, ImageError};
+use image::{ImageError, RgbaImage};
 use crate::{Binary, BinaryState, impl_store_wasm, io::Store, utils::io::normalize};
 use crate::io::texture::Texture;
 use crate::utils;
@@ -22,7 +22,7 @@ pub struct TextureStore {
     /// indexes are scaled lower in powers of 2 (0 = 1/2, 1 = 1/4, 2 = 1/8, etc.)
     #[wasm_bindgen(skip)]
     #[merge(strategy = utils::merge::dashmap::overwrite)]
-    pub(crate) mipmaps: DashMap<String, Vec<DynamicImage>>,
+    pub(crate) mipmaps: DashMap<String, Vec<RgbaImage>>,
 }
 
 #[cfg(target_arch = "wasm32")]
@@ -96,7 +96,7 @@ impl TextureStore {
 impl_store_wasm!(TextureStore, Texture);
 
 impl Store<Texture> for TextureStore {
-    type Data = BinaryState<image::DynamicImage>;
+    type Data = BinaryState<RgbaImage>;
     type MapType = DashMap<String, Arc<RwLock<Texture>>>;
     
     fn create_item(path: String, data: Self::Data, hash: Option<u64>) -> Texture {
@@ -153,7 +153,7 @@ impl TextureStore {
         Ok(())
     }
 
-    pub fn load_with_mipmaps(&mut self, path: String, bytes: &[u8], mips: Vec<DynamicImage>) -> Result<(), ImageError> {
+    pub fn load_with_mipmaps(&mut self, path: String, bytes: &[u8], mips: Vec<RgbaImage>) -> Result<(), ImageError> {
         let texture = Texture::from_bytes(path.clone(), bytes)?;
         self.insert(texture);
         self.set_mipmaps(&path, mips);
@@ -197,12 +197,12 @@ impl TextureStore {
         }).collect()
     }
 
-    pub fn set_mipmaps(&mut self, path: &str, mips: Vec<DynamicImage>) {
+    pub fn set_mipmaps(&mut self, path: &str, mips: Vec<RgbaImage>) {
         let normalized = normalize(path);
         self.mipmaps.insert(normalized, mips);
     }
 
-    pub fn get_mipmap(&self, path: &str, level: usize) -> Option<DynamicImage> {
+    pub fn get_mipmap(&self, path: &str, level: usize) -> Option<RgbaImage> {
         let normalized = normalize(path);
         self.mipmaps.get(&normalized).and_then(|mips| mips.get(level).cloned())
     }

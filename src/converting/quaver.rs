@@ -1,6 +1,7 @@
 use std::sync::{Arc, RwLock};
 
-use image::{DynamicImage, GenericImageView};
+use fast_image_resize::FilterType;
+use image::RgbaImage;
 
 use crate::common::skin::AssetAttribute;
 use crate::common::traits::LaneFallback;
@@ -19,7 +20,7 @@ use crate::generic::elements::{
 use crate::generic::layout::{HUDLayout, KeymodeLayout};
 use crate::generic::sound::{GenericGameplaySounds, ManiaGameplaySounds, Sounds, UISounds};
 use crate::generic::{Gameplay, UI};
-use crate::image_proc::proc::{concat_into_sheet, dist_from_bottom, rotate_90_deg_ccw, trim_image_vertical};
+use crate::image_proc::proc::{concat_into_sheet, dist_from_bottom, resize_img, rotate_90_deg_ccw, trim_image_vertical};
 use crate::io::texture::TextureProcessor;
 use crate::io::Store;
 use crate::skin::generic::{GenericManiaSkin, Keymode, Metadata};
@@ -152,11 +153,12 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 if let Some(texture) = resolver.get_texture_opt(path, fallback_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
                         let off = arc.with_image(|img| {
-                            dist_from_bottom(&img.to_rgba8(), 0.1)
+                            dist_from_bottom(img, 0.1)
                         }).try_into().unwrap_or(0);
 
                         arc.data_mut(|img| {
-                            *img = trim_image_vertical(img.clone(), 0.2);
+                            let trimmed = trim_image_vertical(img, 0.2);
+                            *img = trimmed;
                         });
 
                         off
@@ -178,11 +180,12 @@ pub fn to_generic_mania(skin: &QuaSkin) -> Result<GenericManiaSkin, Box<dyn std:
                 if let Some(texture) = resolver.get_texture_opt(path, fallback_path) {
                     let offset = receptor_processor.process_once(&texture, |arc| {
                         let off = arc.with_image(|img| {
-                            dist_from_bottom(&img.to_rgba8(), 0.1)
+                            dist_from_bottom(img, 0.1)
                         }).try_into().unwrap_or(0);
 
                         arc.data_mut(|img| {
-                            *img = trim_image_vertical(img.clone(), 0.2);
+                            let trimmed = trim_image_vertical(img, 0.2);
+                            *img = trimmed;
                         });
 
                         off
@@ -458,20 +461,21 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
                 if let Some(n) = keymode.long_note_bodies.get(i) {
                     if let Some(texture_arc) = &n.texture
                     {
-                            body_processor.process_once_void(texture_arc, |arc_texture| {
-                                arc_texture.data_mut(|img| {
-                                    let (width, height) = img.dimensions();
-                                    let max_res = QuaDimensions::MaxResolution.as_u32();
-                                    
-                                    if width > max_res || height > max_res {
-                                        *img = img.resize_exact(
-                                            width.min(max_res),
-                                            height.min(max_res),
-                                            image::imageops::FilterType::Lanczos3
-                                        );
-                                    }
-                                });
+                        body_processor.process_once_void(texture_arc, |arc_texture| {
+                            arc_texture.data_mut(|img| {
+                                let (width, height) = img.dimensions();
+                                let max_res = QuaDimensions::MaxResolution.as_u32();
+                                
+                                if width > max_res || height > max_res {
+                                    *img = resize_img(
+                                        img,
+                                        width.min(max_res),
+                                        height.min(max_res),
+                                        FilterType::Hamming
+                                    );
+                                }
                             });
+                        });
                     }
                     tr.reloc_arc_lock(&n.texture, StringPattern::from(&q_ln_bodies[i]));
                 }
@@ -484,7 +488,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
                 let sprite_locks = element.as_texture_frames();
                 let sprites_vec: Vec<_> = sprite_locks.iter().collect();
 
-                let mut sprites: Vec<&DynamicImage> = sprites_vec
+                let mut sprites: Vec<&RgbaImage> = sprites_vec
                     .iter()
                     .map(|g| g.state().as_loaded().expect("Sprite not loaded"))
                     .collect();
@@ -496,7 +500,7 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
                 } else {
                     let rows = element.get_rows().unwrap_or(1);
                     let cols = element.get_columns().unwrap_or(1);
-                    let sheet = concat_into_sheet(sprites, rows, cols);
+                    let sheet = concat_into_sheet(&sprites, rows, cols);
 
                     let key = format!("{}@{}x{}", pattern.to_string(), rows, cols);
 

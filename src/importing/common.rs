@@ -81,9 +81,9 @@ pub fn pair_at2x_files<'a>(
 enum Decoded {
     Loaded {
         path: String,
-        image: image::DynamicImage,
+        image: image::RgbaImage,
         hash: u64,
-        mip: Option<image::DynamicImage>,
+        mip: Option<image::RgbaImage>,
     },
     Unloaded {
         path: String,
@@ -107,8 +107,8 @@ pub fn build_texture_store_from_files(
 
                 if should_load {
                     let hash = xxhash_rust::xxh3::xxh3_64(hires);
-                    let image = image::load_from_memory(hires)?;
-                    let mip = image::load_from_memory(lores)?;
+                    let image = image::load_from_memory(hires).map(|img| img.to_rgba8())?;
+                    let mip = image::load_from_memory(lores).map(|img| img.to_rgba8())?;
                     Ok(Decoded::Loaded {
                         path: canonical_path.clone(),
                         image,
@@ -130,7 +130,7 @@ pub fn build_texture_store_from_files(
 
                 if should_load {
                     let hash = xxhash_rust::xxh3::xxh3_64(bytes);
-                    let image = image::load_from_memory(bytes)?;
+                    let image = image::load_from_memory(bytes).map(|img| img.to_rgba8())?;
                     Ok(Decoded::Loaded {
                         path: path.clone(),
                         image,
