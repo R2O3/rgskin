@@ -7,10 +7,12 @@
 [![license](https://img.shields.io/badge/license-MIT-4A80D4?style=flat-square)](LICENSE)
 [![rust](https://img.shields.io/badge/rust-nightly%201.98%2B-534eb5?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/tools/install)
 
-A library for loading and creating skins for various rhythm games. It supports cross-platform usage including Web and Node.js environments via WebAssembly (WASM).
+A library for loading and creating skins for various rhythm games. It supports multi-threading and cross-platform usage including Web and Node.js environments via WebAssembly (WASM).
 
 ## Table of Contents
 
+- [Features](#features)
+    - [Supported Games](#supported-games) 
 - [Rust Usage](#rust-usage)
     - [Installation](#installation)
     - [API Reference](#api-reference)
@@ -28,6 +30,13 @@ A library for loading and creating skins for various rhythm games. It supports c
     - [Rust Library](#rust-library)
     - [WASM Bindings](#wasm-bindings)
 - [License](#license)
+
+## Features
+
+### Supported Games:
+- Osu!
+- Quaver
+- fluXis
 
 ## Rust Usage
 
@@ -55,6 +64,7 @@ use rgskin::prelude::*;
 // importing a skin from a directory
 let osu_skin = import::osu::skin_from_dir("path/to/skin").expect("Failed to import skin!", false);
 let fluxis_skin = import::fluxis::skin_from_dir("path/to/skin").expect("Failed to import skin!", false);
+let quaver_skin = import::quaver::skin_from_dir("path/to/skin").expect("Failed to import skin!", false);
 ```
 
 The second argument is for if you want to import ALL assets for a skin, it will import all textures but leave the unrequired unloaded, usually recommended when merging skins of the same type as you might need all assets; otherwise if false it will only import and load the required assets.
@@ -98,7 +108,7 @@ OsuSkin.to_generic_mania(()); // yes, the extra parethesis is required.
 ```
 ```rust
 FluXisSkin::from_generic_mania(&generic); 
-FluXisSkin.to_generic_mania(fluxis_layout); // if you don't have a layout you can just pass None or ().
+FluXisSkin.to_generic_mania(fluxis_layout); // if you don't have a layout you can just pass None.
 ```
 
 ---
@@ -142,20 +152,58 @@ then use as an ES module
 ### API Reference
 
 #### Initialization
-```javascript
-// For ES modules
-import * as rgskin from '@r2o3/rgskin'; // or if not in node modules use the path to rgskin.js
 
-// or alternatively
-const rgskin = await import('path/to/rgskin.js')
-
-// For CommonJS
-const rgskin = require('rgskin');
-```
-
-you may need to do ``await rgskin.default()`` after importing if you've imported it in a script tag (with type="module") or you get an error like ``Uncaught TypeError: Cannot read properties of undefined (reading '__wbindgen_malloc')``
 
 As of now you can't parse/write using the original structures in JS/TS, will be supported in the *near* future.
+
+> [!IMPORTANT]
+> `wasm-bindgen-rayon` uses `SharedArrayBuffer` for thread communication, which requires your page to be cross-origin isolated. Your server must send these headers:
+> ```
+> Cross-Origin-Opener-Policy: same-origin
+> Cross-Origin-Embedder-Policy: require-corp
+> ```
+> You can verify isolation is active with `self.crossOriginIsolated` in the browser console.
+
+---
+
+**ES Modules (bundler or Node.js)**
+
+```javascript
+import init, { initThreadPool } from '@r2o3/rgskin';
+// or if not installed via npm:
+// import init, { initThreadPool } from './path/to/rgskin.js';
+
+await init();
+await initThreadPool(navigator.hardwareConcurrency);
+```
+
+---
+
+**Browser (`<script type="module">`)**
+
+```javascript
+import rgskin from './path/to/rgskin.js';
+
+await rgskin.default();
+await rgskin.initThreadPool(navigator.hardwareConcurrency);
+```
+
+---
+
+**CommonJS (Node.js or Legacy Environments)**
+
+CommonJS (`require`) is not natively supported because `wasm-bindgen-rayon` relies on ES Modules and top-level async initialization. However, you can load it using `import()`:
+
+```javascript
+async function loadWasm() {
+    const wasm = await import('@r2o3/rgskin');
+    
+    await wasm.default();
+    await wasm.initThreadPool(navigator.hardwareConcurrency);
+    
+    return wasm;
+}
+```
 
 #### Importing/Loading Skins
 
