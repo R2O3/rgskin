@@ -2,6 +2,8 @@
 name = "rgskin_derive"
 version = "0.0.1"
 edition = "2024"
+description = "Macros for rgskin"
+license = "MIT"
 
 [lib]
 proc-macro = true
