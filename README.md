@@ -1,4 +1,12 @@
 # rgskin
+
+[![crates.io](https://img.shields.io/crates/v/rgskin?style=flat-square&logo=rust&logoColor=white&color=e05d2c)](https://crates.io/crates/rgskin)
+[![npm (browser)](https://img.shields.io/npm/v/%40r2o3%2Frgskin-browser?style=flat-square&logo=npm&logoColor=white&label=npm%20(browser)&color=CB3837)](https://www.npmjs.com/package/@r2o3/rgskin-browser)
+[![npm (node)](https://img.shields.io/npm/v/%40r2o3%2Frgskin-nodejs?style=flat-square&logo=npm&logoColor=white&label=npm%20(node)&color=CB3837)](https://www.npmjs.com/package/@r2o3/rgskin-nodejs)
+
+[![license](https://img.shields.io/badge/license-MIT-4A80D4?style=flat-square)](LICENSE)
+[![rust](https://img.shields.io/badge/rust-nightly%201.98%2B-534eb5?style=flat-square&logo=rust&logoColor=white)](https://www.rust-lang.org/tools/install)
+
 A library for loading and creating skins for various rhythm games. It supports cross-platform usage including Web and Node.js environments via WebAssembly (WASM).
 
 ## Table of Contents
