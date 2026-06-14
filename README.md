@@ -44,7 +44,7 @@ A library for loading and creating skins for various rhythm games. It supports m
 Add this to your `Cargo.toml`:
 ```toml
 [dependencies]
-rgskin = "0.0.6"
+rgskin = "0.0.7"
 ```
 
 Or run:
