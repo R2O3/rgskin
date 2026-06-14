@@ -5,6 +5,8 @@ jobs = 8
 rustflags = [
     "-C", "target-feature=+atomics,+bulk-memory,+mutable-globals",
     "-Z", "threads=8", 
+    "-C", "link-arg=--shared-memory",
+    "-C", "link-arg=--max-memory=1073741824"
 ]
 
 [unstable]
