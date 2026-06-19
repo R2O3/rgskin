@@ -22,12 +22,13 @@ use crate::importing::common::{
 pub fn import_binaries_from_dir<F>(
     path: &str,
     patterns: &[StringPattern],
+    extensions: &[&str],
     mut loader: F,
 ) -> Result<(), ImportError>
 where
     F: FnMut(String, &[u8]) -> Result<(), ImportError>,
 {
-    import_all_binaries_from_dir(path, &["png", "jpg", "jpeg", "wav", "ogg"], |file_path, bytes| {
+    import_all_binaries_from_dir(path, extensions, |file_path, bytes| {
         if patterns.iter().any(|p| p.matches_path(&file_path)) {
             loader(file_path, bytes)?;
         }
@@ -113,7 +114,7 @@ pub fn import_textures_from_dir(
     patterns: &[StringPattern],
 ) -> Result<TextureStore, ImportError> {
     let mut files = HashMap::new();
-    import_binaries_from_dir(path, patterns, |path, bytes| {
+    import_binaries_from_dir(path, patterns, &["png", "jpg", "jpeg"], |path, bytes| {
         files.insert(path, bytes.to_vec());
         Ok(())
     })?;
@@ -137,7 +138,7 @@ pub fn import_samples_from_dir(
     relative_sample_paths: &[StringPattern],
 ) -> Result<SampleStore, ImportError> {
     let mut sample_store = SampleStore::new();
-    import_binaries_from_dir(path, relative_sample_paths, |sample_path, bytes| {
+    import_binaries_from_dir(path, relative_sample_paths, &["wav", "ogg"], |sample_path, bytes| {
         sample_store
             .load_from_bytes(sample_path.clone(), bytes)
             .map_err(|source| ImportError::Sample {

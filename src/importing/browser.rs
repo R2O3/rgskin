@@ -18,6 +18,7 @@ use crate::error::ImportError;
 pub fn import_binaries_from_files<F>(
     files: &HashMap<String, Vec<u8>>,
     patterns: &[&str],
+    extensions: &[&str],
     mut loader: F,
 ) -> Result<(), ImportError>
 where
@@ -30,11 +31,16 @@ where
         .collect();
     for (file_path, bytes) in files {
         let normalized = normalize(file_path);
-        let path_without_ext = remove_extension(&normalized);
-        if seen.try_insert(&path_without_ext)
-            && patterns.iter().any(|p| p.matches_path(&path_without_ext))
-        {
-            loader(path_without_ext.to_string(), bytes)?;
+        if let Some(ext_pos) = normalized.rfind('.') {
+            let ext = &normalized[ext_pos + 1..];
+            if extension_matches(ext, extensions) {
+                let path_without_ext = remove_extension(&normalized);
+                if seen.try_insert(&path_without_ext)
+                    && patterns.iter().any(|p| p.matches_path(&path_without_ext))
+                {
+                    loader(path_without_ext.to_string(), bytes)?;
+                }
+            }
         }
     }
     Ok(())
@@ -69,7 +75,7 @@ pub fn import_textures_from_files(
     patterns: &[&str],
 ) -> Result<TextureStore, ImportError> {
     let mut filtered = HashMap::new();
-    import_binaries_from_files(files, patterns, |path, bytes| {
+    import_binaries_from_files(files, patterns, &["png", "jpg", "jpeg"], |path, bytes| {
         filtered.insert(path, bytes.to_vec());
         Ok(())
     })?;
@@ -92,7 +98,7 @@ pub fn import_samples_from_files(
     relative_sample_paths: &[&str],
 ) -> Result<SampleStore, ImportError> {
     let mut sample_store = SampleStore::new();
-    import_binaries_from_files(files, relative_sample_paths, |path, bytes| {
+    import_binaries_from_files(files, relative_sample_paths, &["wav", "ogg"], |path, bytes| {
         sample_store
             .load_from_bytes(path.clone(), bytes)
             .map_err(|source| ImportError::Sample {
