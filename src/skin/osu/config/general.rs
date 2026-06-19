@@ -2,9 +2,9 @@ use merge::Merge;
 #[cfg(target_arch = "wasm32")]
 use wasm_bindgen::prelude::*;
 
-use crate::{utils::serde::{
-    add_key_value, parse_bool, parse_key_value_eq, parse_u16_list, serialize_bool, serialize_u16_slice
-}};
+use crate::utils::serde::{
+    add_key_value, parse_bool, parse_key_value, parse_u16_list, serialize_bool, serialize_u16_slice
+};
 use rgskin_derive::merge_for_all;
 
 #[merge_for_all(strategy = crate::utils::merge::any::overwrite)]
@@ -85,7 +85,7 @@ impl General {
                 continue;
             }
 
-            let (key_str, value_str) = parse_key_value_eq(line).unwrap_or_default();
+            let (key_str, value_str) = parse_key_value(line).unwrap_or_default();
 
             match key_str {
                 "Name" => general.name = value_str.to_string(),
