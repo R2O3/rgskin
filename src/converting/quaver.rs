@@ -525,6 +525,8 @@ pub fn from_generic_mania(skin: &GenericManiaSkin) -> Result<QuaSkin, Box<dyn st
     let mut tr = StoreRelocator::new(&mut textures);
     let mut sr = StoreRelocator::new(&mut samples);
 
+    tr.reloc_arc_lock(&skin.ui.cursor.texture, static_assets::Cursor::MAIN_CURSOR);
+
     tr.reloc_arc_lock(&skin.gameplay.health_bar.background, static_assets::HealthBar::BACKGROUND);
     tr.reloc_arc_lock(&skin.gameplay.health_bar.fill, static_assets::HealthBar::FOREGROUND);
 
