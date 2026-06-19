@@ -100,7 +100,7 @@ pub trait KeymodeInvariant: Sized {
     }
 }
 
-#[derive(Clone, Default)]
+#[derive(Clone, Default, Debug)]
 pub struct LaneFallback {
     pub receptor: String,
     pub receptor_down: String,

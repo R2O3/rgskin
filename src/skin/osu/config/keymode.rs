@@ -245,7 +245,8 @@ impl Keymode {
             let numeric_part: String = index_str.chars().take_while(|c| c.is_ascii_digit()).collect();
             if let Ok(index) = numeric_part.parse::<usize>() {
                 if index < target.len() {
-                    target[index] = value.to_string();
+                    let no_2x = value.strip_suffix("@2x").unwrap_or(value);
+                    target[index] = no_2x.to_string();
                 }
             }
         }

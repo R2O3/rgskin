@@ -48,9 +48,6 @@ pub fn get_lane_type(keymode: u8, idx: usize) -> LaneType {
     }
 }
 
-
-
-
 pub struct StoreRelocator<'a, T: Binary + 'static, S: Store<T>> {
     store: &'a mut S,
     _phantom: PhantomData<T>,
