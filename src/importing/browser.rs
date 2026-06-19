@@ -79,7 +79,12 @@ pub fn import_textures_from_files(
 pub fn import_all_textures_from_files(
     files: &HashMap<String, Vec<u8>>,
 ) -> Result<TextureStore, ImportError> {
-    build_texture_store_from_files(files, None).map_err(ImportError::from)
+    let mut filtered = HashMap::new();
+    import_all_binaries_from_files(files, &["png", "jpg", "jpeg"], |path, bytes| {
+        filtered.insert(path, bytes.to_vec());
+        Ok(())
+    })?;
+    build_texture_store_from_files(&filtered, None).map_err(ImportError::from)
 }
 
 pub fn import_samples_from_files(
