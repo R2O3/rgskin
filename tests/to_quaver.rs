@@ -7,7 +7,7 @@ use test_dependencies::*;
 pub fn osu_to_quaver_test() -> Result<(), Box<dyn std::error::Error>> {
     benchmark_closure(||
     {
-        let osu_skin = import::osu::skin_from_dir("./tests/skins/Nanachi", false)?;
+        let osu_skin = import::osu::skin_from_dir("./tests/skins/Baller", false)?;
         let generic_skin = osu_skin.to_generic_mania(())?;
         let quaver_from_generic = QuaSkin::from_generic_mania(&generic_skin)?;
         export::quaver::skin_to_dir(&quaver_from_generic, SKIN_PATH)?;

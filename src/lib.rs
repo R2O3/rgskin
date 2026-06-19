@@ -16,6 +16,7 @@ mod parse;
 pub mod image_proc;
 pub mod utils;
 pub mod extensions;
+pub mod error;
 
 pub use skin::osu;
 pub use skin::quaver;
@@ -174,9 +175,9 @@ pub mod export {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub mod import {
-    use crate::{importing::native::*, io::texture::TextureStore, sample::SampleStore, StringPattern};
-    
-    type Res<T> = Result<T, Box<dyn std::error::Error>>;
+    use crate::{StringPattern, error::ImportError, importing::native::*, io::texture::TextureStore, sample::SampleStore};
+
+    type Res<T> = Result<T, ImportError>;
 
     pub fn textures_from_dir(path: &str, relative_texture_paths: &[StringPattern]) -> Res<TextureStore> { import_textures_from_dir(path, relative_texture_paths) }
     pub fn all_textures_from_dir(path: &str, load_only: Option<&[StringPattern]>) -> Res<TextureStore> { import_all_textures_from_dir(path, load_only) }
@@ -186,19 +187,19 @@ pub mod import {
     pub mod osu {
         use super::*;
         pub fn skin_from_dir(path: &str, import_all: bool) -> Res<crate::osu::OsuSkin> { import_osu_mania_skin_from_dir(path, import_all) }
-        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
+        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path).ok().flatten().unwrap_or_default() }
     }
 
     pub mod quaver {
         use super::*;
         pub fn skin_from_dir(path: &str, import_all: bool) -> Res<crate::quaver::QuaSkin> { import_quaver_skin_from_dir(path, import_all) }
-        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
+        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path).ok().flatten().unwrap_or_default() }
     }
 
     pub mod fluxis {
         use super::*;
         pub fn skin_from_dir(path: &str, import_all: bool) -> Res<crate::fluxis::FluXisSkin> { import_fluxis_skin_from_dir(path, import_all) }
-        pub fn json_str_from_dir(path: &str) -> String { read_str_from_path(path) }
+        pub fn json_str_from_dir(path: &str) -> String { read_str_from_path(path).ok().flatten().unwrap_or_default() }
     }
 }
 
@@ -208,35 +209,37 @@ pub mod import {
     use js_sys::{Array, Map};
     use crate::{importing::browser::*, io::texture::TextureStore, sample::SampleStore, utils::wasm::*};
 
+    macro_rules! map_err { ($e:expr) => { $e.map_err(|e| JsError::new(&e.to_string())) } }
+
     #[wasm_bindgen(js_name = texturesFromFiles)]
     pub fn textures_from_files(files: Map, relative_texture_paths: Array) -> Result<TextureStore, JsError> {
         let paths = arr_to_strs(relative_texture_paths)?;
         let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
-        import_textures_from_files(&js_to_hash(files), &path_refs)
+        map_err!(import_textures_from_files(&js_to_hash(files), &path_refs))
     }
 
     #[wasm_bindgen(js_name = allTexturesFromFiles)]
     pub fn all_textures_from_files(files: Map) -> Result<TextureStore, JsError> {
-        import_all_textures_from_files(&js_to_hash(files))
+        map_err!(import_all_textures_from_files(&js_to_hash(files)))
     }
 
     #[wasm_bindgen(js_name = samplesFromFiles)]
     pub fn samples_from_files(files: Map, relative_sample_paths: Array) -> Result<SampleStore, JsError> {
         let paths = arr_to_strs(relative_sample_paths)?;
         let path_refs: Vec<&str> = paths.iter().map(String::as_str).collect();
-        import_samples_from_files(&js_to_hash(files), &path_refs)
+        map_err!(import_samples_from_files(&js_to_hash(files), &path_refs))
     }
 
     #[wasm_bindgen(js_name = allSamplesFromFiles)]
     pub fn all_samples_from_files(files: Map) -> Result<SampleStore, JsError> {
-        import_all_samples_from_files(&js_to_hash(files))
+        map_err!(import_all_samples_from_files(&js_to_hash(files)))
     }
 
     pub mod osu {
         use super::*;
         #[wasm_bindgen(js_name = osuSkinFromFiles)]
         pub fn skin_from_files(files: Map) -> Result<crate::osu::OsuSkin, JsError> {
-            import_osu_mania_skin_from_files(&js_to_hash(files))
+            map_err!(import_osu_mania_skin_from_files(&js_to_hash(files)))
         }
     }
 
@@ -244,7 +247,7 @@ pub mod import {
         use super::*;
         #[wasm_bindgen(js_name = quaverSkinFromFiles)]
         pub fn skin_from_files(files: Map) -> Result<crate::quaver::QuaSkin, JsError> {
-            import_quaver_skin_from_files(&js_to_hash(files))
+            map_err!(import_quaver_skin_from_files(&js_to_hash(files)))
         }
     }
 
@@ -252,7 +255,7 @@ pub mod import {
         use super::*;
         #[wasm_bindgen(js_name = fluXisSkinFromFiles)]
         pub fn skin_from_files(files: Map) -> Result<crate::fluxis::FluXisSkin, JsError> {
-            import_fluxis_skin_from_files(&js_to_hash(files))
+            map_err!(import_fluxis_skin_from_files(&js_to_hash(files)))
         }
     }
 }
@@ -296,7 +299,7 @@ pub mod import {
         pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::osu::OsuSkin, JsError> { map_err!(import_osu_mania_skin_from_dir(path, import_all.unwrap_or(false))) }
 
         #[wasm_bindgen(js_name = osuIniStrFromDir)]
-        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
+        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path).ok().flatten().unwrap_or_default() }
     }
 
     pub mod quaver {
@@ -305,7 +308,7 @@ pub mod import {
         pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::quaver::QuaSkin, JsError> { map_err!(import_quaver_skin_from_dir(path, import_all.unwrap_or(false))) }
 
         #[wasm_bindgen(js_name = quaverIniStrFromDir)]
-        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path) }
+        pub fn ini_str_from_dir(path: &str) -> String { read_str_from_path(path).ok().flatten().unwrap_or_default() }
     }
 
     pub mod fluxis {
@@ -314,6 +317,6 @@ pub mod import {
         pub fn skin_from_dir(path: &str, import_all: Option<bool>) -> Result<crate::fluxis::FluXisSkin, JsError> { map_err!(import_fluxis_skin_from_dir(path, import_all.unwrap_or(false))) }
 
         #[wasm_bindgen(js_name = fluxisJsonStrFromDir)]
-        pub fn json_str_from_dir(path: &str) -> String { read_str_from_path(path) }
+        pub fn json_str_from_dir(path: &str) -> String { read_str_from_path(path).ok().flatten().unwrap_or_default() }
     }
 }

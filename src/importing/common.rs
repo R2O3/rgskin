@@ -1,8 +1,10 @@
 #![allow(unused)]
 
 use std::collections::{HashMap, HashSet};
+use std::fmt;
 use rayon::prelude::*;
 
+use crate::error::TextureLoadError;
 use crate::{Binary, Store, texture::{Texture, TextureStore}, utils::io::get_stem};
 use crate::io::{BinaryState, StringPattern};
 use crate::utils::io::normalize;
@@ -95,10 +97,10 @@ enum Decoded {
 pub fn build_texture_store_from_files(
     files: &HashMap<String, Vec<u8>>,
     load_only: Option<&[StringPattern]>,
-) -> Result<TextureStore, Box<dyn std::error::Error>> {
+) -> Result<TextureStore, TextureLoadError> {
     let entries = pair_at2x_files(files);
 
-    let decoded: Vec<Result<Decoded, image::ImageError>> = entries
+    let decoded: Vec<Result<Decoded, TextureLoadError>> = entries
         .par_iter()
         .map(|entry| match entry {
             TextureEntry::WithMip { canonical_path, hires, lores } => {
@@ -107,8 +109,21 @@ pub fn build_texture_store_from_files(
 
                 if should_load {
                     let hash = xxhash_rust::xxh3::xxh3_64(hires);
-                    let image = image::load_from_memory(hires).map(|img| img.to_rgba8())?;
-                    let mip = image::load_from_memory(lores).map(|img| img.to_rgba8())?;
+
+                    let image = image::load_from_memory(hires)
+                        .map(|img| img.to_rgba8())
+                        .map_err(|source| TextureLoadError::DecodeHires {
+                            path: canonical_path.clone(),
+                            source,
+                        })?;
+
+                    let mip = image::load_from_memory(lores)
+                        .map(|img| img.to_rgba8())
+                        .map_err(|source| TextureLoadError::DecodeMip {
+                            path: canonical_path.clone(),
+                            source,
+                        })?;
+
                     Ok(Decoded::Loaded {
                         path: canonical_path.clone(),
                         image,
@@ -130,7 +145,14 @@ pub fn build_texture_store_from_files(
 
                 if should_load {
                     let hash = xxhash_rust::xxh3::xxh3_64(bytes);
-                    let image = image::load_from_memory(bytes).map(|img| img.to_rgba8())?;
+
+                    let image = image::load_from_memory(bytes)
+                        .map(|img| img.to_rgba8())
+                        .map_err(|source| TextureLoadError::DecodeHires {
+                            path: path.clone(),
+                            source,
+                        })?;
+
                     Ok(Decoded::Loaded {
                         path: path.clone(),
                         image,
@@ -177,7 +199,7 @@ pub fn build_texture_store_from_files(
         if let Some(mip_image) = mip {
             store.mipmaps.insert(normalized, vec![mip_image]);
         }
-        Ok::<_, image::ImageError>(())
+        Ok::<_, TextureLoadError>(())
     })?;
 
     Ok(store)
